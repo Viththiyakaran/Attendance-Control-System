@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Facility Access & Attendance</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Facility Access</p>
+        <h1>Attendance Control System</h1>
+      </div>
+      <nav class="tabs" aria-label="Application areas">
+        <button class="tab active" data-view="register">Registration</button>
+        <button class="tab" data-view="admin">Admin</button>
+        <button class="tab" data-view="scanner">Gate Scanner</button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="view active" id="register-view">
+        <form id="registration-form" class="panel registration-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Public Portal</p>
+            <h2>Apply for facility access</h2>
+          </div>
+          <label>
+            Email Address
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </label>
+          <label>
+            Villa Number
+            <input id="villa-number" name="villaNumber" autocomplete="address-line1" required />
+          </label>
+          <div class="registration-access">
+            <p class="eyebrow">Choose Activities</p>
+            <div id="registration-access-options" class="access-options"></div>
+          </div>
+          <label>
+            Upload Qatar ID
+            <input id="qatar-id" name="qatarId" type="file" accept="image/*,.pdf" required />
+          </label>
+          <button class="primary" type="submit">Submit Application</button>
+          <p class="notice" id="registration-message" role="status"></p>
+        </form>
+      </section>
+
+      <section class="view" id="admin-view">
+        <section class="panel admin-login" id="admin-login-panel">
+          <form id="admin-login-form">
+            <div class="section-heading">
+              <p class="eyebrow">Admin Login</p>
+              <h2>Manager access required</h2>
+            </div>
+            <label>
+              Email
+              <input id="admin-email" type="email" autocomplete="username" required />
+            </label>
+            <label>
+              Password
+              <input id="admin-password" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="primary" type="submit">Login</button>
+            <p class="notice" id="admin-login-message" role="status"></p>
+          </form>
+        </section>
+
+        <div class="admin-dashboard" id="admin-dashboard" hidden>
+          <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="admin-brand">
+              <span class="brand-mark">HTS</span>
+              <div>
+                <strong>Facility Access</strong>
+                <small>Admin console</small>
+              </div>
+            </div>
+            <nav class="admin-menu" aria-label="Admin navigation">
+              <button class="admin-menu-item active" type="button" data-admin-section="dashboard">Dashboard</button>
+              <button class="admin-menu-item" type="button" data-admin-section="applications">Applications</button>
+              <button class="admin-menu-item" type="button" data-admin-section="users">Users</button>
+              <button class="admin-menu-item" type="button" data-admin-section="facilities">Facilities</button>
+              <button class="admin-menu-item" type="button" data-admin-section="scanner-stations">Scanner Stations</button>
+              <button class="admin-menu-item" type="button" data-admin-section="checkin-logs">Check-in Logs</button>
+              <button class="admin-menu-item" type="button" data-admin-section="reports">Reports</button>
+              <button class="admin-menu-item" type="button" data-admin-section="settings">Settings</button>
+              <button class="admin-menu-item danger-link" id="admin-logout" type="button">Logout</button>
+            </nav>
+          </aside>
+
+          <div class="admin-shell">
+            <header class="admin-header">
+              <button class="admin-drawer-toggle" type="button" data-admin-drawer-toggle aria-label="Open admin menu">Menu</button>
+              <div>
+                <p class="eyebrow">Admin Console</p>
+                <h2 id="admin-page-title">Dashboard</h2>
+              </div>
+              <div class="admin-header-tools">
+                <input id="admin-header-search" type="search" placeholder="Search admin" aria-label="Search admin" />
+                <input id="admin-header-date" type="date" aria-label="Admin date filter" />
+                <div class="admin-profile" aria-label="Admin profile">
+                  <span>AD</span>
+                  <div>
+                    <strong>Manager</strong>
+                    <small>Admin</small>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <section class="admin-page active" data-admin-page="dashboard">
+              <div class="kpi-grid">
+                <article class="kpi-card">
+                  <span>Today Check-ins</span>
+                  <strong id="kpi-today-checkins">0</strong>
+                </article>
+                <article class="kpi-card">
+                  <span>Pending Applications</span>
+                  <strong id="kpi-pending-applications">0</strong>
+                </article>
+                <article class="kpi-card">
+                  <span>Active Users</span>
+                  <strong id="kpi-active-users">0</strong>
+                </article>
+                <article class="kpi-card">
+                  <span>Outside Time Attempts</span>
+                  <strong id="kpi-outside-time">0</strong>
+                </article>
+              </div>
+
+              <div class="admin-overview-grid">
+                <section class="panel">
+                  <div class="section-heading">
+                    <p class="eyebrow">Statistics</p>
+                    <h2>Users by facility</h2>
+                  </div>
+                  <div id="weekly-usage-chart" class="usage-chart"></div>
+                  <div id="facility-stats" class="facility-stats"></div>
+                </section>
+                <section class="panel">
+                  <div class="section-heading">
+                    <p class="eyebrow">Notifications</p>
+                    <h2>Email outbox</h2>
+                    <p class="helper-text">Local drafts are not delivered until an SMTP or email API service is connected.</p>
+                  </div>
+                  <div id="email-outbox" class="email-outbox"></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="admin-page" data-admin-page="applications">
+              <section class="panel user-management-panel">
+                <div class="section-heading compact-heading">
+                  <div>
+                    <p class="eyebrow">Verification</p>
+                    <h2>User management</h2>
+                  </div>
+                  <div class="user-tools">
+                    <form id="user-search-form" class="user-search">
+                      <input id="user-search" type="search" placeholder="Search users" aria-label="Search users" />
+                      <button type="submit">Search</button>
+                      <button type="button" id="clear-user-search">Clear</button>
+                    </form>
+                    <label class="status-filter">
+                      Status
+                      <select id="user-status-filter" aria-label="Filter users by status">
+                        <option value="all">All</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="user-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Villa</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pending-users"></tbody>
+                  </table>
+                </div>
+                <div class="table-pagination" id="user-pagination">
+                  <button type="button" data-user-page="prev">Previous</button>
+                  <span id="user-page-status">0 users</span>
+                  <button type="button" data-user-page="next">Next</button>
+                </div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="users">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Users</p>
+                  <h2>Approved resident access</h2>
+                  <p class="helper-text">Use Applications to review, manage, and resend QR passes for individual users.</p>
+                </div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="facilities">
+              <section class="panel facility-management-panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Facilities</p>
+                  <h2>Manage access</h2>
+                </div>
+                <form id="facility-form" class="facility-form">
+                  <input id="facility-name" placeholder="Activity" required />
+                  <input id="facility-location" placeholder="Location" />
+                  <input id="facility-timing" placeholder="Timing" />
+                  <input id="facility-days" placeholder="Days" />
+                  <button class="primary" type="submit">Add</button>
+                </form>
+                <div id="facility-list" class="facility-list"></div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="scanner-stations">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Scanner Stations</p>
+                  <h2>Gate scanner links</h2>
+                </div>
+                <div class="scanner-tools">
+                  <a id="auto-scanner-link" class="scanner-link" href="/?scanner=auto">Open Auto Scanner</a>
+                  <button id="copy-auto-scanner" type="button">Copy Scanner Link</button>
+                </div>
+                <p class="helper-text">Use these links for guard devices and bookmarked scanner stations.</p>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="checkin-logs">
+              <section class="panel report-panel">
+                <div class="section-heading compact-heading">
+                  <div>
+                    <p class="eyebrow">Reporting</p>
+                    <h2>Traffic audit trail</h2>
+                  </div>
+                  <div class="filters">
+                    <label>
+                      Period
+                      <select id="report-period" aria-label="Report period">
+                        <option value="all">All</option>
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </label>
+                    <label>
+                      From
+                      <input id="from-date" type="date" aria-label="From date" />
+                    </label>
+                    <label>
+                      To
+                      <input id="to-date" type="date" aria-label="To date" />
+                    </label>
+                    <button id="export-report-pdf" type="button">Export PDF</button>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Full Name</th>
+                        <th>Amenity</th>
+                        <th>Arrival</th>
+                        <th>Departure</th>
+                        <th>State</th>
+                      </tr>
+                    </thead>
+                    <tbody id="attendance-log"></tbody>
+                  </table>
+                </div>
+                <div class="table-pagination" id="report-pagination">
+                  <button type="button" data-report-page="prev">Previous</button>
+                  <span id="report-page-status">0 records</span>
+                  <button type="button" data-report-page="next">Next</button>
+                </div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="reports">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Reports</p>
+                  <h2>Export reports</h2>
+                  <p class="helper-text">Use Check-in Logs to filter dates and export the PDF report.</p>
+                </div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="settings">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Settings</p>
+                  <h2>Admin settings</h2>
+                  <p class="helper-text">Scanner PIN, email delivery, Firebase, and admin credentials are currently configured in the application code and Netlify environment.</p>
+                </div>
+              </section>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="scanner-view">
+        <div class="scanner-shell">
+          <section class="panel scanner-panel">
+            <div class="section-heading">
+              <p class="eyebrow">Gate Scanner</p>
+              <h2>Scan access pass</h2>
+            </div>
+            <form id="scanner-pin-form" class="scanner-pin">
+              <label>
+                Scanner PIN
+                <input id="scanner-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter PIN" aria-label="Scanner PIN" />
+              </label>
+              <button class="primary" type="submit">Unlock Scanner</button>
+              <p id="scanner-pin-message" class="form-message" role="status"></p>
+            </form>
+            <div id="scanner-workspace">
+              <div class="scanner-unlock-row">
+                <span class="status open">Scanner unlocked</span>
+                <button id="scanner-lock" type="button">Lock</button>
+              </div>
+              <div id="scanner-context" class="scanner-context"></div>
+              <button id="start-scan" class="primary" type="button">Open Camera Scanner</button>
+              <div class="scan-box" id="scan-box">
+                <video id="camera-feed" playsinline muted></video>
+                <div class="scan-placeholder" id="scan-placeholder">Camera preview</div>
+              </div>
+              <form id="manual-scan-form" class="manual-scan">
+                <input id="manual-token" type="text" placeholder="Enter pass token if camera cannot read QR" aria-label="Pass token" />
+                <button type="submit">Check Pass</button>
+              </form>
+              <p id="scan-result" class="scan-result" role="status"></p>
+              <div id="verified-user" class="verified-user" hidden></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="user-dialog">
+      <form method="dialog" class="dialog-card">
+        <button class="icon-close" value="cancel" aria-label="Close">&times;</button>
+        <div id="dialog-content"></div>
+      </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

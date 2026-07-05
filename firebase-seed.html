@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Database Setup</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="seed-page">
+      <section class="panel seed-panel">
+        <div class="section-heading">
+          <p class="eyebrow">Firebase Setup</p>
+          <h1>Create starter collections</h1>
+          <p class="helper-text">Paste your Firebase web config, then create the starting Firestore documents.</p>
+        </div>
+
+        <label>
+          Firebase config
+          <textarea id="firebase-config" spellcheck="false" placeholder='Paste the object only, for example:
+{
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+}'></textarea>
+        </label>
+
+        <button class="primary" id="seed-button" type="button">Create Collections</button>
+        <pre id="seed-log" class="seed-log" aria-live="polite"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="firebase-seed.js"></script>
+  </body>
+</html>
