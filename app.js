@@ -18,6 +18,7 @@ const STORAGE_KEY = "facility-access-system-v1";
 const PUBLIC_SITE_URL = "https://clinquant-faun-77644a.netlify.app";
 const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
+const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
 const firebaseConfig = {
   apiKey: "AIzaSyAXfE01pzRdwK6YUGo50AafKhZHdAgCAIw",
   authDomain: "qrcodehts.firebaseapp.com",
@@ -70,6 +71,7 @@ let userStatusFilter = "all";
 let reportPage = 1;
 let adminLoggedIn = sessionStorage.getItem("facility-admin-auth") === "true";
 let scannerUnlocked = sessionStorage.getItem("facility-scanner-auth") === "true";
+let currentAdminSection = "dashboard";
 let scannerStream = null;
 let detectorTimer = null;
 let qrCanvas = null;
@@ -135,8 +137,12 @@ function normalizeAppDoc(collectionName, item) {
       ...item,
       fullName: item.fullName || item.full_name || "",
       villaNumber: item.villaNumber || item.villa_number || "",
+      contactNumber: item.contactNumber || item.contact_number || "",
       requestedFacilities: item.requestedFacilities || item.requested_facilities || [],
       qidNumber: item.qidNumber || item.qid_number || "",
+      accessMonths: Number(item.accessMonths || item.access_months || 12),
+      monthlyTotalQar: Number(item.monthlyTotalQar || item.monthly_total_qar || 0),
+      totalQar: Number(item.totalQar || item.total_qar || 0),
       accessStartAt: item.accessStartAt || item.access_start_date || "",
       accessEndAt: item.accessEndAt || item.access_end_date || "",
       token: item.token || item.access_token || "",
@@ -146,6 +152,7 @@ function normalizeAppDoc(collectionName, item) {
         type: "image/*",
         data: item.qid_file_url,
       } : undefined),
+      paymentProof: item.paymentProof || item.payment_proof || undefined,
     };
   }
 
@@ -334,9 +341,18 @@ function showFieldMessage(selector, message) {
   if (element) element.textContent = message;
 }
 
+function routeTo(path, { replace = false } = {}) {
+  if (window.location.pathname === path && !window.location.search && !window.location.hash) return;
+  const method = replace ? "replaceState" : "pushState";
+  window.history[method]({}, "", path);
+  handleRoute();
+}
+
 function switchView(view, options = {}) {
   passDisplayMode = view === "scanner" && Boolean(options.passDisplay);
   document.body.classList.toggle("admin-mode", view === "admin");
+  document.body.classList.toggle("scanner-mode", view === "scanner");
+  document.body.classList.toggle("customer-mode", view === "register");
   $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   $$(".view").forEach((section) => section.classList.toggle("active", section.id === `${view}-view`));
   if (view !== "scanner") stopScanner();
@@ -348,6 +364,68 @@ function switchView(view, options = {}) {
   renderAdminAccess();
 }
 
+function handleRoute() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const passTokenFromUrl = new URLSearchParams(window.location.search).get("pass") || path.match(/^\/pass=([^/]+)$/)?.[1] || "";
+
+  if (passTokenFromUrl) {
+    renderPassFromToken(decodeURIComponent(passTokenFromUrl));
+    return;
+  }
+
+  if (path === "/" || path === "/apply") {
+    switchView("register");
+    return;
+  }
+
+  if (path === "/admin") {
+    switchView("admin");
+    if (adminLoggedIn) routeTo("/admin/dashboard", { replace: true });
+    return;
+  }
+
+  if (path.startsWith("/admin/")) {
+    if (!adminLoggedIn) {
+      routeTo("/admin", { replace: true });
+      return;
+    }
+    switchView("admin");
+    switchAdminSection(adminSectionFromPath(path));
+    return;
+  }
+
+  if (path === "/scanner") {
+    switchView("scanner");
+    if (scannerUnlocked) routeTo("/scanner/live", { replace: true });
+    return;
+  }
+
+  if (path === "/scanner/live") {
+    if (!scannerUnlocked) {
+      routeTo("/scanner", { replace: true });
+      return;
+    }
+    switchView("scanner");
+    return;
+  }
+
+  if (new URLSearchParams(window.location.search).get("scanner")) {
+    routeTo("/scanner", { replace: true });
+    return;
+  }
+
+  routeTo("/apply", { replace: true });
+}
+
+function adminSectionFromPath(path) {
+  const section = path.replace(/^\/admin\/?/, "") || "dashboard";
+  return section === "checkin-logs" ? "check-in-logs" : section;
+}
+
+function adminPathForSection(section) {
+  return `/admin/${section}`;
+}
+
 function render() {
   renderAdminKpis();
   renderPendingUsers();
@@ -357,6 +435,8 @@ function render() {
   renderAttendance();
   renderEmailOutbox();
   renderRegistrationAccessOptions();
+  renderPaymentSummary();
+  renderPaymentReviewList();
   renderScannerTools();
   renderScannerContext();
   renderScannerAccess();
@@ -405,9 +485,11 @@ function getFilteredUsers() {
   return statusFiltered.filter((user) => [
     user.fullName,
     user.email,
+    user.contactNumber,
     user.villaNumber,
     user.status,
     user.qidNumber,
+    user.totalQar,
     ...getRequestedAccess(user),
     ...getUserAccess(user),
   ].some((value) => String(value || "").toLowerCase().includes(query)));
@@ -657,13 +739,17 @@ function changeReportPage(direction) {
 }
 
 function switchAdminSection(section = "dashboard") {
+  const allowedSections = ["dashboard", "applications", "users", "facilities", "payments", "scanner-stations", "check-in-logs", "reports", "settings"];
+  if (!allowedSections.includes(section)) section = "dashboard";
+  currentAdminSection = section;
   const labels = {
     dashboard: "Dashboard",
     applications: "Applications",
-    users: "Users",
+    users: "Users / Residents",
     facilities: "Facilities",
+    payments: "Payments",
     "scanner-stations": "Scanner Stations",
-    "checkin-logs": "Check-in Logs",
+    "check-in-logs": "Check-in Logs",
     reports: "Reports",
     settings: "Settings",
   };
@@ -877,6 +963,56 @@ function renderRegistrationAccessOptions() {
       </span>
     </label>
   `).join("");
+}
+
+function getFacilityPrice(facilityName) {
+  const facility = state.facilities.find((item) => item.name === facilityName);
+  return Number(facility?.priceQar || facility?.monthlyPriceQar || DEFAULT_MONTHLY_FACILITY_PRICE_QAR);
+}
+
+function getSelectedRegistrationFacilities() {
+  return [...document.querySelectorAll("#registration-access-options input:checked")].map((input) => input.value);
+}
+
+function calculateApplicationTotal(selectedFacilities = getSelectedRegistrationFacilities()) {
+  const months = Number($("#access-months")?.value || 1);
+  const monthlyTotal = selectedFacilities.reduce((sum, name) => sum + getFacilityPrice(name), 0);
+  return {
+    months,
+    monthlyTotal,
+    total: monthlyTotal * months,
+  };
+}
+
+function renderPaymentSummary() {
+  const totalElement = $("#payment-total");
+  const note = $("#payment-note");
+  if (!totalElement || !note) return;
+  const selectedFacilities = getSelectedRegistrationFacilities();
+  const { months, monthlyTotal, total } = calculateApplicationTotal(selectedFacilities);
+  totalElement.textContent = `QAR ${total}`;
+  note.textContent = selectedFacilities.length
+    ? `${selectedFacilities.length} facilit${selectedFacilities.length === 1 ? "y" : "ies"} x ${months} month${months === 1 ? "" : "s"} at QAR ${monthlyTotal}/month.`
+    : "Select activities to calculate the total.";
+}
+
+function renderPaymentReviewList() {
+  const container = $("#payment-review-list");
+  if (!container) return;
+  const users = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  container.innerHTML = users.length
+    ? users.map((user) => `
+      <div class="payment-review-item">
+        <div>
+          <strong>${escapeHtml(user.fullName || user.email)}</strong>
+          <small>${escapeHtml(user.email)} | ${escapeHtml(user.villaNumber || "-")}</small>
+        </div>
+        <span class="status ${escapeHtml(user.status)}">${escapeHtml(user.status)}</span>
+        <strong>QAR ${Number(user.totalQar || 0)}</strong>
+        <button type="button" data-open-user="${user.id}">Review Payment</button>
+      </div>
+    `).join("")
+    : `<p class="empty">Payment submissions will appear here.</p>`;
 }
 
 function renderScannerContext() {
@@ -1152,37 +1288,58 @@ async function registerUser(event) {
   event.preventDefault();
   const submitButton = event.submitter || event.target.querySelector("button[type='submit']");
   const file = $("#qatar-id").files[0];
+  const paymentFile = $("#payment-proof").files[0];
+  const fullName = normalizeName($("#full-name").value);
+  const qidNumber = $("#qid-number").value.trim();
   const email = $("#email").value.trim().toLowerCase();
+  const contactNumber = normalizeName($("#contact-number").value);
   const villaNumber = normalizeName($("#villa-number").value);
-  const requestedFacilities = [...document.querySelectorAll("#registration-access-options input:checked")].map((input) => input.value);
+  const requestedFacilities = getSelectedRegistrationFacilities();
+  const payment = calculateApplicationTotal(requestedFacilities);
   const message = $("#registration-message");
   submitButton.disabled = true;
 
   try {
+    if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter your full name.");
+    if (!isValidQid(qidNumber)) throw new Error("Qatar ID Number must be exactly 11 digits.");
     if (!isValidEmail(email)) throw new Error("Enter a valid email address.");
+    if (!contactNumber || contactNumber.length < 6) throw new Error("Enter your contact number.");
     if (!villaNumber || villaNumber.length < 2) throw new Error("Enter your villa number.");
     if (!requestedFacilities.length) throw new Error("Choose at least one activity.");
+    if (payment.total <= 0) throw new Error("Choose activities and months to calculate the payment total.");
     if (!file) throw new Error("Upload a Qatar ID image or PDF.");
+    if (!paymentFile) throw new Error("Upload the payment screenshot.");
     if (!isAllowedQidFile(file)) throw new Error("Qatar ID must be a JPG, PNG, WebP, or PDF file.");
+    if (!isAllowedQidFile(paymentFile)) throw new Error("Payment proof must be a JPG, PNG, WebP, or PDF file.");
     if (file.size > MAX_QID_FILE_SIZE) throw new Error("Qatar ID file must be 5 MB or smaller.");
+    if (paymentFile.size > MAX_QID_FILE_SIZE) throw new Error("Payment proof file must be 5 MB or smaller.");
     if (state.users.some((user) => user.email.toLowerCase() === email)) throw new Error("This email already has an application.");
+    if (state.users.some((user) => user.qidNumber === qidNumber && user.status !== "Rejected")) throw new Error("This Qatar ID already has an active application.");
 
     const userId = uid("user");
     message.textContent = file.type.includes("pdf")
       ? "Uploading Qatar ID to Firebase Storage..."
       : "Compressing Qatar ID image...";
     const qidFile = await prepareQidFile(file, userId);
+    message.textContent = paymentFile.type.includes("pdf")
+      ? "Uploading payment proof..."
+      : "Compressing payment screenshot...";
+    const paymentProof = await prepareQidFile(paymentFile, `${userId}-payment`);
     if (qidFile.storageMode === "firestore-inline-fallback") {
       message.textContent = "Storage upload failed, saving small Qatar ID file in Firestore...";
     }
     const user = {
       id: userId,
-      fullName: "",
+      fullName,
       email,
+      contactNumber,
       villaNumber,
       requestedFacilities,
-      qidNumber: "",
+      qidNumber,
       dob: "",
+      accessMonths: payment.months,
+      monthlyTotalQar: payment.monthlyTotal,
+      totalQar: payment.total,
       qatarId: {
         name: qidFile.name,
         type: qidFile.type,
@@ -1191,6 +1348,15 @@ async function registerUser(event) {
         originalName: file.name,
         originalSize: file.size,
         compressedSize: qidFile.size,
+      },
+      paymentProof: {
+        name: paymentProof.name,
+        type: paymentProof.type,
+        data: paymentProof.data,
+        storageMode: paymentProof.storageMode,
+        originalName: paymentFile.name,
+        originalSize: paymentFile.size,
+        compressedSize: paymentProof.size,
       },
       status: "Pending",
       token: "",
@@ -1205,7 +1371,7 @@ async function registerUser(event) {
       id: uid("email"),
       to: user.email,
       subject: "Facility access application received",
-      body: "Your facility access application is pending manager review.",
+      body: `Your facility access application is pending manager review.\n\nCalculated payment total: QAR ${payment.total}`,
       createdAt: new Date().toISOString(),
     });
 
@@ -1328,15 +1494,34 @@ function openUserDialog(userId) {
     : user.qatarId.type.includes("pdf")
     ? `<iframe title="Qatar ID PDF" src="${user.qatarId.data}"></iframe>`
     : `<img alt="Uploaded Qatar ID for ${escapeHtml(user.email)}" src="${user.qatarId.data}" />`;
+  const paymentPreview = !user.paymentProof?.data
+    ? `<p class="empty">No payment screenshot uploaded for this record.</p>`
+    : user.paymentProof.type.includes("pdf")
+    ? `<iframe title="Payment proof PDF" src="${user.paymentProof.data}"></iframe>`
+    : `<img alt="Uploaded payment proof for ${escapeHtml(user.email)}" src="${user.paymentProof.data}" />`;
 
   $("#dialog-content").innerHTML = `
     <div class="section-heading">
       <p class="eyebrow">${isApproved ? "Manage User Access" : "Extract Details From Qatar ID"}</p>
-      <h2>${escapeHtml(user.email)}</h2>
-      <p>${escapeHtml(user.email)} | Villa: ${escapeHtml(user.villaNumber || "-")}</p>
+      <h2>${escapeHtml(user.fullName || user.email)}</h2>
+      <p>${escapeHtml(user.email)} | Contact: ${escapeHtml(user.contactNumber || "-")} | Villa: ${escapeHtml(user.villaNumber || "-")}</p>
       <p class="helper-text">Requested activities: ${escapeHtml(getRequestedAccess(user).join(", ") || "-")}</p>
     </div>
-    <div class="id-preview">${preview}</div>
+    <div class="application-review-grid">
+      <div>
+        <p class="eyebrow">Uploaded Qatar ID</p>
+        <div class="id-preview">${preview}</div>
+      </div>
+      <div>
+        <p class="eyebrow">Payment Screenshot</p>
+        <div class="id-preview">${paymentPreview}</div>
+      </div>
+    </div>
+    <div class="payment-check-card">
+      <strong>Calculated payment: QAR ${Number(user.totalQar || 0)}</strong>
+      <span>${Number(user.accessMonths || 1)} month${Number(user.accessMonths || 1) === 1 ? "" : "s"} | QAR ${Number(user.monthlyTotalQar || 0)}/month</span>
+      <small>Compare this amount with the uploaded payment screenshot before approving.</small>
+    </div>
     <div class="identity-form">
       <label>
         Full Name
@@ -1430,7 +1615,7 @@ async function approveUser(userId) {
   user.approvedAt = user.approvedAt || new Date().toISOString();
   user.updatedAt = new Date().toISOString();
   user.accessStartAt = user.accessStartAt || new Date().toISOString().slice(0, 10);
-  user.accessEndAt = user.accessEndAt || addYears(new Date(), 1).toISOString().slice(0, 10);
+  user.accessEndAt = user.accessEndAt || addMonths(new Date(), Number(user.accessMonths || 12)).toISOString().slice(0, 10);
   const email = createQrPassEmail(user, wasApproved ? "updated" : "approved", accessFacilities);
 
   await sendAndLogQrPassEmail(user, email);
@@ -1550,6 +1735,12 @@ function addYears(date, years) {
   return next;
 }
 
+function addMonths(date, months) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
 function loginAdmin(event) {
   event.preventDefault();
   const email = $("#admin-email").value.trim().toLowerCase();
@@ -1575,12 +1766,15 @@ function loginAdmin(event) {
   $("#admin-login-form").reset();
   $("#admin-login-message").textContent = "";
   render();
+  routeTo("/admin/dashboard", { replace: true });
 }
 
 function logoutAdmin() {
   adminLoggedIn = false;
   sessionStorage.removeItem("facility-admin-auth");
+  currentAdminSection = "dashboard";
   renderAdminAccess();
+  routeTo("/admin", { replace: true });
 }
 
 async function addFacility(event) {
@@ -1781,7 +1975,8 @@ async function processToken(rawToken) {
   const token = extractPassToken(rawToken);
   if (!token || token.length < 10) {
     clearVerifiedUser();
-    setScanResult("Access Denied: QR token is missing or incomplete.", false);
+    await logScanAttempt({ token, state: "Invalid QR", scanResult: "QR token is missing or incomplete." });
+    setScanResult("Access Denied: QR token is missing or incomplete.", "neutral");
     return;
   }
 
@@ -1789,32 +1984,44 @@ async function processToken(rawToken) {
 
   if (!user) {
     clearVerifiedUser();
-    setScanResult("Access Denied: pass is invalid or user is not approved.", false);
+    await logScanAttempt({ token, state: "Invalid QR", scanResult: "Pass is invalid or user is not approved." });
+    setScanResult("Access Denied: pass is invalid or user is not approved.", "neutral");
     return;
   }
 
   const facility = getSelectedScannerFacility();
   if (!facility) {
     clearVerifiedUser();
+    await logScanAttempt({ user, token, state: "Access Denied", scanResult: "No selected scanner facility." });
     setScanResult("Select the facility before scanning.", false);
     return;
   }
 
   if (!facility.open) {
     clearVerifiedUser();
+    await logScanAttempt({ user, facility, token, state: "Access Denied", scanResult: `${facility.name} is closed.` });
     setScanResult(`Access Denied: ${facility.name} is closed.`, false);
+    return;
+  }
+
+  if (!isMembershipActive(user)) {
+    clearVerifiedUser();
+    await logScanAttempt({ user, facility, token, state: "Expired / Invalid QR", scanResult: "Membership is expired or not active." });
+    setScanResult("Access Denied: membership is expired or not active.", "neutral");
     return;
   }
 
   const scheduleError = getFacilityScheduleError(facility);
   if (scheduleError) {
     clearVerifiedUser();
-    setScanResult(`Access Denied: ${scheduleError}`, false);
+    await logScanAttempt({ user, facility, token, state: "Outside Allowed Time", scanResult: scheduleError });
+    setScanResult(`Outside Allowed Time: ${scheduleError}`, "warning");
     return;
   }
 
   if (!getUserAccess(user).includes(facility.name)) {
     clearVerifiedUser();
+    await logScanAttempt({ user, facility, token, state: "Access Denied", scanResult: `${user.fullName || user.email} is not approved for ${facility.name}.` });
     setScanResult(`Access Denied: ${user.fullName || user.email} is not approved for ${facility.name}.`, false);
     return;
   }
@@ -1823,6 +2030,31 @@ async function processToken(rawToken) {
   const action = await toggleAttendance(user, facility);
   setScanResult(`${user.fullName || user.email} ${action} at ${facility.name}.`, true);
   beep(action === "checked out" ? "checkout" : "checkin");
+}
+
+function isMembershipActive(user) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = user.accessStartAt ? new Date(`${user.accessStartAt}T00:00:00`) : null;
+  const end = user.accessEndAt ? new Date(`${user.accessEndAt}T23:59:59`) : null;
+  return (!start || today >= start) && (!end || today <= end);
+}
+
+async function logScanAttempt({ user = null, facility = null, token = "", state: scanState, scanResult }) {
+  const log = {
+    id: uid("log"),
+    userId: user?.id || "",
+    facilityId: facility?.id || "",
+    facilityName: facility?.name || "",
+    token,
+    checkInAt: new Date().toISOString(),
+    checkOutAt: "",
+    state: scanState,
+    scanResult,
+  };
+  state.logs.push(log);
+  await upsertDoc("attendance_logs", log);
+  saveState();
 }
 
 function extractPassToken(rawValue) {
@@ -1877,7 +2109,8 @@ async function toggleAttendance(user, facility) {
 function setScanResult(message, success) {
   const result = $("#scan-result");
   result.textContent = message;
-  result.className = `scan-result ${success ? "success" : "error"}`;
+  const status = success === true ? "success" : success === "warning" ? "warning" : success === "neutral" ? "neutral" : "error";
+  result.className = `scan-result ${status}`;
 }
 
 function showVerifiedUser(user) {
@@ -1949,17 +2182,13 @@ function buildPassUrl(token) {
 
 function buildScannerUrl() {
   const url = new URL(window.location.href);
-  url.pathname = "/";
+  url.pathname = "/scanner";
   url.search = "";
   url.hash = "";
-  url.searchParams.set("scanner", "auto");
   return url.toString();
 }
 
-async function renderPassFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  const pathPass = window.location.pathname.match(/^\/pass=([^/]+)$/);
-  const token = params.get("pass") || (pathPass ? decodeURIComponent(pathPass[1]) : "");
+function renderPassFromToken(token) {
   if (!token) return false;
   const user = state.users.find((item) => item.token === token && item.status === "Approved");
   switchView("scanner", { passDisplay: true });
@@ -1970,13 +2199,6 @@ async function renderPassFromUrl() {
     clearVerifiedUser();
     setScanResult("Access Denied: pass is invalid or user is not approved.", false);
   }
-  return true;
-}
-
-function renderScannerFromUrl() {
-  if (!new URLSearchParams(window.location.search).get("scanner")) return false;
-  switchView("scanner");
-  renderScannerContext();
   return true;
 }
 
@@ -2146,6 +2368,7 @@ async function unlockScanner(event) {
   renderScannerAccess();
   renderScannerContext();
   await beep("checkin");
+  routeTo("/scanner/live", { replace: true });
   autoStartScanner();
 }
 
@@ -2155,6 +2378,7 @@ function lockScanner() {
   stopScanner();
   clearVerifiedUser();
   renderScannerAccess();
+  routeTo("/scanner", { replace: true });
 }
 
 document.addEventListener("click", (event) => {
@@ -2173,7 +2397,7 @@ document.addEventListener("click", (event) => {
   const deleteFacilityButton = event.target.closest("[data-delete-facility]");
 
   if (tab) switchView(tab.dataset.view);
-  if (adminSection) switchAdminSection(adminSection.dataset.adminSection);
+  if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
   if (openUser) openUserDialog(openUser.dataset.openUser);
   if (approve) approveUser(approve.dataset.approveUser);
@@ -2218,7 +2442,9 @@ $("#manual-scan-form").addEventListener("submit", async (event) => {
   await unlockAudio();
   processToken($("#manual-token").value);
 });
+$("#registration-access-options")?.addEventListener("change", renderPaymentSummary);
+$("#access-months")?.addEventListener("change", renderPaymentSummary);
+window.addEventListener("popstate", handleRoute);
 
 render();
-renderScannerFromUrl();
-await renderPassFromUrl();
+handleRoute();

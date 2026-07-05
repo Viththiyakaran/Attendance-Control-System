@@ -7,16 +7,11 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="topbar">
+    <header class="topbar public-header">
       <div>
         <p class="eyebrow">Facility Access</p>
-        <h1>Attendance Control System</h1>
+        <h1>Apply for facility access</h1>
       </div>
-      <nav class="tabs" aria-label="Application areas">
-        <button class="tab active" data-view="register">Registration</button>
-        <button class="tab" data-view="admin">Admin</button>
-        <button class="tab" data-view="scanner">Gate Scanner</button>
-      </nav>
     </header>
 
     <main>
@@ -26,21 +21,67 @@
             <p class="eyebrow">Public Portal</p>
             <h2>Apply for facility access</h2>
           </div>
+          <div class="form-grid two-col">
+            <label>
+              Full Name
+              <input id="full-name" name="fullName" autocomplete="name" required />
+            </label>
+            <label>
+              Qatar ID Number
+              <input id="qid-number" name="qidNumber" inputmode="numeric" maxlength="11" required />
+            </label>
+          </div>
+          <div class="form-grid two-col">
+            <label>
+              Email Address
+              <input id="email" name="email" type="email" required autocomplete="email" />
+            </label>
+            <label>
+              Contact Number
+              <input id="contact-number" name="contactNumber" type="tel" autocomplete="tel" required />
+            </label>
+          </div>
           <label>
-            Email Address
-            <input id="email" name="email" type="email" required autocomplete="email" />
-          </label>
-          <label>
-            Villa Number
+            Unit / Villa / Address
             <input id="villa-number" name="villaNumber" autocomplete="address-line1" required />
           </label>
           <div class="registration-access">
             <p class="eyebrow">Choose Activities</p>
             <div id="registration-access-options" class="access-options"></div>
           </div>
+          <div class="payment-summary">
+            <label>
+              Access Months
+              <select id="access-months" name="accessMonths">
+                <option value="1">1 month</option>
+                <option value="3">3 months</option>
+                <option value="6">6 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </label>
+            <div class="payment-total">
+              <span>Total to pay</span>
+              <strong id="payment-total">QAR 0</strong>
+              <small id="payment-note">Select activities to calculate the total.</small>
+            </div>
+          </div>
+          <div class="bank-details">
+            <p class="eyebrow">Payment Details</p>
+            <h3>Bank / Fowran transfer</h3>
+            <p>Pay the calculated total, then upload the payment screenshot with your Qatar ID.</p>
+            <dl>
+              <div><dt>Bank</dt><dd>HTS Facility Access</dd></div>
+              <div><dt>Fowran</dt><dd>facility-access@hts</dd></div>
+              <div><dt>Reference</dt><dd>Your full name and villa number</dd></div>
+            </dl>
+          </div>
           <label>
             Upload Qatar ID
             <input id="qatar-id" name="qatarId" type="file" accept="image/*,.pdf" required />
+          </label>
+          <label>
+            Upload Payment Screenshot
+            <input id="payment-proof" name="paymentProof" type="file" accept="image/*,.pdf" required />
           </label>
           <button class="primary" type="submit">Submit Application</button>
           <p class="notice" id="registration-message" role="status"></p>
@@ -79,10 +120,11 @@
             <nav class="admin-menu" aria-label="Admin navigation">
               <button class="admin-menu-item active" type="button" data-admin-section="dashboard">Dashboard</button>
               <button class="admin-menu-item" type="button" data-admin-section="applications">Applications</button>
-              <button class="admin-menu-item" type="button" data-admin-section="users">Users</button>
+              <button class="admin-menu-item" type="button" data-admin-section="users">Users / Residents</button>
               <button class="admin-menu-item" type="button" data-admin-section="facilities">Facilities</button>
+              <button class="admin-menu-item" type="button" data-admin-section="payments">Payments</button>
               <button class="admin-menu-item" type="button" data-admin-section="scanner-stations">Scanner Stations</button>
-              <button class="admin-menu-item" type="button" data-admin-section="checkin-logs">Check-in Logs</button>
+              <button class="admin-menu-item" type="button" data-admin-section="check-in-logs">Check-in Logs</button>
               <button class="admin-menu-item" type="button" data-admin-section="reports">Reports</button>
               <button class="admin-menu-item" type="button" data-admin-section="settings">Settings</button>
               <button class="admin-menu-item danger-link" id="admin-logout" type="button">Logout</button>
@@ -224,6 +266,17 @@
               </section>
             </section>
 
+            <section class="admin-page" data-admin-page="payments">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Payments</p>
+                  <h2>Payment verification</h2>
+                  <p class="helper-text">Open an application to compare the uploaded screenshot with the calculated total before approving access.</p>
+                </div>
+                <div id="payment-review-list" class="payment-review-list"></div>
+              </section>
+            </section>
+
             <section class="admin-page" data-admin-page="scanner-stations">
               <section class="panel">
                 <div class="section-heading">
@@ -231,14 +284,14 @@
                   <h2>Gate scanner links</h2>
                 </div>
                 <div class="scanner-tools">
-                  <a id="auto-scanner-link" class="scanner-link" href="/?scanner=auto">Open Auto Scanner</a>
+                  <a id="auto-scanner-link" class="scanner-link" href="/scanner">Open Auto Scanner</a>
                   <button id="copy-auto-scanner" type="button">Copy Scanner Link</button>
                 </div>
                 <p class="helper-text">Use these links for guard devices and bookmarked scanner stations.</p>
               </section>
             </section>
 
-            <section class="admin-page" data-admin-page="checkin-logs">
+            <section class="admin-page" data-admin-page="check-in-logs">
               <section class="panel report-panel">
                 <div class="section-heading compact-heading">
                   <div>
