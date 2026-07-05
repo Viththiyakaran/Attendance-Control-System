@@ -20,70 +20,118 @@
           <div class="section-heading">
             <p class="eyebrow">Public Portal</p>
             <h2>Apply for facility access</h2>
+            <p class="helper-text">Complete the four steps below. Admin will review your QID and payment proof before issuing a QR pass.</p>
           </div>
-          <div class="form-grid two-col">
-            <label>
-              Full Name
-              <input id="full-name" name="fullName" autocomplete="name" required />
-            </label>
-            <label>
-              Qatar ID Number
-              <input id="qid-number" name="qidNumber" inputmode="numeric" maxlength="11" required />
-            </label>
-          </div>
-          <div class="form-grid two-col">
-            <label>
-              Email Address
-              <input id="email" name="email" type="email" required autocomplete="email" />
-            </label>
-            <label>
-              Contact Number
-              <input id="contact-number" name="contactNumber" type="tel" autocomplete="tel" required />
-            </label>
-          </div>
-          <label>
-            Unit / Villa / Address
-            <input id="villa-number" name="villaNumber" autocomplete="address-line1" required />
-          </label>
-          <div class="registration-access">
-            <p class="eyebrow">Choose Activities</p>
-            <div id="registration-access-options" class="access-options"></div>
-          </div>
-          <div class="payment-summary">
-            <label>
-              Access Months
-              <select id="access-months" name="accessMonths">
-                <option value="1">1 month</option>
-                <option value="3">3 months</option>
-                <option value="6">6 months</option>
-                <option value="12">12 months</option>
-              </select>
-            </label>
-            <div class="payment-total">
-              <span>Total to pay</span>
-              <strong id="payment-total">QAR 0</strong>
-              <small id="payment-note">Select activities to calculate the total.</small>
+
+          <ol class="wizard-stepper" aria-label="Application steps">
+            <li class="active" data-step-indicator="1"><span>1</span><strong>Personal Details</strong></li>
+            <li data-step-indicator="2"><span>2</span><strong>Facilities</strong></li>
+            <li data-step-indicator="3"><span>3</span><strong>Payment</strong></li>
+            <li data-step-indicator="4"><span>4</span><strong>Upload</strong></li>
+          </ol>
+
+          <section class="wizard-step active" data-wizard-step="1">
+            <div class="wizard-copy">
+              <p class="eyebrow">Step 1</p>
+              <h3>Personal Details</h3>
+              <p>Enter the resident information exactly as it should appear for admin review.</p>
             </div>
+            <div class="form-grid two-col">
+              <label>
+                Full Name
+                <input id="full-name" name="fullName" autocomplete="name" required />
+              </label>
+              <label>
+                Qatar ID Number
+                <input id="qid-number" name="qidNumber" inputmode="numeric" maxlength="11" required />
+              </label>
+            </div>
+            <div class="form-grid two-col">
+              <label>
+                Email Address
+                <input id="email" name="email" type="email" required autocomplete="email" />
+              </label>
+              <label>
+                Contact Number
+                <input id="contact-number" name="contactNumber" type="tel" autocomplete="tel" required />
+              </label>
+            </div>
+            <label>
+              Unit / Villa / Address
+              <input id="villa-number" name="villaNumber" autocomplete="address-line1" required />
+            </label>
+          </section>
+
+          <section class="wizard-step" data-wizard-step="2">
+            <div class="wizard-copy">
+              <p class="eyebrow">Step 2</p>
+              <h3>Select Facility and Months</h3>
+              <p>Choose one or more facilities. Your payment total updates as you select facilities and months.</p>
+            </div>
+            <div class="registration-access">
+              <div id="registration-access-options" class="access-options wizard-facilities"></div>
+            </div>
+            <div class="month-picker" aria-label="Access months">
+              <button type="button" id="month-minus" aria-label="Decrease months">-</button>
+              <div>
+                <span id="access-months-display">1</span>
+                <small>month(s)</small>
+              </div>
+              <button type="button" id="month-plus" aria-label="Increase months">+</button>
+              <input id="access-months" name="accessMonths" type="hidden" value="1" />
+            </div>
+            <div class="payment-summary live-summary">
+              <div class="payment-total">
+                <span>Total to pay</span>
+                <strong id="payment-total">QAR 0</strong>
+                <small id="payment-note">Select activities to calculate the total.</small>
+              </div>
+              <div id="selected-facility-summary" class="selected-facility-summary"></div>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-wizard-step="3">
+            <div class="wizard-copy">
+              <p class="eyebrow">Step 3</p>
+              <h3>Payment Details</h3>
+              <p>Please pay the exact total amount before submitting the application. After payment, upload your payment screenshot in the next step.</p>
+            </div>
+            <div class="payment-total payment-total-large">
+              <span>Total QAR to pay</span>
+              <strong id="payment-total-review">QAR 0</strong>
+              <small id="payment-review-note">Your selected facilities and months will appear here.</small>
+            </div>
+            <div class="bank-details">
+              <p class="eyebrow">Bank / Fowran details</p>
+              <h3 id="bank-account-name">HTS Facility Access</h3>
+              <img class="bank-qr" id="bank-qr-code" alt="Bank QR Code" />
+              <dl id="bank-details-list"></dl>
+            </div>
+          </section>
+
+          <section class="wizard-step" data-wizard-step="4">
+            <div class="wizard-copy">
+              <p class="eyebrow">Step 4</p>
+              <h3>Upload Documents</h3>
+              <p>Upload JPG, PNG, or PDF files for both required documents.</p>
+            </div>
+            <label class="upload-box">
+              Qatar ID / QID Document
+              <input id="qatar-id" name="qatarId" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
+              <span id="qatar-id-file-name">No file selected</span>
+            </label>
+            <label class="upload-box">
+              Payment Screenshot / Proof of Payment
+              <input id="payment-proof" name="paymentProof" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
+              <span id="payment-proof-file-name">No file selected</span>
+            </label>
+          </section>
+
+          <div class="wizard-actions">
+            <button id="wizard-back" type="button">Back</button>
+            <button id="wizard-next" class="primary" type="button">Next</button>
+            <button id="wizard-submit" class="primary" type="submit" hidden disabled>Submit Application</button>
           </div>
-          <div class="bank-details">
-            <p class="eyebrow">Payment Details</p>
-            <h3>Bank / Fowran transfer</h3>
-            <p>Pay the calculated total, then upload the payment screenshot with your Qatar ID.</p>
-            <dl>
-              <div><dt>Bank</dt><dd>HTS Facility Access</dd></div>
-              <div><dt>Fowran</dt><dd>facility-access@hts</dd></div>
-              <div><dt>Reference</dt><dd>Your full name and villa number</dd></div>
-            </dl>
-          </div>
-          <label>
-            Upload Qatar ID
-            <input id="qatar-id" name="qatarId" type="file" accept="image/*,.pdf" required />
-          </label>
-          <label>
-            Upload Payment Screenshot
-            <input id="payment-proof" name="paymentProof" type="file" accept="image/*,.pdf" required />
-          </label>
-          <button class="primary" type="submit">Submit Application</button>
           <p class="notice" id="registration-message" role="status"></p>
         </form>
       </section>

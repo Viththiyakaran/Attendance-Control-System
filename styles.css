@@ -1727,6 +1727,200 @@ dialog::backdrop {
   padding: clamp(18px, 4vw, 34px);
 }
 
+.customer-mode main {
+  background:
+    linear-gradient(120deg, rgba(246, 247, 244, 0.92), rgba(238, 248, 243, 0.95)),
+    radial-gradient(circle at 15% 15%, rgba(13, 124, 102, 0.14), transparent 32%),
+    radial-gradient(circle at 85% 10%, rgba(6, 118, 71, 0.12), transparent 30%);
+  min-height: calc(100vh - 92px);
+}
+
+.wizard-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wizard-stepper li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fbf9;
+  color: var(--subtle);
+  padding: 10px;
+  font-weight: 800;
+}
+
+.wizard-stepper span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: white;
+  color: var(--accent-dark);
+  border: 1px solid var(--line);
+}
+
+.wizard-stepper li.active,
+.wizard-stepper li.complete {
+  border-color: rgba(13, 124, 102, 0.28);
+  background: #e8f7ef;
+  color: var(--accent-dark);
+}
+
+.wizard-stepper li.active span,
+.wizard-stepper li.complete span {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.wizard-step {
+  display: none;
+  gap: 16px;
+}
+
+.wizard-step.active {
+  display: grid;
+}
+
+.wizard-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.wizard-copy h3 {
+  margin: 0;
+}
+
+.wizard-copy p:not(.eyebrow) {
+  color: var(--subtle);
+}
+
+.wizard-facilities {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.wizard-facilities .facility-choice-card {
+  min-height: 100%;
+  border: 1px solid var(--line);
+}
+
+.wizard-facilities .facility-choice-card:has(input:checked) {
+  border-color: var(--accent);
+  background: #e8f7ef;
+  box-shadow: 0 10px 24px rgba(13, 124, 102, 0.12);
+}
+
+.month-picker {
+  display: inline-grid;
+  grid-template-columns: 48px minmax(120px, 160px) 48px;
+  gap: 10px;
+  align-items: center;
+  justify-content: start;
+}
+
+.month-picker button {
+  min-height: 48px;
+  border-color: rgba(13, 124, 102, 0.32);
+  color: var(--accent-dark);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.month-picker div {
+  display: grid;
+  place-items: center;
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+}
+
+.month-picker span {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--accent-dark);
+}
+
+.selected-facility-summary {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  padding: 16px;
+}
+
+.selected-facility-summary span,
+.selected-facility-summary small {
+  color: var(--subtle);
+}
+
+.payment-total-large {
+  background: #e8f7ef;
+}
+
+.bank-qr {
+  width: min(180px, 100%);
+  aspect-ratio: 1;
+  border: 1px dashed #9ab4ab;
+  border-radius: 16px;
+  background: white;
+  object-fit: contain;
+  padding: 10px;
+}
+
+.bank-details dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bank-details dd button {
+  min-height: 34px;
+  padding-inline: 10px;
+}
+
+.upload-box {
+  border: 1.5px dashed #a8bab2;
+  border-radius: 16px;
+  background: #f8fbf9;
+  padding: 18px;
+}
+
+.upload-box input {
+  margin-top: 10px;
+}
+
+.upload-box span {
+  display: block;
+  margin-top: 8px;
+  color: var(--subtle);
+  font-weight: 800;
+}
+
+.upload-box .file-selected,
+.file-selected {
+  color: var(--accent-dark);
+}
+
+.wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
 .registration-panel .section-heading {
   border-bottom: 1px solid var(--line);
   padding-bottom: 16px;
@@ -1850,16 +2044,10 @@ dialog::backdrop {
   text-transform: uppercase;
 }
 
-.registration-panel > label:nth-of-type(1)::before {
-  content: "Step 1";
-}
-
-.registration-panel > label:nth-of-type(2)::before {
-  content: "Step 2";
-}
-
+.registration-panel > label:nth-of-type(1)::before,
+.registration-panel > label:nth-of-type(2)::before,
 .registration-access::before {
-  content: "Step 3";
+  content: "";
 }
 
 .registration-panel input[type="file"] {
@@ -1988,6 +2176,25 @@ dialog::backdrop {
   .payment-summary,
   .application-review-grid,
   .payment-review-item {
+    grid-template-columns: 1fr;
+  }
+
+  .wizard-stepper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wizard-stepper li {
+    align-items: flex-start;
+    font-size: 0.86rem;
+  }
+
+  .month-picker {
+    grid-template-columns: 48px 1fr 48px;
+    width: 100%;
+  }
+
+  .wizard-actions {
+    display: grid;
     grid-template-columns: 1fr;
   }
 

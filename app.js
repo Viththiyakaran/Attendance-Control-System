@@ -13,6 +13,7 @@ import {
   ref,
   uploadBytes,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+import { PAYMENT_DETAILS } from "./payment-config.js";
 
 const STORAGE_KEY = "facility-access-system-v1";
 const PUBLIC_SITE_URL = "https://clinquant-faun-77644a.netlify.app";
@@ -55,7 +56,7 @@ const MAX_QID_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_INLINE_QID_FILE_SIZE = 750 * 1024;
 const MAX_COMPRESSED_QID_SIZE = 900 * 1024;
 const MAX_QID_IMAGE_DIMENSION = 1600;
-const ALLOWED_QID_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const ALLOWED_QID_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 const initialState = {
   users: [],
@@ -69,6 +70,7 @@ let userPage = 1;
 let userSearchQuery = "";
 let userStatusFilter = "all";
 let reportPage = 1;
+let registrationStep = 1;
 let adminLoggedIn = sessionStorage.getItem("facility-admin-auth") === "true";
 let scannerUnlocked = sessionStorage.getItem("facility-scanner-auth") === "true";
 let currentAdminSection = "dashboard";
@@ -435,8 +437,10 @@ function render() {
   renderAttendance();
   renderEmailOutbox();
   renderRegistrationAccessOptions();
+  renderRegistrationWizard();
   renderPaymentSummary();
   renderPaymentReviewList();
+  renderBankDetails();
   renderScannerTools();
   renderScannerContext();
   renderScannerAccess();
@@ -951,20 +955,150 @@ function renderEmailOutbox() {
 function renderRegistrationAccessOptions() {
   const container = $("#registration-access-options");
   if (!container) return;
-  const icons = ["🏊", "🏋", "⚽", "🏀", "🎾", "🥊", "🤸", "🥋", "🎉"];
+  const icons = ["SW", "GY", "FB", "BB", "TN", "KB", "GM", "TK", "EV"];
   container.innerHTML = getFacilityOptions().map((option, index) => `
-    <label>
+    <label class="facility-choice-card">
       <input type="checkbox" value="${escapeHtml(option.name)}" />
       <span>
         <span class="activity-icon">${icons[index % icons.length]}</span>
         <strong>${escapeHtml(option.name)}</strong>
-        <small>${escapeHtml(formatFacilitySchedule(option))}</small>
+        <small>${escapeHtml(option.location || "Location to be confirmed")}</small>
+        <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
+        <small>${escapeHtml(option.timing || "Time to be confirmed")}</small>
+        <small>QAR ${getFacilityPrice(option.name)} / month</small>
         <small>${escapeHtml(getFacilityAvailability(option).label)}</small>
       </span>
     </label>
   `).join("");
 }
 
+function renderRegistrationWizard() {
+  $$(".wizard-step").forEach((step) => {
+    step.classList.toggle("active", Number(step.dataset.wizardStep) === registrationStep);
+  });
+  $$("[data-step-indicator]").forEach((item) => {
+    const step = Number(item.dataset.stepIndicator);
+    item.classList.toggle("active", step === registrationStep);
+    item.classList.toggle("complete", step < registrationStep);
+  });
+  const back = $("#wizard-back");
+  const next = $("#wizard-next");
+  const submit = $("#wizard-submit");
+  if (back) back.hidden = registrationStep === 1;
+  if (next) next.hidden = registrationStep === 4;
+  if (submit) {
+    submit.hidden = registrationStep !== 4;
+    submit.disabled = !isRegistrationReady();
+  }
+  updateFileName("qatar-id", "qatar-id-file-name");
+  updateFileName("payment-proof", "payment-proof-file-name");
+}
+
+function changeRegistrationStep(direction) {
+  if (direction > 0 && !validateRegistrationStep(registrationStep)) return;
+  registrationStep = Math.min(4, Math.max(1, registrationStep + direction));
+  $("#registration-message").textContent = "";
+  renderRegistrationWizard();
+}
+
+function validateRegistrationStep(step) {
+  const message = $("#registration-message");
+  message.textContent = "";
+  if (step === 1) {
+    const fullName = normalizeName($("#full-name").value);
+    const qidNumber = $("#qid-number").value.trim();
+    const email = $("#email").value.trim().toLowerCase();
+    const contactNumber = normalizeName($("#contact-number").value);
+    const villaNumber = normalizeName($("#villa-number").value);
+    if (!fullName || !qidNumber || !email || !contactNumber || !villaNumber) {
+      message.textContent = "Complete all personal details before continuing.";
+      return false;
+    }
+    if (!hasLetters(fullName) || fullName.length < 2) {
+      message.textContent = "Enter your full name.";
+      return false;
+    }
+    if (!isValidQid(qidNumber)) {
+      message.textContent = "QID Number must be exactly 11 digits.";
+      return false;
+    }
+    if (!isValidEmail(email)) {
+      message.textContent = "Enter a valid email address.";
+      return false;
+    }
+    if (contactNumber.length < 6) {
+      message.textContent = "Enter your contact number.";
+      return false;
+    }
+    return true;
+  }
+  if (step === 2) {
+    if (!getSelectedRegistrationFacilities().length) {
+      message.textContent = "Choose at least one facility before continuing.";
+      return false;
+    }
+    const months = Number($("#access-months").value);
+    if (months < 1 || months > 12) {
+      message.textContent = "Month count must be between 1 and 12.";
+      return false;
+    }
+  }
+  return true;
+}
+
+function isRegistrationReady() {
+  return validateRegistrationStepSilently(1)
+    && validateRegistrationStepSilently(2)
+    && Boolean($("#qatar-id")?.files?.[0])
+    && Boolean($("#payment-proof")?.files?.[0]);
+}
+
+function validateRegistrationStepSilently(step) {
+  if (step === 1) {
+    return hasLetters(normalizeName($("#full-name")?.value || ""))
+      && isValidQid($("#qid-number")?.value.trim() || "")
+      && isValidEmail($("#email")?.value.trim().toLowerCase() || "")
+      && normalizeName($("#contact-number")?.value || "").length >= 6
+      && normalizeName($("#villa-number")?.value || "").length >= 2;
+  }
+  if (step === 2) {
+    const months = Number($("#access-months")?.value || 0);
+    return getSelectedRegistrationFacilities().length > 0 && months >= 1 && months <= 12;
+  }
+  return true;
+}
+
+function changeAccessMonths(delta) {
+  const input = $("#access-months");
+  const next = Math.min(12, Math.max(1, Number(input.value || 1) + delta));
+  input.value = String(next);
+  renderPaymentSummary();
+  renderRegistrationWizard();
+}
+
+function updateFileName(inputId, labelId) {
+  const input = $(`#${inputId}`);
+  const label = $(`#${labelId}`);
+  if (!input || !label) return;
+  const file = input.files?.[0];
+  label.textContent = file ? file.name : "No file selected";
+  label.classList.toggle("file-selected", Boolean(file));
+}
+
+function validateUploadFile(input) {
+  const file = input.files?.[0];
+  if (!file) return true;
+  const allowed = ["image/jpeg", "image/png", "application/pdf"];
+  if (!allowed.includes(file.type)) {
+    input.value = "";
+    $("#registration-message").textContent = "Only JPG, PNG, or PDF files are accepted.";
+    renderRegistrationWizard();
+    return false;
+  }
+  $("#registration-message").textContent = "";
+  renderRegistrationWizard();
+  return true;
+}
 function getFacilityPrice(facilityName) {
   const facility = state.facilities.find((item) => item.name === facilityName);
   return Number(facility?.priceQar || facility?.monthlyPriceQar || DEFAULT_MONTHLY_FACILITY_PRICE_QAR);
@@ -990,10 +1124,53 @@ function renderPaymentSummary() {
   if (!totalElement || !note) return;
   const selectedFacilities = getSelectedRegistrationFacilities();
   const { months, monthlyTotal, total } = calculateApplicationTotal(selectedFacilities);
+  const display = $("#access-months-display");
+  const reviewTotal = $("#payment-total-review");
+  const reviewNote = $("#payment-review-note");
+  const summary = $("#selected-facility-summary");
   totalElement.textContent = `QAR ${total}`;
+  if (display) display.textContent = months;
+  if (reviewTotal) reviewTotal.textContent = `QAR ${total}`;
   note.textContent = selectedFacilities.length
     ? `${selectedFacilities.length} facilit${selectedFacilities.length === 1 ? "y" : "ies"} x ${months} month${months === 1 ? "" : "s"} at QAR ${monthlyTotal}/month.`
     : "Select activities to calculate the total.";
+  if (reviewNote) reviewNote.textContent = selectedFacilities.length
+    ? `${selectedFacilities.join(", ")} for ${months} month${months === 1 ? "" : "s"}.`
+    : "Your selected facilities and months will appear here.";
+  if (summary) summary.innerHTML = selectedFacilities.length
+    ? `
+      <strong>Selected facilities</strong>
+      ${selectedFacilities.map((name) => `<span>${escapeHtml(name)} - QAR ${getFacilityPrice(name)} / month</span>`).join("")}
+      <small>${months} month${months === 1 ? "" : "s"} selected</small>
+    `
+    : `<p class="empty">No facilities selected yet.</p>`;
+  renderRegistrationWizard();
+}
+
+function renderBankDetails() {
+  const name = $("#bank-account-name");
+  const qr = $("#bank-qr-code");
+  const list = $("#bank-details-list");
+  if (!list) return;
+  if (name) name.textContent = PAYMENT_DETAILS.accountName;
+  if (qr) qr.src = PAYMENT_DETAILS.bankQrCodeImage || "";
+  const rows = [
+    ["Fowran Number", PAYMENT_DETAILS.fowranNumber, "fowran"],
+    ["Account Name", PAYMENT_DETAILS.accountName, ""],
+    ["Account Number", PAYMENT_DETAILS.accountNumber, "account"],
+    ["Bank Name", PAYMENT_DETAILS.bankName, ""],
+    ["Swift Code", PAYMENT_DETAILS.swiftCode, ""],
+    ["IBAN", PAYMENT_DETAILS.iban, "iban"],
+  ];
+  list.innerHTML = rows.map(([label, value, copyKey]) => `
+    <div>
+      <dt>${escapeHtml(label)}</dt>
+      <dd>
+        <span>${escapeHtml(value)}</span>
+        ${copyKey ? `<button type="button" data-copy-payment="${copyKey}">Copy</button>` : ""}
+      </dd>
+    </div>
+  `).join("");
 }
 
 function renderPaymentReviewList() {
@@ -1300,6 +1477,7 @@ async function registerUser(event) {
   submitButton.disabled = true;
 
   try {
+    if (!isRegistrationReady()) throw new Error("Complete all application steps before submitting.");
     if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter your full name.");
     if (!isValidQid(qidNumber)) throw new Error("Qatar ID Number must be exactly 11 digits.");
     if (!isValidEmail(email)) throw new Error("Enter a valid email address.");
@@ -1309,8 +1487,8 @@ async function registerUser(event) {
     if (payment.total <= 0) throw new Error("Choose activities and months to calculate the payment total.");
     if (!file) throw new Error("Upload a Qatar ID image or PDF.");
     if (!paymentFile) throw new Error("Upload the payment screenshot.");
-    if (!isAllowedQidFile(file)) throw new Error("Qatar ID must be a JPG, PNG, WebP, or PDF file.");
-    if (!isAllowedQidFile(paymentFile)) throw new Error("Payment proof must be a JPG, PNG, WebP, or PDF file.");
+    if (!isAllowedQidFile(file)) throw new Error("Qatar ID must be a JPG, PNG, or PDF file.");
+    if (!isAllowedQidFile(paymentFile)) throw new Error("Payment proof must be a JPG, PNG, or PDF file.");
     if (file.size > MAX_QID_FILE_SIZE) throw new Error("Qatar ID file must be 5 MB or smaller.");
     if (paymentFile.size > MAX_QID_FILE_SIZE) throw new Error("Payment proof file must be 5 MB or smaller.");
     if (state.users.some((user) => user.email.toLowerCase() === email)) throw new Error("This email already has an application.");
@@ -1377,7 +1555,8 @@ async function registerUser(event) {
 
     saveState();
     event.target.reset();
-    message.textContent = "Application submitted, marked Pending, and confirmation email queued.";
+    registrationStep = 1;
+    message.textContent = "Application submitted successfully. Admin will review your QID and payment proof.";
     render();
   } catch (error) {
     console.error(error);
@@ -2301,6 +2480,17 @@ async function copyScannerLink() {
   alert("Auto scanner link copied. Guard can bookmark/open this link anytime.");
 }
 
+async function copyPaymentValue(key) {
+  const value = {
+    fowran: PAYMENT_DETAILS.fowranNumber,
+    iban: PAYMENT_DETAILS.iban,
+    account: PAYMENT_DETAILS.accountNumber,
+  }[key];
+  if (!value) return;
+  await navigator.clipboard.writeText(value);
+  $("#registration-message").textContent = "Copied payment detail.";
+}
+
 function getFacilityNames() {
   return state.facilities.map((facility) => facility.name);
 }
@@ -2385,6 +2575,7 @@ document.addEventListener("click", (event) => {
   const tab = event.target.closest(".tab");
   const adminSection = event.target.closest("[data-admin-section]");
   const drawerToggle = event.target.closest("[data-admin-drawer-toggle]");
+  const copyPayment = event.target.closest("[data-copy-payment]");
   const openUser = event.target.closest("[data-open-user]");
   const approve = event.target.closest("[data-approve-user]");
   const sendPass = event.target.closest("[data-send-pass-user]");
@@ -2399,6 +2590,7 @@ document.addEventListener("click", (event) => {
   if (tab) switchView(tab.dataset.view);
   if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
+  if (copyPayment) copyPaymentValue(copyPayment.dataset.copyPayment);
   if (openUser) openUserDialog(openUser.dataset.openUser);
   if (approve) approveUser(approve.dataset.approveUser);
   if (sendPass) sendQrPassToUser(sendPass.dataset.sendPassUser);
@@ -2442,9 +2634,21 @@ $("#manual-scan-form").addEventListener("submit", async (event) => {
   await unlockAudio();
   processToken($("#manual-token").value);
 });
-$("#registration-access-options")?.addEventListener("change", renderPaymentSummary);
-$("#access-months")?.addEventListener("change", renderPaymentSummary);
+$("#wizard-back")?.addEventListener("click", () => changeRegistrationStep(-1));
+$("#wizard-next")?.addEventListener("click", () => changeRegistrationStep(1));
+$("#month-minus")?.addEventListener("click", () => changeAccessMonths(-1));
+$("#month-plus")?.addEventListener("click", () => changeAccessMonths(1));
+$("#registration-access-options")?.addEventListener("change", () => {
+  renderPaymentSummary();
+  renderRegistrationWizard();
+});
+["full-name", "qid-number", "email", "contact-number", "villa-number"].forEach((id) => {
+  $(`#${id}`)?.addEventListener("input", renderRegistrationWizard);
+});
+$("#qatar-id")?.addEventListener("change", (event) => validateUploadFile(event.target));
+$("#payment-proof")?.addEventListener("change", (event) => validateUploadFile(event.target));
 window.addEventListener("popstate", handleRoute);
 
 render();
 handleRoute();
+

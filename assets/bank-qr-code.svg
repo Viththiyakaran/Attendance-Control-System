@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img" aria-label="Bank QR code">
+  <rect width="240" height="240" fill="#ffffff"/>
+  <rect x="16" y="16" width="58" height="58" fill="#10352e"/>
+  <rect x="28" y="28" width="34" height="34" fill="#ffffff"/>
+  <rect x="38" y="38" width="14" height="14" fill="#10352e"/>
+  <rect x="166" y="16" width="58" height="58" fill="#10352e"/>
+  <rect x="178" y="28" width="34" height="34" fill="#ffffff"/>
+  <rect x="188" y="38" width="14" height="14" fill="#10352e"/>
+  <rect x="16" y="166" width="58" height="58" fill="#10352e"/>
+  <rect x="28" y="178" width="34" height="34" fill="#ffffff"/>
+  <rect x="38" y="188" width="14" height="14" fill="#10352e"/>
+  <path fill="#10352e" d="M92 20h14v14H92zM120 20h28v14h-28zM92 48h42v14H92zM148 48h14v14h-14zM88 88h14v14H88zM116 88h14v14h-14zM144 88h28v14h-28zM200 88h14v14h-14zM88 116h56v14H88zM158 116h14v14h-14zM186 116h28v14h-28zM102 144h14v14h-14zM130 144h42v14h-42zM200 144h14v14h-14zM88 172h14v14H88zM116 172h28v14h-28zM158 172h56v14h-56zM88 200h42v14H88zM144 200h14v14h-14zM186 200h28v14h-28z"/>
+  <rect x="86" y="86" width="68" height="68" fill="none" stroke="#0d7c66" stroke-width="4"/>
+</svg>
