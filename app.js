@@ -1013,6 +1013,17 @@ function validateRegistrationStep(step) {
   const message = $("#registration-message");
   message.textContent = "";
   if (step === 1) {
+    if (!getSelectedRegistrationFacilities().length) {
+      message.textContent = "Choose at least one facility before continuing.";
+      return false;
+    }
+    if (getSelectedRegistrationFacilities().some((name) => getFacilityMonths(name) < 1 || getFacilityMonths(name) > 12)) {
+      message.textContent = "Each selected facility month count must be between 1 and 12.";
+      return false;
+    }
+    return true;
+  }
+  if (step === 2) {
     const fullName = normalizeName($("#full-name").value);
     const qidNumber = $("#qid-number").value.trim();
     const email = $("#email").value.trim().toLowerCase();
@@ -1040,16 +1051,6 @@ function validateRegistrationStep(step) {
     }
     return true;
   }
-  if (step === 2) {
-    if (!getSelectedRegistrationFacilities().length) {
-      message.textContent = "Choose at least one facility before continuing.";
-      return false;
-    }
-    if (getSelectedRegistrationFacilities().some((name) => getFacilityMonths(name) < 1 || getFacilityMonths(name) > 12)) {
-      message.textContent = "Each selected facility month count must be between 1 and 12.";
-      return false;
-    }
-  }
   return true;
 }
 
@@ -1062,15 +1063,15 @@ function isRegistrationReady() {
 
 function validateRegistrationStepSilently(step) {
   if (step === 1) {
+    const selected = getSelectedRegistrationFacilities();
+    return selected.length > 0 && selected.every((name) => getFacilityMonths(name) >= 1 && getFacilityMonths(name) <= 12);
+  }
+  if (step === 2) {
     return hasLetters(normalizeName($("#full-name")?.value || ""))
       && isValidQid($("#qid-number")?.value.trim() || "")
       && isValidEmail($("#email")?.value.trim().toLowerCase() || "")
       && normalizeName($("#contact-number")?.value || "").length >= 6
       && normalizeName($("#villa-number")?.value || "").length >= 2;
-  }
-  if (step === 2) {
-    const selected = getSelectedRegistrationFacilities();
-    return selected.length > 0 && selected.every((name) => getFacilityMonths(name) >= 1 && getFacilityMonths(name) <= 12);
   }
   return true;
 }
