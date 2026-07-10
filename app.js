@@ -1918,7 +1918,7 @@ async function approveUser(userId) {
   approvalRecord.token = approvalRecord.token || user.token || passToken();
   approvalRecord.approvedAt = approvalRecord.approvedAt || new Date().toISOString();
   approvalRecord.updatedAt = new Date().toISOString();
-  approvalRecord.accessStartAt = approvalRecord.accessStartAt || new Date().toISOString().slice(0, 10);
+  approvalRecord.accessStartAt = approvalRecord.accessStartAt || toDateInputValue(new Date());
   approvalRecord.accessEndAt = calculateRenewalEndDate(approvalRecord, user);
 
   if (renewalTarget) {
@@ -2073,7 +2073,7 @@ function calculateRenewalEndDate(target, request) {
   today.setHours(0, 0, 0, 0);
   const currentEnd = target.accessEndAt ? new Date(`${target.accessEndAt}T23:59:59`) : today;
   const base = currentEnd > today ? currentEnd : today;
-  return addMonths(base, Number(request.accessMonths || 1)).toISOString().slice(0, 10);
+  return toDateInputValue(addMonths(base, Number(request.accessMonths || 1)));
 }
 
 function loginAdmin(event) {
