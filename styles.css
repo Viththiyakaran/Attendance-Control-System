@@ -2390,6 +2390,464 @@ dialog::backdrop {
   }
 }
 
+/* Reference-inspired public page and compact dashboard polish */
+.customer-mode {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(13, 124, 102, 0.08), transparent 28%),
+    linear-gradient(135deg, #f7fbf9 0%, #f3f7f6 44%, #ffffff 100%) !important;
+}
+
+.customer-mode main {
+  padding: 18px !important;
+}
+
+.customer-mode .public-header {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  max-width: 1440px !important;
+  margin: 0 auto !important;
+  padding: 18px 22px 8px !important;
+  border: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+.customer-mode .public-header h1 {
+  max-width: 680px !important;
+  font-size: clamp(1.75rem, 2.8vw, 2.6rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.customer-mode .public-header .helper-text {
+  max-width: 640px !important;
+  margin-top: 8px !important;
+  color: #4e5c56 !important;
+  font-size: 0.96rem !important;
+}
+
+#register-view.active {
+  display: grid !important;
+  grid-template-columns: minmax(300px, 0.82fr) minmax(620px, 1.18fr) !important;
+  align-items: start !important;
+  justify-content: center !important;
+  gap: 18px !important;
+  width: min(1440px, 100%) !important;
+  margin: 0 auto !important;
+}
+
+.public-showcase {
+  display: grid !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+.public-brand-card,
+.role-card,
+.public-info-card {
+  border: 1px solid rgba(216, 226, 221, 0.95) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 16px 40px rgba(21, 47, 39, 0.07) !important;
+}
+
+.public-brand-card {
+  display: grid !important;
+  grid-template-columns: 52px minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: start !important;
+  padding: 18px !important;
+}
+
+.public-brand-mark {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(145deg, #07906f, #064139) !important;
+  color: #fff !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.public-brand-card h2 {
+  max-width: 320px !important;
+  margin-top: 2px !important;
+  font-size: 1.45rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.public-brand-card p:not(.eyebrow) {
+  margin-top: 8px !important;
+  color: #53635d !important;
+  line-height: 1.55 !important;
+}
+
+.role-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.role-card {
+  display: grid !important;
+  justify-items: center !important;
+  gap: 6px !important;
+  padding: 14px 10px !important;
+  text-align: center !important;
+}
+
+.role-card h3,
+.public-info-card h3 {
+  margin: 0 !important;
+  font-size: 0.98rem !important;
+}
+
+.role-card p {
+  margin: 0 !important;
+  color: #5d6a65 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.35 !important;
+}
+
+.role-icon {
+  position: relative !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 12px !important;
+  background: #e8f6f0 !important;
+}
+
+.role-icon::before,
+.role-icon::after {
+  content: "" !important;
+  position: absolute !important;
+  border-radius: 999px !important;
+}
+
+.resident-icon::before {
+  width: 12px !important;
+  height: 12px !important;
+  top: 7px !important;
+  background: #0d9b78 !important;
+}
+
+.resident-icon::after {
+  width: 22px !important;
+  height: 11px !important;
+  bottom: 6px !important;
+  background: #0d9b78 !important;
+  border-radius: 14px 14px 8px 8px !important;
+}
+
+.admin-icon {
+  background: #f0ebff !important;
+}
+
+.admin-icon::before {
+  width: 12px !important;
+  height: 12px !important;
+  top: 7px !important;
+  border: 3px solid #6d3bd1 !important;
+}
+
+.admin-icon::after {
+  width: 24px !important;
+  height: 13px !important;
+  bottom: 5px !important;
+  border: 3px solid #6d3bd1 !important;
+  border-radius: 14px 14px 7px 7px !important;
+}
+
+.scanner-icon {
+  background: #edf4ff !important;
+}
+
+.scanner-icon::before {
+  inset: 8px !important;
+  border: 3px solid #2878ff !important;
+  border-radius: 4px !important;
+}
+
+.scanner-icon::after {
+  width: 8px !important;
+  height: 8px !important;
+  background: #2878ff !important;
+  border-radius: 3px !important;
+}
+
+.public-info-card {
+  padding: 16px !important;
+}
+
+.feature-list,
+.process-list {
+  display: grid !important;
+  gap: 9px !important;
+  margin: 12px 0 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.feature-list li {
+  position: relative !important;
+  padding-left: 26px !important;
+  color: #26312d !important;
+  font-size: 0.88rem !important;
+}
+
+.feature-list li::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 2px !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 5px !important;
+  background: #27b36f !important;
+}
+
+.feature-list li::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 5px !important;
+  top: 6px !important;
+  width: 6px !important;
+  height: 3px !important;
+  border-left: 2px solid #fff !important;
+  border-bottom: 2px solid #fff !important;
+  transform: rotate(-45deg) !important;
+}
+
+.process-list {
+  counter-reset: process-step !important;
+}
+
+.process-list li {
+  counter-increment: process-step !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  gap: 9px 10px !important;
+  align-items: start !important;
+}
+
+.process-list li::before {
+  content: counter(process-step) !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 10px !important;
+  background: #e7f6ef !important;
+  color: #08725f !important;
+  font-weight: 900 !important;
+}
+
+.process-list strong {
+  display: block !important;
+  font-size: 0.9rem !important;
+}
+
+.process-list span {
+  grid-column: 2 !important;
+  color: #5e6c66 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.35 !important;
+}
+
+.trust-strip {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  padding: 10px !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 12px 30px rgba(21, 47, 39, 0.05) !important;
+}
+
+.trust-strip span {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 42px !important;
+  border-radius: 11px !important;
+  background: #fff !important;
+  color: #33423d !important;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+
+.registration-panel {
+  max-width: none !important;
+  width: 100% !important;
+  border-radius: 16px !important;
+  padding: 18px !important;
+  box-shadow: 0 20px 50px rgba(18, 48, 39, 0.1) !important;
+}
+
+.wizard-stepper {
+  gap: 8px !important;
+}
+
+.wizard-stepper li {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+}
+
+.wizard-facilities {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.access-card {
+  border-radius: 13px !important;
+  padding: 12px !important;
+  box-shadow: none !important;
+}
+
+.access-card.selected,
+.access-card:has(input:checked) {
+  border-color: #0d7c66 !important;
+  background: #ecf8f3 !important;
+  box-shadow: 0 12px 26px rgba(13, 124, 102, 0.09) !important;
+}
+
+.payment-summary.live-summary {
+  grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+}
+
+.admin-mode {
+  background: #f5f7f8 !important;
+}
+
+.admin-dashboard {
+  background: #f5f7f8 !important;
+}
+
+.admin-sidebar {
+  background:
+    radial-gradient(circle at 25% 0%, rgba(25, 179, 138, 0.26), transparent 26%),
+    linear-gradient(180deg, #075244 0%, #053b33 58%, #032b26 100%) !important;
+  box-shadow: 18px 0 42px rgba(0, 42, 34, 0.15) !important;
+}
+
+.admin-menu-item.active {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+.admin-menu-item em,
+#sidebar-pending-badge {
+  background: #19b88b !important;
+  color: #fff !important;
+}
+
+@media (min-width: 1121px) {
+  .admin-header {
+    border-radius: 12px !important;
+    padding: 10px 12px !important;
+  }
+
+  .admin-page[data-admin-page="dashboard"] .kpi-grid {
+    grid-template-columns: repeat(4, minmax(160px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .admin-page[data-admin-page="dashboard"] .summary-card {
+    min-height: 96px !important;
+    padding: 12px !important;
+  }
+
+  .admin-page[data-admin-page="dashboard"] .dashboard-layout {
+    grid-template-columns: minmax(420px, 1fr) minmax(280px, 0.72fr) minmax(360px, 0.9fr) !important;
+    align-items: stretch !important;
+  }
+
+  .facility-usage-card {
+    grid-column: 1 !important;
+  }
+
+  .dashboard-side {
+    grid-column: 2 !important;
+    grid-row: span 1 !important;
+  }
+
+  .recent-checkins-card {
+    grid-column: 3 !important;
+  }
+
+  .recent-activity-card {
+    grid-column: 1 / -1 !important;
+  }
+
+  .dashboard-card {
+    border-radius: 12px !important;
+    padding: 13px !important;
+  }
+
+  .recent-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .recent-row .scan-chip {
+    display: none !important;
+  }
+
+  .activity-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  #register-view.active {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-showcase {
+    max-width: 760px !important;
+    width: 100% !important;
+  }
+
+  .registration-panel {
+    max-width: 760px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .customer-mode main {
+    padding: 10px !important;
+  }
+
+  .customer-mode .public-header {
+    padding: 14px 10px 6px !important;
+  }
+
+  .role-card-grid,
+  .trust-strip,
+  .wizard-facilities,
+  .payment-summary.live-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-brand-card {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    padding: 14px !important;
+  }
+
+  .public-brand-mark {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .registration-panel {
+    padding: 14px !important;
+  }
+}
+
 /* Final clean admin layout pass: one tidy system for every admin page */
 .admin-page,
 .admin-page * {
