@@ -924,7 +924,7 @@ function renderWeeklyUsageChart() {
           <div class="chart-track">
             <div class="chart-bar" style="width: ${Math.max(4, (item.count / max) * 100)}%"></div>
           </div>
-          <strong>${item.count}</strong>
+          <strong>${item.count} (${Math.round((item.count / Math.max(1, logs.length)) * 100)}%)</strong>
         </div>
       `).join("")}
     </div>
@@ -976,18 +976,22 @@ function renderQuickActions() {
   const pending = state.users.filter((user) => ["Pending", "Renewal Pending"].includes(user.status)).length;
   container.innerHTML = `
     <button type="button" data-admin-section="applications">
+      <span class="quick-icon">${adminIcon("clipboard")}</span>
       <span>Review</span>
       <strong>${pending ? `${pending} pending application${pending === 1 ? "" : "s"}` : "No pending applications"}</strong>
     </button>
     <a href="/scanner">
+      <span class="quick-icon">${adminIcon("scan")}</span>
       <span>Scanner</span>
       <strong>Open gate scanner</strong>
     </a>
     <button type="button" data-admin-section="facilities">
+      <span class="quick-icon">${adminIcon("building")}</span>
       <span>Facilities</span>
       <strong>Add or edit facility access</strong>
     </button>
     <button type="button" data-export-today>
+      <span class="quick-icon">${adminIcon("history")}</span>
       <span>Reports</span>
       <strong>Export today check-ins</strong>
     </button>
