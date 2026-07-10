@@ -69,10 +69,20 @@ let state = await loadState();
 let userPage = 1;
 let userSearchQuery = "";
 let userStatusFilter = "all";
+let userSubmittedDateFilter = "";
 let reportPage = 1;
+let reportFacilityFilter = "all";
+let reportStatusFilter = "all";
+let exceptionReasonFilter = "all";
+let exceptionFacilityFilter = "all";
+let exceptionDateFilter = "";
+let notificationStatusFilter = "all";
+let notificationDateFilter = "";
+let notificationTypeFilter = "all";
 let registrationStep = 1;
 let registrationFacilityMonths = {};
 let usagePeriod = "today";
+let editingFacilityId = "";
 let adminLoggedIn = sessionStorage.getItem("facility-admin-auth") === "true";
 let scannerUnlocked = sessionStorage.getItem("facility-scanner-auth") === "true";
 let currentAdminSection = "dashboard";
@@ -488,10 +498,17 @@ function render() {
   renderAdminKpis();
   renderPendingUsers();
   renderFacilities();
+  renderApprovedResidents();
+  renderPaymentSummaryCards();
+  renderReportCards();
+  renderSettingsSections();
+  renderFilterOptions();
+  enhanceAdminIcons();
   renderWeeklyUsageChart();
   renderFacilityStats();
   renderQuickActions();
   renderScannerStatus();
+  renderScannerStations();
   renderRecentCheckIns();
   renderRecentActivity();
   renderAccessExceptions();
@@ -554,9 +571,12 @@ function getFilteredUsers() {
   const query = userSearchQuery.trim().toLowerCase();
   const users = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const statusFiltered = userStatusFilter === "all" ? users : users.filter((user) => user.status === userStatusFilter);
-  if (!query) return statusFiltered;
+  const dateFiltered = userSubmittedDateFilter
+    ? statusFiltered.filter((user) => toDateInputValue(new Date(user.createdAt)) === userSubmittedDateFilter)
+    : statusFiltered;
+  if (!query) return dateFiltered;
 
-  return statusFiltered.filter((user) => [
+  return dateFiltered.filter((user) => [
     user.fullName,
     user.email,
     user.contactNumber,
@@ -583,10 +603,14 @@ function updateUserSearch() {
 }
 function clearUserSearch() {
   userSearchQuery = "";
+  userSubmittedDateFilter = "";
+  userStatusFilter = "all";
   const input = $("#user-search");
   const headerInput = $("#admin-header-search");
   if (input) input.value = "";
   if (headerInput) headerInput.value = "";
+  if ($("#user-date-filter")) $("#user-date-filter").value = "";
+  if ($("#user-status-filter")) $("#user-status-filter").value = "all";
   userPage = 1;
   renderPendingUsers();
 }
@@ -597,31 +621,169 @@ function filterUsersByStatus(value) {
   renderPendingUsers();
 }
 
+function filterUsersByDate(value) {
+  userSubmittedDateFilter = value || "";
+  userPage = 1;
+  renderPendingUsers();
+}
+
 function renderPendingUsers() {
+  const table = $("#pending-users");
+  const cards = $("#application-cards");
+  if (!table) return;
   const users = getFilteredUsers();
   const totalPages = Math.max(1, Math.ceil(users.length / USERS_PAGE_SIZE));
   userPage = Math.min(Math.max(userPage, 1), totalPages);
   const startIndex = (userPage - 1) * USERS_PAGE_SIZE;
   const pageUsers = users.slice(startIndex, startIndex + USERS_PAGE_SIZE);
 
-  $("#pending-users").innerHTML = pageUsers.length
-    ? pageUsers.map((user) => `
+  table.innerHTML = pageUsers.length
+    ? pageUsers.map((user) => {
+      const access = getUserAccess(user);
+      return `
       <tr>
-        <td>${escapeHtml(user.fullName || "Pending QID extraction")}</td>
-        <td>${escapeHtml(user.email)}</td>
+        <td class="person-cell">
+          <strong>${escapeHtml(user.fullName || "Pending QID extraction")}</strong>
+          <small>${escapeHtml(user.email)}</small>
+          ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
+        </td>
         <td>${escapeHtml(user.villaNumber || "-")}</td>
-        <td>${escapeHtml(getUserAccess(user).join(", ") || "-")}</td>
-        <td><span class="status ${statusClass(user.status)}">${user.status}</span></td>
+        <td>${renderFacilitySummary(access)}</td>
+        <td><span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span></td>
         <td>${formatDateTime(user.createdAt)}</td>
         <td class="action-cell">
           ${user.status !== "Rejected" ? `<button data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
-          <button class="danger" data-delete-user="${user.id}">Delete</button>
+          <details class="row-menu">
+            <summary aria-label="More actions">More</summary>
+            <button type="button" data-delete-user="${user.id}">Delete application</button>
+          </details>
         </td>
       </tr>
-    `).join("")
-    : `<tr><td colspan="7" class="empty">No applications yet.</td></tr>`;
+    `;
+    }).join("")
+    : `<tr><td colspan="6" class="empty">${emptyState("No applications found", "Applications matching your filters will appear here.")}</td></tr>`;
+
+  if (cards) {
+    cards.innerHTML = pageUsers.length ? pageUsers.map((user) => `
+      <article class="mobile-record-card">
+        <div class="record-card-head">
+          <div>
+            <strong>${escapeHtml(user.fullName || "Pending QID extraction")}</strong>
+            <small>${escapeHtml(user.email)}</small>
+          </div>
+          <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
+        </div>
+        <dl>
+          <div><dt>Villa</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
+          <div><dt>Requested</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div>
+          <div><dt>Submitted</dt><dd>${formatDateTime(user.createdAt)}</dd></div>
+        </dl>
+        <div class="record-actions">
+          ${user.status !== "Rejected" ? `<button class="primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review application" : "Manage access"}</button>` : ""}
+          <details class="row-menu">
+            <summary>More actions</summary>
+            <button type="button" data-delete-user="${user.id}">Delete application</button>
+          </details>
+        </div>
+      </article>
+    `).join("") : emptyState("No applications found", "Applications matching your filters will appear here.");
+  }
 
   renderUserPagination(users.length, startIndex, pageUsers.length, totalPages);
+}
+
+function renderFacilitySummary(facilities) {
+  const list = uniqueList(facilities || []);
+  if (!list.length) return "-";
+  const visible = list.slice(0, 2).map((name) => `<span class="facility-pill" title="${escapeHtml(displayFacilityName(name))}">${escapeHtml(displayFacilityName(name))}</span>`).join("");
+  const more = list.length > 2 ? `<span class="facility-pill muted" title="${escapeHtml(list.map(displayFacilityName).join(", "))}">+${list.length - 2} more</span>` : "";
+  return `<span class="facility-summary">${visible}${more}</span>`;
+}
+
+function renderApprovedResidents() {
+  const table = $("#resident-table-body");
+  const cards = $("#resident-cards");
+  const summary = $("#resident-summary");
+  if (!table && !cards && !summary) return;
+
+  const approved = state.users.filter((user) => user.status === "Approved");
+  const active = approved.filter(isMembershipActive).length;
+  const expiringSoon = approved.filter((user) => daysUntil(user.accessEndAt) <= 30 && daysUntil(user.accessEndAt) >= 0).length;
+  const suspended = state.users.filter((user) => /suspend/i.test(user.status || "")).length;
+
+  if (summary) {
+    summary.innerHTML = [
+      summaryCard("Total approved residents", approved.length, "Approved applicants"),
+      summaryCard("Active memberships", active, "Currently valid"),
+      summaryCard("Expiring soon", expiringSoon, "Within 30 days"),
+      summaryCard("Suspended users", suspended, "Access disabled"),
+    ].join("");
+  }
+
+  const rows = approved.sort((a, b) => new Date(b.approvedAt || b.createdAt) - new Date(a.approvedAt || a.createdAt));
+  table.innerHTML = rows.length ? rows.map((user) => `
+    <tr>
+      <td class="person-cell">
+        <strong>${escapeHtml(user.fullName || user.email)}</strong>
+        <small>${escapeHtml(maskEmail(user.email))}</small>
+        ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
+      </td>
+      <td>${escapeHtml(user.villaNumber || "-")}</td>
+      <td>${renderFacilitySummary(getUserAccess(user))}</td>
+      <td><span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span></td>
+      <td>${escapeHtml(user.accessEndAt || "-")}</td>
+      <td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td>
+      <td class="action-cell">
+        <button type="button" data-open-user="${user.id}">View</button>
+        <details class="row-menu">
+          <summary>More</summary>
+          <button type="button" data-open-user="${user.id}">Edit access</button>
+          <button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>
+          <button type="button" data-suspend-user="${user.id}">Suspend access</button>
+        </details>
+      </td>
+    </tr>
+  `).join("") : `<tr><td colspan="7" class="empty">${emptyState("No approved residents yet", "Approved applications will appear here after verification.")}</td></tr>`;
+
+  if (cards) {
+    cards.innerHTML = rows.length ? rows.map((user) => `
+      <article class="mobile-record-card">
+        <div class="record-card-head">
+          <div>
+            <strong>${escapeHtml(user.fullName || user.email)}</strong>
+            <small>${escapeHtml(maskEmail(user.email))}</small>
+          </div>
+          <span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span>
+        </div>
+        <dl>
+          <div><dt>Villa</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
+          <div><dt>Facilities</dt><dd>${getUserAccess(user).length} active</dd></div>
+          <div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div>
+        </dl>
+        <button class="primary" type="button" data-open-user="${user.id}">View details</button>
+      </article>
+    `).join("") : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
+  }
+}
+
+function summaryCard(title, value, detail) {
+  return `
+    <article class="summary-card">
+      <span>${escapeHtml(title)}</span>
+      <strong>${escapeHtml(value)}</strong>
+      <small>${escapeHtml(detail)}</small>
+    </article>
+  `;
+}
+
+function daysUntil(dateValue) {
+  if (!dateValue) return Number.POSITIVE_INFINITY;
+  const target = new Date(`${dateValue}T23:59:59`);
+  return Math.ceil((target.getTime() - Date.now()) / 86400000);
+}
+
+function isDemoRecord(record) {
+  return /demo|test/i.test(`${record.fullName || ""} ${record.email || ""} ${record.name || ""}`);
 }
 
 function renderUserPagination(totalUsers, startIndex, visibleCount, totalPages) {
@@ -654,29 +816,53 @@ function changeUserPage(direction) {
 }
 
 function renderFacilities() {
-  $("#facility-list").innerHTML = state.facilities.map((facility) => `
+  const list = $("#facility-list");
+  const form = $("#facility-form");
+  if (!list) return;
+  if (form) form.classList.toggle("is-collapsed", !form.dataset.open);
+  list.innerHTML = state.facilities.map((facility) => {
+    const editing = editingFacilityId === String(facility.id);
+    const availability = getFacilityAvailability(facility);
+    return `
     <div class="facility-item facility-card">
       <div class="facility-card-head">
         <div>
           <p class="eyebrow">Activity</p>
-          <strong>${escapeHtml(facility.name)}</strong>
+          <strong>${escapeHtml(displayFacilityName(facility.name))}</strong>
+          ${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}
         </div>
         <div class="facility-status-line">${renderFacilityBadges(facility)}</div>
       </div>
-      <div class="facility-edit">
-        <input value="${escapeHtml(facility.name)}" data-facility-field="name" data-facility-id="${facility.id}" aria-label="Activity" />
-        <input value="${escapeHtml(facility.location || "")}" data-facility-field="location" data-facility-id="${facility.id}" aria-label="Location" placeholder="Location" />
-        <input value="${escapeHtml(facility.timing || "")}" data-facility-field="timing" data-facility-id="${facility.id}" aria-label="Timing" placeholder="Timing" />
-        <input value="${escapeHtml(facility.days || "")}" data-facility-field="days" data-facility-id="${facility.id}" aria-label="Days" placeholder="Days" />
-      </div>
+      <dl class="facility-meta">
+        <div><dt>Location</dt><dd>${escapeHtml(facility.location || "Location to be confirmed")}</dd></div>
+        <div><dt>Time</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div>
+        <div><dt>Days</dt><dd>${escapeHtml(facility.days || "-")}</dd></div>
+        <div><dt>Today</dt><dd>${escapeHtml(availability.label)}</dd></div>
+      </dl>
+      ${editing ? `
+        <div class="facility-edit">
+          <label>Facility name<input value="${escapeHtml(facility.name)}" data-facility-field="name" data-facility-id="${facility.id}" aria-label="Activity" /></label>
+          <label>Location<input value="${escapeHtml(facility.location || "")}" data-facility-field="location" data-facility-id="${facility.id}" aria-label="Location" placeholder="Location" /></label>
+          <label>Timing<input value="${escapeHtml(facility.timing || "")}" data-facility-field="timing" data-facility-id="${facility.id}" aria-label="Timing" placeholder="Timing" /></label>
+          <label>Days<input value="${escapeHtml(facility.days || "")}" data-facility-field="days" data-facility-id="${facility.id}" aria-label="Days" placeholder="Days" /></label>
+        </div>
+      ` : ""}
       <div class="facility-actions">
-        <button type="button" data-update-facility="${facility.id}">Edit</button>
-        <button class="switch" type="button" role="switch" aria-label="Toggle ${facility.name}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button>
-        <span class="switch-label">${facility.open ? "Disable" : "Enable"}</span>
-        <button class="danger" type="button" data-delete-facility="${facility.id}">Delete</button>
+        ${editing
+          ? `<button class="primary" type="button" data-update-facility="${facility.id}">Save</button><button type="button" data-cancel-facility-edit>Cancel</button>`
+          : `<button type="button" data-edit-facility="${facility.id}">Edit</button>`}
+        <label class="switch-row">
+          <span>Active</span>
+          <button class="switch" type="button" role="switch" aria-label="Toggle ${facility.name}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button>
+        </label>
+        <details class="row-menu">
+          <summary>More</summary>
+          <button type="button" data-delete-facility="${facility.id}">Delete facility</button>
+        </details>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 function renderScannerTools() {
@@ -710,8 +896,8 @@ function renderFacilityStats() {
 function renderFacilityBadges(facility) {
   const availability = getFacilityAvailability(facility);
   return `
-    <span class="${facility.open ? "open" : "closed"} status">${facility.open ? "Open" : "Closed"}</span>
-    <span class="${availability.available ? "open" : "closed"} status">${escapeHtml(availability.label)}</span>
+    <span class="${facility.open ? "open" : "neutral"} status">${facility.open ? "Active" : "Disabled"}</span>
+    <span class="${availability.available ? "open" : "warning"} status">${escapeHtml(availability.label)}</span>
   `;
 }
 
@@ -901,6 +1087,13 @@ function renderAccessExceptions() {
   if (!container) return;
   const exceptions = state.logs
     .filter((log) => !isSeedLog(log) && isAccessException(log))
+    .filter((log) => {
+      const text = `${log.state || ""} ${log.scanResult || ""}`.toLowerCase();
+      const reasonMatch = exceptionReasonFilter === "all" || text.includes(exceptionReasonFilter);
+      const facilityMatch = exceptionFacilityFilter === "all" || log.facilityId === exceptionFacilityFilter || log.facilityName === exceptionFacilityFilter;
+      const dateMatch = !exceptionDateFilter || toDateInputValue(new Date(log.checkInAt)) === exceptionDateFilter;
+      return reasonMatch && facilityMatch && dateMatch;
+    })
     .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt))
     .slice(0, 30);
 
@@ -946,20 +1139,208 @@ function scanResultClass(log) {
 function emptyState(title, detail) {
   return `
     <div class="empty-state">
+      <span class="empty-icon">${adminIcon("info")}</span>
       <strong>${escapeHtml(title)}</strong>
       <small>${escapeHtml(detail)}</small>
     </div>
   `;
 }
 
+function renderFilterOptions() {
+  const optionHtml = `<option value="all">All facilities</option>${getFacilityOptions().map((facility) =>
+    `<option value="${escapeHtml(facility.id)}">${escapeHtml(displayFacilityName(facility.name))}</option>`
+  ).join("")}`;
+  ["report-facility-filter", "exception-facility-filter"].forEach((id) => {
+    const select = $(`#${id}`);
+    if (!select) return;
+    const current = select.value || "all";
+    select.innerHTML = optionHtml;
+    select.value = current;
+  });
+}
+
+function renderScannerStations() {
+  const container = $("#scanner-station-list");
+  if (!container) return;
+  const logs = state.logs.filter((log) => !isSeedLog(log)).sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
+  container.innerHTML = getFacilityOptions().slice(0, 6).map((facility) => {
+    const latest = logs.find((log) => log.facilityId === facility.id || log.facilityName === facility.name);
+    return scannerStatusRow(`${displayFacilityName(facility.name)} station`, latest);
+  }).join("") || emptyState("No scanner stations", "Scanner station activity will appear after the first scan.");
+}
+
+function renderReportCards() {
+  const container = $("#report-card-list");
+  if (!container) return;
+  const reports = [
+    ["Attendance report", "Export filtered check-in logs as a PDF.", "history", "Available", "check-in-logs"],
+    ["Facility usage report", "Use the dashboard usage chart for live facility activity.", "chart", "View only", "dashboard"],
+    ["Resident access report", "Approved resident access is available in Users / Residents.", "users", "View only", "users"],
+    ["Payment report", "Payment verification records are available in Payments.", "card", "View only", "payments"],
+    ["Access exceptions report", "Denied and invalid scans are available in Access Exceptions.", "shield", "View only", "access-exceptions"],
+  ];
+  container.innerHTML = reports.map(([title, detail, icon, badge, section]) => `
+    <article class="report-card">
+      <span class="card-icon">${adminIcon(icon)}</span>
+      <div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(detail)}</p>
+        <span class="status ${badge === "Available" ? "open" : "neutral"}">${escapeHtml(badge)}</span>
+      </div>
+      <button type="button" data-admin-section="${section}">${section === "check-in-logs" ? "Open Check-in Logs" : "Open page"}</button>
+    </article>
+  `).join("");
+}
+
+function renderSettingsSections() {
+  const container = $("#settings-sections");
+  if (!container) return;
+  const sections = [
+    ["General", [["Organisation name", "HTS Facility Access"], ["Admin display name", "Manager"], ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Date format", "Local browser format"]]],
+    ["Access", [["Default membership duration", "Selected by application months"], ["QR expiry behaviour", "Based on membership end date"], ["Repeat scan window", "Current scanner check-in/out logic"]]],
+    ["Notifications", [["Email notifications", state.emails?.some((email) => email.status === "Sent") ? "Connected" : "Local drafts / service dependent"], ["Approval email", "Enabled"], ["Rejection email", "Enabled"], ["Expiry reminder", "Not configured"]]],
+    ["Security", [["Admin password", "Configured outside this UI"], ["Scanner session status", scannerUnlocked ? "Unlocked in this browser" : "Locked"], ["Sign out other sessions", "Not supported by current backend"]]],
+    ["System Information", [["Firebase", "Connected when Firestore requests succeed"], ["Email service", "Uses Netlify function / SMTP environment"], ["App version", "1.0.0"]]],
+  ];
+  container.innerHTML = sections.map(([title, rows]) => `
+    <article class="settings-card">
+      <h3>${escapeHtml(title)}</h3>
+      <dl>
+        ${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
+      </dl>
+    </article>
+  `).join("");
+}
+
+function enhanceAdminIcons() {
+  const iconMap = {
+    dashboard: "dashboard",
+    applications: "clipboard",
+    users: "users",
+    facilities: "building",
+    payments: "card",
+    "scanner-stations": "scan",
+    "check-in-logs": "history",
+    "access-exceptions": "shield",
+    reports: "chart",
+    notifications: "bell",
+    settings: "settings",
+  };
+  $$(".admin-menu-item[data-admin-section]").forEach((item) => {
+    const iconTarget = item.querySelector("span");
+    const iconName = iconMap[item.dataset.adminSection] || "info";
+    if (iconTarget && iconTarget.dataset.iconRendered !== iconName) {
+      iconTarget.innerHTML = adminIcon(iconName);
+      iconTarget.dataset.iconRendered = iconName;
+    }
+    item.title = item.textContent.trim();
+  });
+  const logoutIconTarget = $("#admin-logout");
+  if (logoutIconTarget && !logoutIconTarget.dataset.iconEnhanced) {
+    logoutIconTarget.innerHTML = `<span>${adminIcon("logout")}</span><b>Logout</b>`;
+    logoutIconTarget.dataset.iconEnhanced = "true";
+  }
+  const collapse = $("[data-sidebar-collapse]");
+  if (collapse && !collapse.dataset.iconRendered) {
+    collapse.innerHTML = adminIcon("chevrons");
+    collapse.dataset.iconRendered = "true";
+  }
+  const menu = $("[data-admin-drawer-toggle]");
+  if (menu && !menu.dataset.iconRendered) {
+    menu.innerHTML = adminIcon("menu");
+    menu.dataset.iconRendered = "true";
+  }
+  const bell = $(".notification-button");
+  if (bell && !bell.dataset.iconRendered) {
+    bell.innerHTML = adminIcon("bell");
+    bell.dataset.iconRendered = "true";
+  }
+  $$("[data-icon-name]").forEach((target) => {
+    target.innerHTML = adminIcon(target.dataset.iconName || "info");
+  });
+  $$(".stat-card").forEach((card) => {
+    const iconTarget = card.querySelector(".stat-icon");
+    const section = card.dataset.adminSection;
+    const iconName = section === "check-in-logs" ? "history" : section === "applications" ? "clipboard" : section === "users" ? "users" : "shield";
+    if (iconTarget && iconTarget.dataset.iconRendered !== iconName) {
+      iconTarget.innerHTML = adminIcon(iconName);
+      iconTarget.dataset.iconRendered = iconName;
+    }
+  });
+}
+
+function adminIcon(name) {
+  const icons = {
+    dashboard: `<path d="M4 4h7v7H4z"/><path d="M13 4h7v4h-7z"/><path d="M13 10h7v10h-7z"/><path d="M4 13h7v7H4z"/>`,
+    clipboard: `<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 10h6"/><path d="M9 14h6"/>`,
+    users: `<path d="M16 19v-2a4 4 0 0 0-8 0v2"/><circle cx="12" cy="8" r="3"/><path d="M20 19v-2a3 3 0 0 0-2-2.8"/><path d="M4 19v-2a3 3 0 0 1 2-2.8"/>`,
+    building: `<path d="M4 20h16"/><path d="M6 20V5h10v15"/><path d="M16 9h3v11"/><path d="M9 8h1"/><path d="M12 8h1"/><path d="M9 12h1"/><path d="M12 12h1"/>`,
+    card: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/>`,
+    scan: `<path d="M4 8V5h3"/><path d="M17 5h3v3"/><path d="M20 16v3h-3"/><path d="M7 19H4v-3"/><path d="M8 12h8"/>`,
+    history: `<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/>`,
+    shield: `<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M12 8v5"/><path d="M12 16h.01"/>`,
+    chart: `<path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-9"/>`,
+    bell: `<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 20a2 2 0 0 0 4 0"/>`,
+    settings: `<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.4 3a7 7 0 0 0-1.7 1L5 6.1l-2 3.4L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.4 3h5l.4-3a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1"/>`,
+    logout: `<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 4v16h-7"/>`,
+    chevrons: `<path d="M15 18l-6-6 6-6"/>`,
+    menu: `<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>`,
+    info: `<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>`,
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${icons[name] || icons.info}</svg>`;
+}
+
+function notify(message, tone = "success") {
+  const region = $("#toast-region");
+  if (!region) return;
+  const toast = document.createElement("div");
+  toast.className = `toast ${tone}`;
+  toast.textContent = message;
+  region.append(toast);
+  window.setTimeout(() => toast.remove(), 3600);
+}
+
+function confirmAction({ title, message, confirmText = "Confirm", danger = true }) {
+  const dialog = $("#confirm-dialog");
+  const content = $("#confirm-dialog-content");
+  if (!dialog || !content) {
+    notify(message, "warning");
+    return Promise.resolve(false);
+  }
+  return new Promise((resolve) => {
+    content.innerHTML = `
+      <div class="section-heading">
+        <p class="eyebrow">${danger ? "Confirm action" : "Confirmation"}</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p class="helper-text">${escapeHtml(message)}</p>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" value="cancel" data-confirm-cancel>Cancel</button>
+        <button class="${danger ? "danger" : "primary"}" type="button" value="confirm" data-confirm-ok>${escapeHtml(confirmText)}</button>
+      </div>
+    `;
+    const cleanup = (result) => {
+      dialog.close();
+      content.innerHTML = "";
+      resolve(result);
+    };
+    content.querySelector("[data-confirm-cancel]").addEventListener("click", () => cleanup(false), { once: true });
+    content.querySelector("[data-confirm-ok]").addEventListener("click", () => cleanup(true), { once: true });
+    dialog.addEventListener("cancel", () => cleanup(false), { once: true });
+    dialog.showModal();
+  });
+}
+
 function renderAttendance() {
+  const table = $("#attendance-log");
+  if (!table) return;
   const logs = getFilteredAttendanceLogs();
   const totalPages = Math.max(1, Math.ceil(logs.length / REPORT_PAGE_SIZE));
   reportPage = Math.min(Math.max(reportPage, 1), totalPages);
   const startIndex = (reportPage - 1) * REPORT_PAGE_SIZE;
   const pageLogs = logs.slice(startIndex, startIndex + REPORT_PAGE_SIZE);
 
-  $("#attendance-log").innerHTML = pageLogs.length
+  table.innerHTML = pageLogs.length
     ? pageLogs.map((log) => {
       const user = state.users.find((item) => item.id === log.userId);
       const facility = state.facilities.find((item) => item.id === log.facilityId);
@@ -967,14 +1348,39 @@ function renderAttendance() {
         <tr>
           <td>${formatDateTime(log.checkInAt, "date")}</td>
           <td>${escapeHtml(user?.fullName || "Deleted user")}</td>
-          <td>${escapeHtml(facility?.name || log.facilityName || "Deleted facility")}</td>
+          <td>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Deleted facility"))}</td>
           <td>${formatDateTime(log.checkInAt, "time")}</td>
           <td>${formatDateTime(log.checkOutAt, "time")}</td>
-          <td>${log.state}</td>
+          <td><span class="status ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span></td>
         </tr>
       `;
     }).join("")
     : `<tr><td colspan="6" class="empty">No attendance records for this range.</td></tr>`;
+
+  const cards = $("#attendance-cards");
+  if (cards) {
+    cards.innerHTML = pageLogs.length ? pageLogs.map((log) => {
+      const user = state.users.find((item) => item.id === log.userId);
+      const facility = state.facilities.find((item) => item.id === log.facilityId);
+      return `
+        <article class="mobile-record-card">
+          <div class="record-card-head">
+            <div>
+              <strong>${escapeHtml(user?.fullName || "Deleted user")}</strong>
+              <small>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Deleted facility"))}</small>
+            </div>
+            <span class="scan-chip ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
+          </div>
+          <dl class="two-col">
+            <div><dt>Arrival</dt><dd>${formatDateTime(log.checkInAt, "time")}</dd></div>
+            <div><dt>Departure</dt><dd>${formatDateTime(log.checkOutAt, "time")}</dd></div>
+            <div><dt>Date</dt><dd>${formatDateTime(log.checkInAt, "date")}</dd></div>
+            <div><dt>Scanner</dt><dd>Gate scanner</dd></div>
+          </dl>
+        </article>
+      `;
+    }).join("") : emptyState("No attendance records", "Check-ins matching your filters will appear here.");
+  }
 
   renderReportPagination(logs.length, startIndex, pageLogs.length, totalPages);
 }
@@ -1100,7 +1506,10 @@ function getFilteredAttendanceLogs() {
     .filter((log) => {
       if (isSeedLog(log)) return false;
       const checkIn = new Date(log.checkInAt);
-      return (!from || checkIn >= from) && (!to || checkIn <= to);
+      const matchesDate = (!from || checkIn >= from) && (!to || checkIn <= to);
+      const matchesFacility = reportFacilityFilter === "all" || log.facilityId === reportFacilityFilter || log.facilityName === reportFacilityFilter;
+      const matchesStatus = reportStatusFilter === "all" || log.state === reportStatusFilter;
+      return matchesDate && matchesFacility && matchesStatus;
     })
     .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
 }
@@ -1139,13 +1548,13 @@ function toDateInputValue(date) {
 function exportReportPdf() {
   const validationError = validateReportExport();
   if (validationError) {
-    alert(validationError);
+    notify(validationError, "warning");
     return;
   }
 
   const logs = getFilteredAttendanceLogs();
   if (!logs.length) {
-    alert("No attendance records found for this report range.");
+    notify("No attendance records found for this report range.", "warning");
     return;
   }
 
@@ -1215,6 +1624,7 @@ function exportReportPdf() {
     </html>
   `);
   reportWindow.document.close();
+  notify("Report export opened.");
 }
 
 function validateReportExport() {
@@ -1244,27 +1654,53 @@ function isSeedLog(log) {
 function renderEmailOutbox() {
   const container = $("#email-outbox");
   if (!container) return;
-  const emails = [...(state.emails || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const emails = [...(state.emails || [])]
+    .filter((email) => {
+      const status = normalizeNotificationStatus(email.status);
+      const statusMatch = notificationStatusFilter === "all"
+        || status === notificationStatusFilter
+        || (notificationStatusFilter === "Local draft" && status === "Pending");
+      const dateMatch = !notificationDateFilter || toDateInputValue(new Date(email.createdAt)) === notificationDateFilter;
+      const subject = String(email.subject || "").toLowerCase();
+      const typeMatch = notificationTypeFilter === "all" || subject.includes(notificationTypeFilter) || (notificationTypeFilter === "pass" && /qr|pass/.test(subject));
+      return statusMatch && dateMatch && typeMatch;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   container.innerHTML = emails.length
     ? emails.map((email) => {
       const canOpen = email.to && email.to !== "admin";
       const mailto = `mailto:${encodeURIComponent(email.to)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
       return `
         <div class="email-item">
-          <strong>${escapeHtml(email.subject)}</strong>
-          <span>To: ${escapeHtml(maskEmail(email.to))}</span>
-          <span>Status: ${escapeHtml(email.status || "Local draft only")}</span>
-          ${email.messageId ? `<span>Message ID: ${escapeHtml(maskToken(email.messageId))}</span>` : ""}
-          ${email.accepted?.length ? `<span>Accepted: ${escapeHtml(email.accepted.map(maskEmail).join(", "))}</span>` : ""}
-          ${email.rejected?.length ? `<span class="email-error">Rejected: ${escapeHtml(email.rejected.map(maskEmail).join(", "))}</span>` : ""}
-          ${email.error ? `<span class="email-error">Error: ${escapeHtml(email.error)}</span>` : ""}
-          <span>${formatDateTime(email.createdAt)}</span>
-          <p>${escapeHtml(sanitizeNotificationText(email.body))}</p>
-          ${canOpen ? `<a href="${mailto}">Open Email</a>` : ""}
+          <div class="record-card-head">
+            <div>
+              <strong>${escapeHtml(email.subject)}</strong>
+              <small>To: ${escapeHtml(maskEmail(email.to))} | ${formatDateTime(email.createdAt)}</small>
+            </div>
+            <span class="status ${statusClass(normalizeNotificationStatus(email.status))}">${escapeHtml(normalizeNotificationStatus(email.status))}</span>
+          </div>
+          <details class="notification-details">
+            <summary>View details</summary>
+            <p>${escapeHtml(sanitizeNotificationText(email.body))}</p>
+            <details>
+              <summary>Technical details</summary>
+              ${email.messageId ? `<span>Message ID: ${escapeHtml(maskToken(email.messageId))}</span>` : ""}
+              ${email.accepted?.length ? `<span>Accepted: ${escapeHtml(email.accepted.map(maskEmail).join(", "))}</span>` : ""}
+              ${email.rejected?.length ? `<span class="email-error">Rejected: ${escapeHtml(email.rejected.map(maskEmail).join(", "))}</span>` : ""}
+              ${email.error ? `<span class="email-error">Error: ${escapeHtml(email.error)}</span>` : ""}
+            </details>
+            ${canOpen ? `<a href="${mailto}">Open Email</a>` : ""}
+          </details>
         </div>
       `;
     }).join("")
-    : `<p class="empty">Registration, approval, and rejection emails will appear here.</p>`;
+    : emptyState("No notifications found", "Registration, approval, and rejection emails matching your filters will appear here.");
+}
+
+function normalizeNotificationStatus(status) {
+  if (/sent/i.test(status || "")) return "Sent";
+  if (/fail|error/i.test(status || "")) return "Failed";
+  return "Pending";
 }
 
 function renderRegistrationAccessOptions() {
@@ -1556,18 +1992,73 @@ function renderPaymentReviewList() {
   if (!container) return;
   const users = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   container.innerHTML = users.length
-    ? users.map((user) => `
+    ? users.map((user) => {
+      const payment = getPaymentStatus(user);
+      return `
       <div class="payment-review-item">
         <div>
           <strong>${escapeHtml(user.fullName || user.email)}</strong>
-          <small>${escapeHtml(user.email)} | ${escapeHtml(user.villaNumber || "-")}</small>
+          <small>${escapeHtml(maskEmail(user.email))} | Villa ${escapeHtml(user.villaNumber || "-")} | Ref ${escapeHtml(String(user.id).slice(-8))}</small>
         </div>
-        <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
-        <strong>QAR ${Number(user.totalQar || 0)}</strong>
-        <button type="button" data-open-user="${user.id}">Review Payment</button>
+        <span class="status ${payment.className}">${escapeHtml(payment.label)}</span>
+        <strong>${payment.amountLabel}</strong>
+        <small>${formatDateTime(user.createdAt)}</small>
+        <button type="button" data-open-user="${user.id}">${escapeHtml(payment.action)}</button>
       </div>
-    `).join("")
-    : `<p class="empty">Payment submissions will appear here.</p>`;
+    `;
+    }).join("")
+    : emptyState("No payment submissions", "Payment screenshots will appear here after applications are submitted.");
+}
+
+function renderPaymentSummaryCards() {
+  const container = $("#payment-summary-cards");
+  if (!container) return;
+  const pending = state.users.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
+  const verified = state.users.filter((user) => getPaymentStatus(user).label === "Verified").length;
+  const totalReceived = state.users
+    .filter((user) => user.status === "Approved")
+    .reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
+  const issues = state.users.filter((user) => /Rejected|issue/i.test(getPaymentStatus(user).label)).length;
+  container.innerHTML = [
+    summaryCard("Pending verification", pending, "Need admin review"),
+    summaryCard("Verified payments", verified, "Approved applications"),
+    summaryCard("Total received", `QAR ${totalReceived}`, "Approved totals"),
+    summaryCard("Payment issues", issues, "Rejected or failed checks"),
+  ].join("");
+}
+
+function getPaymentStatus(user) {
+  const amount = Number(user.totalQar || 0);
+  if (!amount) {
+    return {
+      label: "No payment required",
+      className: "neutral",
+      amountLabel: "QAR 0 - no charge",
+      action: "View application",
+    };
+  }
+  if (user.status === "Approved") {
+    return {
+      label: "Verified",
+      className: "Approved",
+      amountLabel: `QAR ${amount}`,
+      action: "View payment",
+    };
+  }
+  if (user.status === "Rejected") {
+    return {
+      label: "Rejected",
+      className: "Rejected",
+      amountLabel: `QAR ${amount}`,
+      action: "View issue",
+    };
+  }
+  return {
+    label: "Pending verification",
+    className: "Pending",
+    amountLabel: `QAR ${amount}`,
+    action: "Review payment",
+  };
 }
 
 function statusClass(status) {
@@ -2193,32 +2684,32 @@ async function approveUser(userId) {
   const accessFacilities = [...document.querySelectorAll(".access-options input:checked")].map((input) => input.value);
 
   if (!fullName || !qidNumber || !dob) {
-    alert("Enter Full Name, Qatar ID Number, and Date of Birth from the uploaded Qatar ID before approving.");
+    notify("Enter Full Name, Qatar ID Number, and Date of Birth from the uploaded Qatar ID before approving.", "warning");
     return;
   }
 
   if (!hasLetters(fullName) || fullName.length < 2) {
-    alert("Enter a valid full name from the Qatar ID.");
+    notify("Enter a valid full name from the Qatar ID.", "warning");
     return;
   }
 
   if (!isValidQid(qidNumber)) {
-    alert("Qatar ID Number must be exactly 11 digits.");
+    notify("Qatar ID Number must be exactly 11 digits.", "warning");
     return;
   }
 
   if (!isPastDate(dob)) {
-    alert("Date of Birth must be a valid past date.");
+    notify("Date of Birth must be a valid past date.", "warning");
     return;
   }
 
   if (!$("#review-qid-match")?.checked) {
-    alert("Confirm that the personal details match the uploaded Qatar ID before approving.");
+    notify("Confirm that the personal details match the uploaded Qatar ID before approving.", "warning");
     return;
   }
 
   if (!$("#review-payment-match")?.checked) {
-    alert("Confirm that the payment proof matches the calculated total before approving.");
+    notify("Confirm that the payment proof matches the calculated total before approving.", "warning");
     return;
   }
 
@@ -2230,18 +2721,18 @@ async function approveUser(userId) {
     && item.status !== "Renewal Pending"
   );
   if (duplicateQid) {
-    alert("Another active user already has this Qatar ID Number.");
+    notify("Another active user already has this Qatar ID Number.", "warning");
     return;
   }
 
   const validFacilities = getFacilityNames();
   if (accessFacilities.some((name) => !validFacilities.includes(name))) {
-    alert("One or more selected facilities no longer exist. Reopen the review and try again.");
+    notify("One or more selected facilities no longer exist. Reopen the review and try again.", "warning");
     return;
   }
 
   if (!accessFacilities.length) {
-    alert("Select at least one facility access option before approving.");
+    notify("Select at least one facility access option before approving.", "warning");
     return;
   }
 
@@ -2330,7 +2821,7 @@ async function sendQrPassToUser(userId) {
   const user = state.users.find((item) => item.id === userId);
   if (!user) return;
   if (user.status !== "Approved") {
-    alert("Approve the user before sending a QR pass.");
+    notify("Approve the user before sending a QR pass.", "warning");
     return;
   }
 
@@ -2341,6 +2832,7 @@ async function sendQrPassToUser(userId) {
   saveState();
   $("#user-dialog").close();
   render();
+  notify("QR pass email prepared.");
 }
 
 async function rejectUser(userId) {
@@ -2366,7 +2858,11 @@ async function deleteUser(userId) {
   if (!user) return;
   const label = user.fullName || user.email;
 
-  const confirmed = window.confirm(`Delete ${label}? This removes their profile and attendance history.`);
+  const confirmed = await confirmAction({
+    title: `Delete ${label}?`,
+    message: "This removes the profile and related attendance history. This action cannot be undone.",
+    confirmText: "Delete",
+  });
   if (!confirmed) return;
 
   state.users = state.users.filter((item) => item.id !== userId);
@@ -2383,6 +2879,24 @@ async function deleteUser(userId) {
   });
   saveState();
   render();
+  notify("Application deleted.");
+}
+
+async function suspendUser(userId) {
+  const user = state.users.find((item) => item.id === userId);
+  if (!user) return;
+  const confirmed = await confirmAction({
+    title: `Suspend ${user.fullName || user.email}?`,
+    message: "The resident will no longer be shown as active until their access is reviewed.",
+    confirmText: "Suspend",
+  });
+  if (!confirmed) return;
+  user.status = "Suspended";
+  user.suspendedAt = new Date().toISOString();
+  await upsertDoc("users", user);
+  saveState();
+  render();
+  notify("Resident access suspended.", "warning");
 }
 
 function addYears(date, years) {
@@ -2465,12 +2979,12 @@ async function addFacility(event) {
   const days = normalizeName($("#facility-days").value);
   const error = validateFacilityInput({ name, location, timing, days });
   if (error) {
-    alert(error);
+    notify(error, "warning");
     return;
   }
 
   if (state.facilities.some((facility) => facility.name.toLowerCase() === name.toLowerCase())) {
-    alert("This facility already exists.");
+    notify("This facility already exists.", "warning");
     return;
   }
 
@@ -2478,8 +2992,10 @@ async function addFacility(event) {
   state.facilities.push(facility);
   await upsertDoc("facilities", facility);
   $("#facility-form").reset();
+  $("#facility-form").dataset.open = "";
   saveState();
   render();
+  notify("Facility added.");
 }
 
 async function updateFacility(facilityId) {
@@ -2493,12 +3009,12 @@ async function updateFacility(facilityId) {
   const nextDays = normalizeName(fields.find((field) => field.dataset.facilityField === "days")?.value || "");
   const error = validateFacilityInput({ name: nextName, location: nextLocation, timing: nextTiming, days: nextDays });
   if (error) {
-    alert(error);
+    notify(error, "warning");
     return;
   }
 
   if (state.facilities.some((item) => item.id !== facility.id && item.name.toLowerCase() === nextName.toLowerCase())) {
-    alert("Another facility already uses this name.");
+    notify("Another facility already uses this name.", "warning");
     return;
   }
 
@@ -2516,8 +3032,10 @@ async function updateFacility(facilityId) {
   await Promise.all(state.users
     .filter((user) => Array.isArray(user.accessFacilities) && user.accessFacilities.includes(nextName))
     .map((user) => upsertDoc("users", user)));
+  editingFacilityId = "";
   saveState();
   render();
+  notify("Facility saved.");
 }
 
 function validateFacilityInput(facility) {
@@ -2538,7 +3056,11 @@ function validateFacilityInput(facility) {
 async function deleteFacility(facilityId) {
   const facility = state.facilities.find((item) => String(item.id) === String(facilityId));
   if (!facility) return;
-  const confirmed = window.confirm(`Delete ${facility.name}? It will also be removed from approved users' access.`);
+  const confirmed = await confirmAction({
+    title: `Delete ${displayFacilityName(facility.name)}?`,
+    message: "It will also be removed from approved users' access. This action cannot be undone.",
+    confirmText: "Delete",
+  });
   if (!confirmed) return;
 
   state.facilities = state.facilities.filter((item) => item.id !== facility.id);
@@ -2551,6 +3073,7 @@ async function deleteFacility(facilityId) {
   await Promise.all(state.users.map((user) => upsertDoc("users", user)));
   saveState();
   render();
+  notify("Facility deleted.");
 }
 
 async function toggleFacility(facilityId) {
@@ -2560,6 +3083,7 @@ async function toggleFacility(facilityId) {
   await upsertDoc("facilities", facility);
   saveState();
   render();
+  notify(facility.open ? "Facility enabled." : "Facility disabled.", facility.open ? "success" : "warning");
 }
 
 async function startScanner() {
@@ -2978,7 +3502,7 @@ function minutesFromMidnight(hour, minute, period) {
 async function copyScannerLink() {
   const link = buildScannerUrl();
   await navigator.clipboard.writeText(link);
-  alert("Auto scanner link copied. Guard can bookmark/open this link anytime.");
+  notify("Scanner link copied.");
 }
 
 async function copyPaymentValue(key) {
@@ -2989,7 +3513,8 @@ async function copyPaymentValue(key) {
   }[key];
   if (!value) return;
   await navigator.clipboard.writeText(value);
-  $("#registration-message").textContent = "Copied payment detail.";
+  if ($("#registration-message")) $("#registration-message").textContent = "Copied payment detail.";
+  notify("Payment detail copied.");
 }
 
 function getFacilityNames() {
@@ -3076,14 +3601,19 @@ document.addEventListener("click", (event) => {
   const tab = event.target.closest(".tab");
   const adminSection = event.target.closest("[data-admin-section]");
   const drawerToggle = event.target.closest("[data-admin-drawer-toggle]");
+  const drawerClose = event.target.closest("[data-admin-drawer-close]");
   const sidebarCollapse = event.target.closest("[data-sidebar-collapse]");
   const usagePeriodButton = event.target.closest("[data-usage-period]");
   const exportToday = event.target.closest("[data-export-today]");
+  const toggleAddFacility = event.target.closest("[data-toggle-add-facility]");
+  const editFacilityButton = event.target.closest("[data-edit-facility]");
+  const cancelFacilityEdit = event.target.closest("[data-cancel-facility-edit]");
   const copyPayment = event.target.closest("[data-copy-payment]");
   const facilityMonthButton = event.target.closest("[data-facility-month]");
   const openUser = event.target.closest("[data-open-user]");
   const approve = event.target.closest("[data-approve-user]");
   const sendPass = event.target.closest("[data-send-pass-user]");
+  const suspend = event.target.closest("[data-suspend-user]");
   const userPageButton = event.target.closest("[data-user-page]");
   const reportPageButton = event.target.closest("[data-report-page]");
   const reject = event.target.closest("[data-reject-user]");
@@ -3095,6 +3625,7 @@ document.addEventListener("click", (event) => {
   if (tab) switchView(tab.dataset.view);
   if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
+  if (drawerClose) document.body.classList.remove("admin-drawer-open");
   if (sidebarCollapse) {
     const collapsed = document.body.classList.toggle("admin-sidebar-collapsed");
     sidebarCollapse.setAttribute("aria-expanded", String(!collapsed));
@@ -3105,6 +3636,21 @@ document.addEventListener("click", (event) => {
     renderWeeklyUsageChart();
   }
   if (exportToday) exportTodayReport();
+  if (toggleAddFacility) {
+    const form = $("#facility-form");
+    if (form) {
+      form.dataset.open = form.dataset.open ? "" : "true";
+      renderFacilities();
+    }
+  }
+  if (editFacilityButton) {
+    editingFacilityId = editFacilityButton.dataset.editFacility;
+    renderFacilities();
+  }
+  if (cancelFacilityEdit) {
+    editingFacilityId = "";
+    renderFacilities();
+  }
   if (copyPayment) copyPaymentValue(copyPayment.dataset.copyPayment);
   if (facilityMonthButton) {
     event.preventDefault();
@@ -3113,6 +3659,7 @@ document.addEventListener("click", (event) => {
   if (openUser) openUserDialog(openUser.dataset.openUser);
   if (approve) approveUser(approve.dataset.approveUser);
   if (sendPass) sendQrPassToUser(sendPass.dataset.sendPassUser);
+  if (suspend) suspendUser(suspend.dataset.suspendUser);
   if (userPageButton) changeUserPage(userPageButton.dataset.userPage);
   if (reportPageButton) changeReportPage(reportPageButton.dataset.reportPage);
   if (reject) rejectUser(reject.dataset.rejectUser);
@@ -3127,6 +3674,7 @@ $("#user-search-form")?.addEventListener("submit", searchUsers);
 $("#user-search")?.addEventListener("input", updateUserSearch);
 $("#clear-user-search")?.addEventListener("click", clearUserSearch);
 $("#user-status-filter")?.addEventListener("change", (event) => filterUsersByStatus(event.target.value));
+$("#user-date-filter")?.addEventListener("change", (event) => filterUsersByDate(event.target.value));
 $("#admin-header-search")?.addEventListener("input", updateAdminHeaderSearch);
 $("#admin-header-date")?.addEventListener("change", applyAdminHeaderDate);
 $("#admin-date-range")?.addEventListener("change", (event) => applyAdminDateRange(event.target.value));
@@ -3139,6 +3687,40 @@ $("#facility-form").addEventListener("submit", addFacility);
 $("#copy-auto-scanner").addEventListener("click", copyScannerLink);
 $("#report-period").addEventListener("change", (event) => setReportPeriod(event.target.value));
 $("#export-report-pdf").addEventListener("click", exportReportPdf);
+$("#report-facility-filter")?.addEventListener("change", (event) => {
+  reportFacilityFilter = event.target.value || "all";
+  reportPage = 1;
+  renderAttendance();
+});
+$("#report-status-filter")?.addEventListener("change", (event) => {
+  reportStatusFilter = event.target.value || "all";
+  reportPage = 1;
+  renderAttendance();
+});
+$("#exception-reason-filter")?.addEventListener("change", (event) => {
+  exceptionReasonFilter = event.target.value || "all";
+  renderAccessExceptions();
+});
+$("#exception-facility-filter")?.addEventListener("change", (event) => {
+  exceptionFacilityFilter = event.target.value || "all";
+  renderAccessExceptions();
+});
+$("#exception-date-filter")?.addEventListener("change", (event) => {
+  exceptionDateFilter = event.target.value || "";
+  renderAccessExceptions();
+});
+$("#notification-status-filter")?.addEventListener("change", (event) => {
+  notificationStatusFilter = event.target.value || "all";
+  renderEmailOutbox();
+});
+$("#notification-date-filter")?.addEventListener("change", (event) => {
+  notificationDateFilter = event.target.value || "";
+  renderEmailOutbox();
+});
+$("#notification-type-filter")?.addEventListener("change", (event) => {
+  notificationTypeFilter = event.target.value || "all";
+  renderEmailOutbox();
+});
 $("#from-date").addEventListener("change", () => {
   $("#report-period").value = "custom";
   reportPage = 1;
@@ -3171,4 +3753,3 @@ window.addEventListener("popstate", handleRoute);
 
 render();
 handleRoute();
-

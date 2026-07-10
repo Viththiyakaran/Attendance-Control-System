@@ -156,31 +156,32 @@
                 <small>Admin console</small>
               </div>
             </div>
-            <button class="sidebar-collapse" type="button" data-sidebar-collapse aria-expanded="true" aria-label="Collapse sidebar">Collapse</button>
+            <button class="sidebar-collapse icon-button" type="button" data-sidebar-collapse aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"></button>
             <nav class="admin-menu" aria-label="Admin navigation">
               <p>Overview</p>
-              <button class="admin-menu-item active" type="button" data-admin-section="dashboard"><span>H</span><b>Dashboard</b></button>
+              <button class="admin-menu-item active" type="button" data-admin-section="dashboard"><span></span><b>Dashboard</b></button>
               <p>Access Management</p>
-              <button class="admin-menu-item" type="button" data-admin-section="applications"><span>A</span><b>Applications</b><em id="sidebar-pending-badge" hidden>0</em></button>
-              <button class="admin-menu-item" type="button" data-admin-section="users"><span>U</span><b>Users / Residents</b></button>
-              <button class="admin-menu-item" type="button" data-admin-section="facilities"><span>F</span><b>Facilities</b></button>
-              <button class="admin-menu-item" type="button" data-admin-section="payments"><span>P</span><b>Payments</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="applications"><span></span><b>Applications</b><em id="sidebar-pending-badge" hidden>0</em></button>
+              <button class="admin-menu-item" type="button" data-admin-section="users"><span></span><b>Users / Residents</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="facilities"><span></span><b>Facilities</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="payments"><span></span><b>Payments</b></button>
               <p>Operations</p>
-              <button class="admin-menu-item" type="button" data-admin-section="scanner-stations"><span>S</span><b>Scanner Stations</b></button>
-              <button class="admin-menu-item" type="button" data-admin-section="check-in-logs"><span>L</span><b>Check-in Logs</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="scanner-stations"><span></span><b>Scanner Stations</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="check-in-logs"><span></span><b>Check-in Logs</b></button>
               <button class="admin-menu-item" type="button" data-admin-section="access-exceptions"><span>!</span><b>Access Exceptions</b></button>
               <p>Analytics</p>
-              <button class="admin-menu-item" type="button" data-admin-section="reports"><span>R</span><b>Reports</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="reports"><span></span><b>Reports</b></button>
               <p>System</p>
-              <button class="admin-menu-item" type="button" data-admin-section="notifications"><span>N</span><b>Notifications</b></button>
-              <button class="admin-menu-item" type="button" data-admin-section="settings"><span>*</span><b>Settings</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="notifications"><span></span><b>Notifications</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="settings"><span></span><b>Settings</b></button>
               <button class="admin-menu-item danger-link" id="admin-logout" type="button">Logout</button>
             </nav>
           </aside>
+          <button class="admin-drawer-overlay" type="button" data-admin-drawer-close aria-label="Close admin menu"></button>
 
           <div class="admin-shell">
             <header class="admin-header">
-              <button class="admin-drawer-toggle" type="button" data-admin-drawer-toggle aria-label="Open admin menu">Menu</button>
+              <button class="admin-drawer-toggle icon-button" type="button" data-admin-drawer-toggle aria-label="Open admin menu"></button>
               <div>
                 <h2 id="admin-page-title">Dashboard</h2>
                 <p id="admin-page-subtitle">Overview of facility access and attendance</p>
@@ -194,7 +195,7 @@
                   <option value="custom">Custom range</option>
                 </select>
                 <input id="admin-header-date" type="date" aria-label="Custom admin date" hidden />
-                <button class="notification-button" type="button" data-admin-section="notifications" aria-label="Open notifications">N</button>
+                <button class="notification-button icon-button" type="button" data-admin-section="notifications" aria-label="Open notifications"></button>
                 <details class="admin-profile">
                   <summary><span>AD</span><strong>Manager</strong></summary>
                   <button type="button" data-admin-section="settings">Profile</button>
@@ -207,19 +208,19 @@
             <section class="admin-page active" data-admin-page="dashboard">
               <div class="kpi-grid admin-stat-grid">
                 <button class="kpi-card stat-card" type="button" data-admin-section="check-in-logs">
-                  <span class="stat-icon">OK</span>
+                  <span class="stat-icon"></span>
                   <span>Today Check-ins</span>
                   <strong id="kpi-today-checkins">0</strong>
                   <small id="kpi-today-note">QR scans recorded today</small>
                 </button>
                 <button class="kpi-card stat-card" type="button" data-admin-section="applications">
-                  <span class="stat-icon">A</span>
+                  <span class="stat-icon"></span>
                   <span>Pending Applications</span>
                   <strong id="kpi-pending-applications">0</strong>
                   <small id="kpi-pending-note">No applications waiting</small>
                 </button>
                 <button class="kpi-card stat-card" type="button" data-admin-section="users">
-                  <span class="stat-icon">U</span>
+                  <span class="stat-icon"></span>
                   <span>Active Residents</span>
                   <strong id="kpi-active-users">0</strong>
                   <small id="kpi-active-note">Approved memberships</small>
@@ -301,8 +302,7 @@
                   <div class="user-tools">
                     <form id="user-search-form" class="user-search">
                       <input id="user-search" type="search" placeholder="Search users" aria-label="Search users" />
-                      <button type="submit">Search</button>
-                      <button type="button" id="clear-user-search">Clear</button>
+                      <button class="clear-filter" type="button" id="clear-user-search" aria-label="Clear search">Clear</button>
                     </form>
                     <label class="status-filter">
                       Status
@@ -314,16 +314,19 @@
                         <option value="Rejected">Rejected</option>
                       </select>
                     </label>
+                    <label class="status-filter">
+                      Submitted
+                      <input id="user-date-filter" type="date" aria-label="Filter applications by submitted date" />
+                    </label>
                   </div>
                 </div>
                 <div class="table-wrap">
                   <table class="user-table">
                     <thead>
                       <tr>
-                        <th>Name</th>
-                        <th>Email</th>
+                        <th>Applicant</th>
                         <th>Villa</th>
-                        <th>Requested</th>
+                        <th>Requested facilities</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>Actions</th>
@@ -332,6 +335,7 @@
                     <tbody id="pending-users"></tbody>
                   </table>
                 </div>
+                <div id="application-cards" class="mobile-record-list"></div>
                 <div class="table-pagination" id="user-pagination">
                   <button type="button" data-user-page="prev">Previous</button>
                   <span id="user-page-status">0 users</span>
@@ -345,16 +349,36 @@
                 <div class="section-heading">
                   <p class="eyebrow">Users</p>
                   <h2>Approved resident access</h2>
-                  <p class="helper-text">Use Applications to review, manage, and resend QR passes for individual users.</p>
                 </div>
+                <div id="resident-summary" class="summary-grid"></div>
+                <div class="table-wrap">
+                  <table class="resident-table">
+                    <thead>
+                      <tr>
+                        <th>Resident</th>
+                        <th>Villa</th>
+                        <th>Active facilities</th>
+                        <th>Membership</th>
+                        <th>Expiry</th>
+                        <th>QR pass</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="resident-table-body"></tbody>
+                  </table>
+                </div>
+                <div id="resident-cards" class="mobile-record-list"></div>
               </section>
             </section>
 
             <section class="admin-page" data-admin-page="facilities">
               <section class="panel facility-management-panel">
                 <div class="section-heading">
-                  <p class="eyebrow">Facilities</p>
-                  <h2>Manage access</h2>
+                  <div>
+                    <p class="eyebrow">Facilities</p>
+                    <h2>Manage access</h2>
+                  </div>
+                  <button class="primary" type="button" data-toggle-add-facility>Add facility</button>
                 </div>
                 <form id="facility-form" class="facility-form">
                   <input id="facility-name" placeholder="Activity" required />
@@ -374,21 +398,32 @@
                   <h2>Payment verification</h2>
                   <p class="helper-text">Open an application to compare the uploaded screenshot with the calculated total before approving access.</p>
                 </div>
+                <div id="payment-summary-cards" class="summary-grid"></div>
                 <div id="payment-review-list" class="payment-review-list"></div>
               </section>
             </section>
 
             <section class="admin-page" data-admin-page="scanner-stations">
-              <section class="panel">
+              <section class="panel scanner-station-panel">
                 <div class="section-heading">
                   <p class="eyebrow">Scanner Stations</p>
                   <h2>Gate scanner links</h2>
                 </div>
-                <div class="scanner-tools">
-                  <a id="auto-scanner-link" class="scanner-link" href="/scanner">Open Auto Scanner</a>
-                  <button id="copy-auto-scanner" type="button">Copy Scanner Link</button>
+                <div class="scanner-station-grid">
+                  <article class="admin-info-card">
+                    <span class="card-icon" data-icon-name="scan"></span>
+                    <h3>Open Scanner</h3>
+                    <p>Launch the guard scanner for the current scheduled facility.</p>
+                    <a id="auto-scanner-link" class="scanner-link primary" href="/scanner">Open gate scanner</a>
+                  </article>
+                  <article class="admin-info-card">
+                    <span class="card-icon" data-icon-name="settings"></span>
+                    <h3>Scanner Setup</h3>
+                    <p>Copy this link for authorised guard devices. Do not expose scanner PINs.</p>
+                    <button id="copy-auto-scanner" type="button">Copy scanner link</button>
+                  </article>
                 </div>
-                <p class="helper-text">Use these links for guard devices and bookmarked scanner stations.</p>
+                <div id="scanner-station-list" class="scanner-status-list"></div>
               </section>
             </section>
 
@@ -417,6 +452,24 @@
                       To
                       <input id="to-date" type="date" aria-label="To date" />
                     </label>
+                    <label>
+                      Facility
+                      <select id="report-facility-filter" aria-label="Filter logs by facility">
+                        <option value="all">All facilities</option>
+                      </select>
+                    </label>
+                    <label>
+                      Status
+                      <select id="report-status-filter" aria-label="Filter logs by status">
+                        <option value="all">All statuses</option>
+                        <option value="Checked In">Checked in</option>
+                        <option value="Checked Out">Checked out</option>
+                        <option value="Access Denied">Denied</option>
+                        <option value="Outside Allowed Time">Outside time</option>
+                        <option value="Expired / Invalid QR">Expired</option>
+                        <option value="Invalid QR">Invalid QR</option>
+                      </select>
+                    </label>
                     <button id="export-report-pdf" type="button">Export PDF</button>
                   </div>
                 </div>
@@ -435,6 +488,7 @@
                     <tbody id="attendance-log"></tbody>
                   </table>
                 </div>
+                <div id="attendance-cards" class="mobile-record-list"></div>
                 <div class="table-pagination" id="report-pagination">
                   <button type="button" data-report-page="prev">Previous</button>
                   <span id="report-page-status">0 records</span>
@@ -448,17 +502,41 @@
                 <div class="section-heading">
                   <p class="eyebrow">Reports</p>
                   <h2>Export reports</h2>
-                  <p class="helper-text">Use Check-in Logs to filter dates and export the PDF report.</p>
                 </div>
+                <div id="report-card-list" class="report-card-list"></div>
               </section>
             </section>
 
             <section class="admin-page" data-admin-page="access-exceptions">
               <section class="panel report-panel">
-                <div class="section-heading">
-                  <p class="eyebrow">Operations</p>
-                  <h2>Access Exceptions</h2>
-                  <p class="helper-text">Denied, invalid, expired, and outside-time scan attempts.</p>
+                <div class="section-heading compact-heading">
+                  <div>
+                    <p class="eyebrow">Operations</p>
+                    <h2>Access Exceptions</h2>
+                    <p class="helper-text">Denied, invalid, expired, and outside-time scan attempts.</p>
+                  </div>
+                  <div class="filters">
+                    <label>
+                      Reason
+                      <select id="exception-reason-filter" aria-label="Filter exceptions by reason">
+                        <option value="all">All reasons</option>
+                        <option value="outside">Outside opening time</option>
+                        <option value="invalid">Invalid QR pass</option>
+                        <option value="expired">Expired membership</option>
+                        <option value="denied">Facility not authorised</option>
+                      </select>
+                    </label>
+                    <label>
+                      Facility
+                      <select id="exception-facility-filter" aria-label="Filter exceptions by facility">
+                        <option value="all">All facilities</option>
+                      </select>
+                    </label>
+                    <label>
+                      Date
+                      <input id="exception-date-filter" type="date" aria-label="Filter exceptions by date" />
+                    </label>
+                  </div>
                 </div>
                 <div id="access-exceptions-list" class="recent-checkins"></div>
               </section>
@@ -471,6 +549,31 @@
                   <h2>Notifications & Email Logs</h2>
                   <p class="helper-text">Detailed delivery records are kept here instead of on the dashboard.</p>
                 </div>
+                <div class="filters notification-filters">
+                  <label>
+                    Status
+                    <select id="notification-status-filter" aria-label="Filter notifications by status">
+                      <option value="all">All statuses</option>
+                      <option value="Sent">Sent</option>
+                      <option value="Local draft">Pending</option>
+                      <option value="Draft">Pending</option>
+                      <option value="Failed">Failed</option>
+                    </select>
+                  </label>
+                  <label>
+                    Date
+                    <input id="notification-date-filter" type="date" aria-label="Filter notifications by date" />
+                  </label>
+                  <label>
+                    Type
+                    <select id="notification-type-filter" aria-label="Filter notifications by type">
+                      <option value="all">All types</option>
+                      <option value="approved">Approval</option>
+                      <option value="rejected">Rejection</option>
+                      <option value="pass">QR pass</option>
+                    </select>
+                  </label>
+                </div>
                 <div id="email-outbox" class="email-outbox"></div>
               </section>
             </section>
@@ -480,8 +583,9 @@
                 <div class="section-heading">
                   <p class="eyebrow">Settings</p>
                   <h2>Admin settings</h2>
-                  <p class="helper-text">Scanner PIN, email delivery, Firebase, and admin credentials are currently configured in the application code and Netlify environment.</p>
+                  <p class="helper-text">Read-only operational settings. Secrets and credentials are hidden.</p>
                 </div>
+                <div id="settings-sections" class="settings-grid"></div>
               </section>
             </section>
           </div>
@@ -532,6 +636,14 @@
         <div id="dialog-content"></div>
       </form>
     </dialog>
+
+    <dialog id="confirm-dialog" class="confirm-dialog">
+      <form method="dialog" class="dialog-card">
+        <div id="confirm-dialog-content"></div>
+      </form>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script type="module" src="app.js"></script>
