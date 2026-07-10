@@ -1996,6 +1996,276 @@ dialog::backdrop {
   }
 }
 
+/* Emergency final dashboard layout repair */
+.admin-dashboard {
+  background: #f5f7f6;
+}
+
+.admin-sidebar {
+  width: 300px;
+  background:
+    radial-gradient(circle at 95% 8%, rgba(13, 148, 118, 0.24), transparent 30%),
+    linear-gradient(180deg, #064b40 0%, #04382f 54%, #022620 100%);
+}
+
+.admin-shell {
+  margin-left: 300px;
+  padding: 0;
+  min-width: 0;
+}
+
+.admin-page.active {
+  display: block;
+  padding: 20px 24px 36px;
+}
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: auto minmax(240px, 1fr) minmax(520px, auto);
+  align-items: center;
+  gap: 18px;
+  min-height: 92px;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid #e1e7e4;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 30px rgba(16, 24, 40, 0.05);
+  padding: 18px 24px;
+}
+
+.admin-header-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+#admin-header-search {
+  width: 360px;
+  min-width: 240px;
+  max-width: 100%;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 18px;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+  min-height: 132px;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.kpi-card > span:not(.stat-icon) {
+  min-width: 0;
+  color: #101828;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.kpi-card strong {
+  color: #087f65;
+  font-size: 2.1rem;
+}
+
+.kpi-card small {
+  min-width: 0;
+  white-space: normal;
+}
+
+.stat-icon {
+  grid-row: 1 / span 3;
+  width: 52px;
+  height: 52px;
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+}
+
+.dashboard-layout > * {
+  min-width: 0;
+}
+
+.dashboard-side {
+  display: contents;
+}
+
+.facility-usage-card {
+  grid-column: span 5;
+  min-width: 0;
+  min-height: 374px;
+}
+
+.dashboard-side .dashboard-card:first-child {
+  grid-column: span 3;
+}
+
+.dashboard-side .dashboard-card:nth-child(2) {
+  grid-column: span 4;
+}
+
+.recent-checkins-card {
+  grid-column: span 7;
+}
+
+.recent-activity-card {
+  grid-column: span 5;
+}
+
+.dashboard-card {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid #e1e7e4;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+}
+
+.chart-row {
+  grid-template-columns: minmax(130px, 0.8fr) minmax(160px, 1.2fr) minmax(60px, auto);
+}
+
+.chart-row > * {
+  min-width: 0;
+}
+
+.quick-actions button,
+.quick-actions a {
+  grid-template-columns: 34px minmax(0, 1fr) 14px;
+  min-width: 0;
+}
+
+.quick-actions strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+}
+
+.scanner-status-row {
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+}
+
+.recent-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.activity-row {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.scanner-status-row > *,
+.recent-row > *,
+.activity-row > * {
+  min-width: 0;
+}
+
+@media (max-width: 1500px) {
+  .admin-sidebar {
+    width: 280px;
+  }
+
+  .admin-shell {
+    margin-left: 280px;
+  }
+
+  .dashboard-layout {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  .facility-usage-card {
+    grid-column: span 5;
+  }
+
+  .dashboard-side .dashboard-card:first-child,
+  .dashboard-side .dashboard-card:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .recent-checkins-card,
+  .recent-activity-card {
+    grid-column: span 4;
+  }
+}
+
+@media (max-width: 1280px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .facility-usage-card,
+  .dashboard-side .dashboard-card:first-child,
+  .dashboard-side .dashboard-card:nth-child(2),
+  .recent-checkins-card,
+  .recent-activity-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 1120px) {
+  .admin-sidebar {
+    width: min(300px, 84vw);
+  }
+
+  .admin-shell,
+  .admin-sidebar-collapsed .admin-shell {
+    margin-left: 0;
+  }
+
+  .admin-header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .admin-header-tools {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  #admin-header-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-page.active {
+    padding: 12px;
+  }
+
+  .kpi-grid,
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-row,
+  .scanner-status-row,
+  .recent-row,
+  .activity-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Screenshot-inspired admin dashboard theme */
 .admin-dashboard {
   --accent: #087f65;
