@@ -1729,9 +1729,14 @@ dialog::backdrop {
 
 .customer-mode main {
   background:
-    linear-gradient(120deg, rgba(246, 247, 244, 0.9), rgba(238, 248, 243, 0.94)),
+    linear-gradient(120deg, rgba(246, 247, 244, 0.62), rgba(232, 248, 241, 0.72)),
     url("assets/sports-registration-bg.png") center / cover fixed;
   min-height: calc(100vh - 92px);
+}
+
+.customer-mode .registration-panel {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
 }
 
 .wizard-stepper {
