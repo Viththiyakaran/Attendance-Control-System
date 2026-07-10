@@ -344,6 +344,16 @@ th {
   color: var(--warning);
 }
 
+.status.Renewal-Pending {
+  background: #eaf3ff;
+  color: #175cd3;
+}
+
+.status.Renewal-Approved {
+  background: #eef4ff;
+  color: #3538cd;
+}
+
 .status.Approved,
 .open {
   background: #e7f8ef;

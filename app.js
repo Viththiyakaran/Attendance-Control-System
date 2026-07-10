@@ -145,6 +145,8 @@ function normalizeAppDoc(collectionName, item) {
       qidNumber: item.qidNumber || item.qid_number || "",
       accessMonths: Number(item.accessMonths || item.access_months || 12),
       facilityMonths: item.facilityMonths || item.facility_months || {},
+      applicationType: item.applicationType || item.application_type || "New Application",
+      renewalOf: item.renewalOf || item.renewal_of || "",
       monthlyTotalQar: Number(item.monthlyTotalQar || item.monthly_total_qar || 0),
       totalQar: Number(item.totalQar || item.total_qar || 0),
       accessStartAt: item.accessStartAt || item.access_start_date || "",
@@ -472,7 +474,7 @@ function renderAdminKpis() {
     const checkIn = new Date(log.checkInAt);
     return !isSeedLog(log) && checkIn >= today && checkIn < tomorrow;
   });
-  const pending = state.users.filter((user) => user.status === "Pending").length;
+  const pending = state.users.filter((user) => ["Pending", "Renewal Pending"].includes(user.status)).length;
   const active = state.users.filter((user) => user.status === "Approved").length;
   const outside = state.logs.filter((log) => /outside time|denied/i.test(`${log.scanResult || ""} ${log.state || ""}`)).length;
 
@@ -543,10 +545,10 @@ function renderPendingUsers() {
         <td>${escapeHtml(user.email)}</td>
         <td>${escapeHtml(user.villaNumber || "-")}</td>
         <td>${escapeHtml(getUserAccess(user).join(", ") || "-")}</td>
-        <td><span class="status ${user.status}">${user.status}</span></td>
+        <td><span class="status ${statusClass(user.status)}">${user.status}</span></td>
         <td>${formatDateTime(user.createdAt)}</td>
         <td class="action-cell">
-          ${user.status !== "Rejected" ? `<button data-open-user="${user.id}">${user.status === "Pending" ? "Review" : "Manage"}</button>` : ""}
+          ${user.status !== "Rejected" ? `<button data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
           <button class="danger" data-delete-user="${user.id}">Delete</button>
         </td>
       </tr>
@@ -1249,12 +1251,16 @@ function renderPaymentReviewList() {
           <strong>${escapeHtml(user.fullName || user.email)}</strong>
           <small>${escapeHtml(user.email)} | ${escapeHtml(user.villaNumber || "-")}</small>
         </div>
-        <span class="status ${escapeHtml(user.status)}">${escapeHtml(user.status)}</span>
+        <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
         <strong>QAR ${Number(user.totalQar || 0)}</strong>
         <button type="button" data-open-user="${user.id}">Review Payment</button>
       </div>
     `).join("")
     : `<p class="empty">Payment submissions will appear here.</p>`;
+}
+
+function statusClass(status) {
+  return String(status || "").replace(/\s+/g, "-");
 }
 
 function renderUserPaymentLines(user) {
@@ -1566,8 +1572,22 @@ async function registerUser(event) {
     if (!isAllowedQidFile(paymentFile)) throw new Error("Payment proof must be a JPG, PNG, or PDF file.");
     if (file.size > MAX_QID_FILE_SIZE) throw new Error("Qatar ID file must be 5 MB or smaller.");
     if (paymentFile.size > MAX_QID_FILE_SIZE) throw new Error("Payment proof file must be 5 MB or smaller.");
-    if (state.users.some((user) => user.email.toLowerCase() === email)) throw new Error("This email already has an application.");
-    if (state.users.some((user) => user.qidNumber === qidNumber && user.status !== "Rejected")) throw new Error("This Qatar ID already has an active application.");
+    const duplicatePending = state.users.find((user) =>
+      ["Pending", "Renewal Pending"].includes(user.status)
+      && (user.email.toLowerCase() === email || user.qidNumber === qidNumber)
+    );
+    if (duplicatePending) throw new Error("You already have a pending application. Please wait for admin review.");
+    const conflictingApproved = state.users.find((user) =>
+      user.status === "Approved"
+      && (user.email.toLowerCase() === email || user.qidNumber === qidNumber)
+      && !(user.email.toLowerCase() === email && user.qidNumber === qidNumber)
+    );
+    if (conflictingApproved) throw new Error("Existing resident details do not match. Use the same Qatar ID and email, or contact admin.");
+    const existingApproved = state.users.find((user) =>
+      user.status === "Approved"
+      && user.email.toLowerCase() === email
+      && user.qidNumber === qidNumber
+    );
 
     const userId = uid("user");
     message.textContent = file.type.includes("pdf")
@@ -1594,6 +1614,8 @@ async function registerUser(event) {
       facilityMonths: Object.fromEntries(requestedFacilities.map((name) => [name, getFacilityMonths(name)])),
       monthlyTotalQar: payment.monthlyTotal,
       totalQar: payment.total,
+      applicationType: existingApproved ? "Renewal" : "New Application",
+      renewalOf: existingApproved?.id || "",
       qatarId: {
         name: qidFile.name,
         type: qidFile.type,
@@ -1612,8 +1634,8 @@ async function registerUser(event) {
         originalSize: paymentFile.size,
         compressedSize: paymentProof.size,
       },
-      status: "Pending",
-      token: "",
+      status: existingApproved ? "Renewal Pending" : "Pending",
+      token: existingApproved?.token || "",
       createdAt: new Date().toISOString(),
     };
 
@@ -1624,15 +1646,18 @@ async function registerUser(event) {
     await createEmailLog({
       id: uid("email"),
       to: user.email,
-      subject: "Facility access application received",
-      body: `Your facility access application is pending manager review.\n\nCalculated payment total: QAR ${payment.total}`,
+      subject: existingApproved ? "Facility access renewal received" : "Facility access application received",
+      body: `Your facility access ${existingApproved ? "renewal request" : "application"} is pending manager review.\n\nCalculated payment total: QAR ${payment.total}`,
       createdAt: new Date().toISOString(),
     });
 
     saveState();
     event.target.reset();
     registrationStep = 1;
-    message.textContent = "Application submitted successfully. Admin will review your QID and payment proof.";
+    registrationFacilityMonths = {};
+    message.textContent = existingApproved
+      ? "Renewal request submitted successfully. Admin will review your payment proof."
+      : "Application submitted successfully. Admin will review your QID and payment proof.";
     render();
   } catch (error) {
     console.error(error);
@@ -1741,7 +1766,12 @@ function readFile(file) {
 function openUserDialog(userId) {
   const user = state.users.find((item) => item.id === userId);
   if (!user) return;
-  const selectedAccess = user.accessFacilities?.length ? getUserAccess(user) : getRequestedAccess(user);
+  const renewalTarget = getRenewalTarget(user);
+  const selectedAccess = user.accessFacilities?.length
+    ? getUserAccess(user)
+    : renewalTarget
+    ? uniqueList([...getUserAccess(renewalTarget), ...getRequestedAccess(user)])
+    : getRequestedAccess(user);
   const isApproved = user.status === "Approved";
 
   const preview = !user.qatarId?.data
@@ -1757,9 +1787,10 @@ function openUserDialog(userId) {
 
   $("#dialog-content").innerHTML = `
     <div class="section-heading">
-      <p class="eyebrow">${isApproved ? "Manage User Access" : "Extract Details From Qatar ID"}</p>
+      <p class="eyebrow">${user.status === "Renewal Pending" ? "Renewal Review" : isApproved ? "Manage User Access" : "Extract Details From Qatar ID"}</p>
       <h2>${escapeHtml(user.fullName || user.email)}</h2>
       <p>${escapeHtml(user.email)} | Contact: ${escapeHtml(user.contactNumber || "-")} | Villa: ${escapeHtml(user.villaNumber || "-")}</p>
+      ${renewalTarget ? `<p class="helper-text">Existing resident found. Approval will update ${escapeHtml(renewalTarget.fullName || renewalTarget.email)} and keep the same QR pass active.</p>` : ""}
       <p class="helper-text">Requested activities: ${escapeHtml(getRequestedAccess(user).join(", ") || "-")}</p>
     </div>
     <div class="application-review-grid">
@@ -1818,6 +1849,8 @@ function openUserDialog(userId) {
 async function approveUser(userId) {
   const user = state.users.find((item) => item.id === userId);
   if (!user) return;
+  const renewalTarget = getRenewalTarget(user);
+  const approvalRecord = renewalTarget || user;
   const wasApproved = user.status === "Approved";
   const fullName = normalizeName($("#review-full-name")?.value || "");
   const qidNumber = $("#review-qid-number")?.value.trim();
@@ -1844,7 +1877,13 @@ async function approveUser(userId) {
     return;
   }
 
-  const duplicateQid = state.users.some((item) => item.id !== user.id && item.qidNumber === qidNumber && item.status !== "Rejected");
+  const duplicateQid = state.users.some((item) =>
+    item.id !== user.id
+    && item.id !== renewalTarget?.id
+    && item.qidNumber === qidNumber
+    && item.status !== "Rejected"
+    && item.status !== "Renewal Pending"
+  );
   if (duplicateQid) {
     alert("Another active user already has this Qatar ID Number.");
     return;
@@ -1861,20 +1900,37 @@ async function approveUser(userId) {
     return;
   }
 
-  user.fullName = fullName;
-  user.qidNumber = qidNumber;
-  user.dob = dob;
-  user.accessFacilities = accessFacilities;
-  user.status = "Approved";
-  user.token = user.token || passToken();
-  user.approvedAt = user.approvedAt || new Date().toISOString();
-  user.updatedAt = new Date().toISOString();
-  user.accessStartAt = user.accessStartAt || new Date().toISOString().slice(0, 10);
-  user.accessEndAt = user.accessEndAt || addMonths(new Date(), Number(user.accessMonths || 12)).toISOString().slice(0, 10);
-  const email = createQrPassEmail(user, wasApproved ? "updated" : "approved", accessFacilities);
+  approvalRecord.fullName = fullName;
+  approvalRecord.email = approvalRecord.email || user.email;
+  approvalRecord.contactNumber = user.contactNumber || approvalRecord.contactNumber || "";
+  approvalRecord.villaNumber = user.villaNumber || approvalRecord.villaNumber || "";
+  approvalRecord.qidNumber = qidNumber;
+  approvalRecord.dob = dob;
+  approvalRecord.requestedFacilities = uniqueList([...(approvalRecord.requestedFacilities || []), ...getRequestedAccess(user)]);
+  approvalRecord.accessFacilities = accessFacilities;
+  approvalRecord.facilityMonths = { ...(approvalRecord.facilityMonths || {}), ...(user.facilityMonths || {}) };
+  approvalRecord.totalQar = user.totalQar || approvalRecord.totalQar || 0;
+  approvalRecord.monthlyTotalQar = user.monthlyTotalQar || approvalRecord.monthlyTotalQar || 0;
+  approvalRecord.accessMonths = user.accessMonths || approvalRecord.accessMonths || 12;
+  approvalRecord.paymentProof = user.paymentProof || approvalRecord.paymentProof;
+  approvalRecord.qatarId = user.qatarId || approvalRecord.qatarId;
+  approvalRecord.status = "Approved";
+  approvalRecord.token = approvalRecord.token || user.token || passToken();
+  approvalRecord.approvedAt = approvalRecord.approvedAt || new Date().toISOString();
+  approvalRecord.updatedAt = new Date().toISOString();
+  approvalRecord.accessStartAt = approvalRecord.accessStartAt || new Date().toISOString().slice(0, 10);
+  approvalRecord.accessEndAt = calculateRenewalEndDate(approvalRecord, user);
 
-  await sendAndLogQrPassEmail(user, email);
-  await upsertDoc("users", user);
+  if (renewalTarget) {
+    user.status = "Renewal Approved";
+    user.reviewedAt = new Date().toISOString();
+  }
+
+  const email = createQrPassEmail(approvalRecord, renewalTarget || wasApproved ? "updated" : "approved", accessFacilities);
+
+  await sendAndLogQrPassEmail(approvalRecord, email);
+  await upsertDoc("users", approvalRecord);
+  if (renewalTarget) await upsertDoc("users", user);
   saveState();
   $("#user-dialog").close();
   render();
@@ -1994,6 +2050,30 @@ function addMonths(date, months) {
   const next = new Date(date);
   next.setMonth(next.getMonth() + months);
   return next;
+}
+
+function uniqueList(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+function getRenewalTarget(user) {
+  if (!user || user.status !== "Renewal Pending") return null;
+  return state.users.find((item) => item.id === user.renewalOf && item.status === "Approved")
+    || state.users.find((item) =>
+      item.id !== user.id
+      && item.status === "Approved"
+      && item.qidNumber === user.qidNumber
+      && item.email?.toLowerCase() === user.email?.toLowerCase()
+    )
+    || null;
+}
+
+function calculateRenewalEndDate(target, request) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const currentEnd = target.accessEndAt ? new Date(`${target.accessEndAt}T23:59:59`) : today;
+  const base = currentEnd > today ? currentEnd : today;
+  return addMonths(base, Number(request.accessMonths || 1)).toISOString().slice(0, 10);
 }
 
 function loginAdmin(event) {
