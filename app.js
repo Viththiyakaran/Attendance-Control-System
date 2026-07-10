@@ -71,6 +71,7 @@ let userSearchQuery = "";
 let userStatusFilter = "all";
 let reportPage = 1;
 let registrationStep = 1;
+let registrationFacilityMonths = {};
 let adminLoggedIn = sessionStorage.getItem("facility-admin-auth") === "true";
 let scannerUnlocked = sessionStorage.getItem("facility-scanner-auth") === "true";
 let currentAdminSection = "dashboard";
@@ -143,6 +144,7 @@ function normalizeAppDoc(collectionName, item) {
       requestedFacilities: item.requestedFacilities || item.requested_facilities || [],
       qidNumber: item.qidNumber || item.qid_number || "",
       accessMonths: Number(item.accessMonths || item.access_months || 12),
+      facilityMonths: item.facilityMonths || item.facility_months || {},
       monthlyTotalQar: Number(item.monthlyTotalQar || item.monthly_total_qar || 0),
       totalQar: Number(item.totalQar || item.total_qar || 0),
       accessStartAt: item.accessStartAt || item.access_start_date || "",
@@ -967,9 +969,15 @@ function renderRegistrationAccessOptions() {
         <small>${escapeHtml(option.timing || "Time to be confirmed")}</small>
         <small>QAR ${getFacilityPrice(option.name)} / month</small>
         <small>${escapeHtml(getFacilityAvailability(option).label)}</small>
+        <span class="facility-month-control" data-facility-month-control="${escapeHtml(option.name)}">
+          <button type="button" data-facility-month="${escapeHtml(option.name)}" data-month-delta="-1" aria-label="Decrease ${escapeHtml(option.name)} months">-</button>
+          <span><strong data-facility-month-value="${escapeHtml(option.name)}">${getFacilityMonths(option.name)}</strong> month(s)</span>
+          <button type="button" data-facility-month="${escapeHtml(option.name)}" data-month-delta="1" aria-label="Increase ${escapeHtml(option.name)} months">+</button>
+        </span>
       </span>
     </label>
   `).join("");
+  updateFacilityMonthControls();
 }
 
 function renderRegistrationWizard() {
@@ -1037,9 +1045,8 @@ function validateRegistrationStep(step) {
       message.textContent = "Choose at least one facility before continuing.";
       return false;
     }
-    const months = Number($("#access-months").value);
-    if (months < 1 || months > 12) {
-      message.textContent = "Month count must be between 1 and 12.";
+    if (getSelectedRegistrationFacilities().some((name) => getFacilityMonths(name) < 1 || getFacilityMonths(name) > 12)) {
+      message.textContent = "Each selected facility month count must be between 1 and 12.";
       return false;
     }
   }
@@ -1062,18 +1069,48 @@ function validateRegistrationStepSilently(step) {
       && normalizeName($("#villa-number")?.value || "").length >= 2;
   }
   if (step === 2) {
-    const months = Number($("#access-months")?.value || 0);
-    return getSelectedRegistrationFacilities().length > 0 && months >= 1 && months <= 12;
+    const selected = getSelectedRegistrationFacilities();
+    return selected.length > 0 && selected.every((name) => getFacilityMonths(name) >= 1 && getFacilityMonths(name) <= 12);
   }
   return true;
 }
 
-function changeAccessMonths(delta) {
-  const input = $("#access-months");
-  const next = Math.min(12, Math.max(1, Number(input.value || 1) + delta));
-  input.value = String(next);
+function getFacilityMonths(facilityName) {
+  return Number(registrationFacilityMonths[facilityName] || 1);
+}
+
+function setFacilityMonths(facilityName, months) {
+  registrationFacilityMonths[facilityName] = Math.min(12, Math.max(1, Number(months || 1)));
+}
+
+function changeFacilityMonths(facilityName, delta) {
+  setFacilityMonths(facilityName, getFacilityMonths(facilityName) + Number(delta));
+  const input = [...document.querySelectorAll("#registration-access-options input")]
+    .find((item) => item.value === facilityName);
+  if (input) input.checked = true;
+  updateFacilityMonthControls();
   renderPaymentSummary();
   renderRegistrationWizard();
+}
+
+function syncSelectedFacilityMonths() {
+  getSelectedRegistrationFacilities().forEach((name) => {
+    if (!registrationFacilityMonths[name]) registrationFacilityMonths[name] = 1;
+  });
+  Object.keys(registrationFacilityMonths).forEach((name) => {
+    if (!getSelectedRegistrationFacilities().includes(name)) delete registrationFacilityMonths[name];
+  });
+  updateFacilityMonthControls();
+}
+
+function updateFacilityMonthControls() {
+  $$("[data-facility-month-value]").forEach((item) => {
+    item.textContent = getFacilityMonths(item.dataset.facilityMonthValue);
+  });
+  $$("[data-facility-month-control]").forEach((item) => {
+    const selected = getSelectedRegistrationFacilities().includes(item.dataset.facilityMonthControl);
+    item.classList.toggle("active", selected);
+  });
 }
 
 function updateFileName(inputId, labelId) {
@@ -1109,12 +1146,23 @@ function getSelectedRegistrationFacilities() {
 }
 
 function calculateApplicationTotal(selectedFacilities = getSelectedRegistrationFacilities()) {
-  const months = Number($("#access-months")?.value || 1);
-  const monthlyTotal = selectedFacilities.reduce((sum, name) => sum + getFacilityPrice(name), 0);
+  const lineItems = selectedFacilities.map((name) => {
+    const months = getFacilityMonths(name);
+    const price = getFacilityPrice(name);
+    return {
+      name,
+      months,
+      price,
+      total: price * months,
+    };
+  });
+  const monthlyTotal = lineItems.reduce((sum, item) => sum + item.price, 0);
+  const total = lineItems.reduce((sum, item) => sum + item.total, 0);
   return {
-    months,
+    months: lineItems.reduce((max, item) => Math.max(max, item.months), 1),
     monthlyTotal,
-    total: monthlyTotal * months,
+    total,
+    lineItems,
   };
 }
 
@@ -1122,26 +1170,25 @@ function renderPaymentSummary() {
   const totalElement = $("#payment-total");
   const note = $("#payment-note");
   if (!totalElement || !note) return;
+  syncSelectedFacilityMonths();
   const selectedFacilities = getSelectedRegistrationFacilities();
-  const { months, monthlyTotal, total } = calculateApplicationTotal(selectedFacilities);
-  const display = $("#access-months-display");
+  const { months, monthlyTotal, total, lineItems } = calculateApplicationTotal(selectedFacilities);
   const reviewTotal = $("#payment-total-review");
   const reviewNote = $("#payment-review-note");
   const summary = $("#selected-facility-summary");
   totalElement.textContent = `QAR ${total}`;
-  if (display) display.textContent = months;
   if (reviewTotal) reviewTotal.textContent = `QAR ${total}`;
   note.textContent = selectedFacilities.length
-    ? `${selectedFacilities.length} facilit${selectedFacilities.length === 1 ? "y" : "ies"} x ${months} month${months === 1 ? "" : "s"} at QAR ${monthlyTotal}/month.`
+    ? `${selectedFacilities.length} facilit${selectedFacilities.length === 1 ? "y" : "ies"} selected. Line totals add up to QAR ${total}.`
     : "Select activities to calculate the total.";
   if (reviewNote) reviewNote.textContent = selectedFacilities.length
-    ? `${selectedFacilities.join(", ")} for ${months} month${months === 1 ? "" : "s"}.`
+    ? lineItems.map((item) => `${item.name}: ${item.months} month${item.months === 1 ? "" : "s"} = QAR ${item.total}`).join(" | ")
     : "Your selected facilities and months will appear here.";
   if (summary) summary.innerHTML = selectedFacilities.length
     ? `
       <strong>Selected facilities</strong>
-      ${selectedFacilities.map((name) => `<span>${escapeHtml(name)} - QAR ${getFacilityPrice(name)} / month</span>`).join("")}
-      <small>${months} month${months === 1 ? "" : "s"} selected</small>
+      ${lineItems.map((item) => `<span>${escapeHtml(item.name)} - QAR ${item.price} x ${item.months} month${item.months === 1 ? "" : "s"} = QAR ${item.total}</span>`).join("")}
+      <small>Monthly base total: QAR ${monthlyTotal}</small>
     `
     : `<p class="empty">No facilities selected yet.</p>`;
   renderRegistrationWizard();
@@ -1190,6 +1237,16 @@ function renderPaymentReviewList() {
       </div>
     `).join("")
     : `<p class="empty">Payment submissions will appear here.</p>`;
+}
+
+function renderUserPaymentLines(user) {
+  const facilities = getRequestedAccess(user);
+  if (!facilities.length) return `<span>No selected facilities recorded.</span>`;
+  return facilities.map((name) => {
+    const months = Number(user.facilityMonths?.[name] || user.accessMonths || 1);
+    const price = getFacilityPrice(name);
+    return `<span>${escapeHtml(name)}: QAR ${price} x ${months} month${months === 1 ? "" : "s"} = QAR ${price * months}</span>`;
+  }).join("");
 }
 
 function renderScannerContext() {
@@ -1516,6 +1573,7 @@ async function registerUser(event) {
       qidNumber,
       dob: "",
       accessMonths: payment.months,
+      facilityMonths: Object.fromEntries(requestedFacilities.map((name) => [name, getFacilityMonths(name)])),
       monthlyTotalQar: payment.monthlyTotal,
       totalQar: payment.total,
       qatarId: {
@@ -1698,7 +1756,7 @@ function openUserDialog(userId) {
     </div>
     <div class="payment-check-card">
       <strong>Calculated payment: QAR ${Number(user.totalQar || 0)}</strong>
-      <span>${Number(user.accessMonths || 1)} month${Number(user.accessMonths || 1) === 1 ? "" : "s"} | QAR ${Number(user.monthlyTotalQar || 0)}/month</span>
+      ${renderUserPaymentLines(user)}
       <small>Compare this amount with the uploaded payment screenshot before approving.</small>
     </div>
     <div class="identity-form">
@@ -2576,6 +2634,7 @@ document.addEventListener("click", (event) => {
   const adminSection = event.target.closest("[data-admin-section]");
   const drawerToggle = event.target.closest("[data-admin-drawer-toggle]");
   const copyPayment = event.target.closest("[data-copy-payment]");
+  const facilityMonthButton = event.target.closest("[data-facility-month]");
   const openUser = event.target.closest("[data-open-user]");
   const approve = event.target.closest("[data-approve-user]");
   const sendPass = event.target.closest("[data-send-pass-user]");
@@ -2591,6 +2650,10 @@ document.addEventListener("click", (event) => {
   if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
   if (copyPayment) copyPaymentValue(copyPayment.dataset.copyPayment);
+  if (facilityMonthButton) {
+    event.preventDefault();
+    changeFacilityMonths(facilityMonthButton.dataset.facilityMonth, facilityMonthButton.dataset.monthDelta);
+  }
   if (openUser) openUserDialog(openUser.dataset.openUser);
   if (approve) approveUser(approve.dataset.approveUser);
   if (sendPass) sendQrPassToUser(sendPass.dataset.sendPassUser);
@@ -2636,9 +2699,8 @@ $("#manual-scan-form").addEventListener("submit", async (event) => {
 });
 $("#wizard-back")?.addEventListener("click", () => changeRegistrationStep(-1));
 $("#wizard-next")?.addEventListener("click", () => changeRegistrationStep(1));
-$("#month-minus")?.addEventListener("click", () => changeAccessMonths(-1));
-$("#month-plus")?.addEventListener("click", () => changeAccessMonths(1));
 $("#registration-access-options")?.addEventListener("change", () => {
+  syncSelectedFacilityMonths();
   renderPaymentSummary();
   renderRegistrationWizard();
 });

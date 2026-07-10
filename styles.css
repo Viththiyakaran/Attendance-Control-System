@@ -1819,6 +1819,43 @@ dialog::backdrop {
   box-shadow: 0 10px 24px rgba(13, 124, 102, 0.12);
 }
 
+.facility-month-control {
+  display: grid;
+  grid-template-columns: 34px minmax(74px, 1fr) 34px;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  opacity: 0.55;
+}
+
+.facility-month-control.active {
+  opacity: 1;
+}
+
+.facility-month-control button {
+  min-height: 32px;
+  padding: 0;
+  border-color: rgba(13, 124, 102, 0.34);
+  color: var(--accent-dark);
+  font-weight: 900;
+}
+
+.facility-month-control > span {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--subtle);
+  font-size: 0.8rem;
+}
+
+.facility-month-control strong {
+  color: var(--accent-dark);
+  font-size: 1.05rem;
+}
+
 .month-picker {
   display: inline-grid;
   grid-template-columns: 48px minmax(120px, 160px) 48px;
