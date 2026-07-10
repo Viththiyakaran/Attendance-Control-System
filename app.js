@@ -827,7 +827,6 @@ function renderFacilities() {
     <div class="facility-item facility-card">
       <div class="facility-card-head">
         <div>
-          <p class="eyebrow">Activity</p>
           <strong>${escapeHtml(displayFacilityName(facility.name))}</strong>
           ${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}
         </div>
@@ -1177,11 +1176,7 @@ function renderReportCards() {
   const container = $("#report-card-list");
   if (!container) return;
   const reports = [
-    ["Attendance report", "Export filtered check-in logs as a PDF.", "history", "Available", "check-in-logs"],
-    ["Facility usage report", "Use the dashboard usage chart for live facility activity.", "chart", "View only", "dashboard"],
-    ["Resident access report", "Approved resident access is available in Users / Residents.", "users", "View only", "users"],
-    ["Payment report", "Payment verification records are available in Payments.", "card", "View only", "payments"],
-    ["Access exceptions report", "Denied and invalid scans are available in Access Exceptions.", "shield", "View only", "access-exceptions"],
+    ["Attendance / Check-in report", "Use Check-in Logs to filter by date, facility and status, then export the PDF.", "history", "Available", "check-in-logs"],
   ];
   container.innerHTML = reports.map(([title, detail, icon, badge, section]) => `
     <article class="report-card">
@@ -1201,10 +1196,8 @@ function renderSettingsSections() {
   if (!container) return;
   const sections = [
     ["General", [["Organisation name", "HTS Facility Access"], ["Admin display name", "Manager"], ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Date format", "Local browser format"]]],
-    ["Access", [["Default membership duration", "Selected by application months"], ["QR expiry behaviour", "Based on membership end date"], ["Repeat scan window", "Current scanner check-in/out logic"]]],
-    ["Notifications", [["Email notifications", state.emails?.some((email) => email.status === "Sent") ? "Connected" : "Local drafts / service dependent"], ["Approval email", "Enabled"], ["Rejection email", "Enabled"], ["Expiry reminder", "Not configured"]]],
-    ["Security", [["Admin password", "Configured outside this UI"], ["Scanner session status", scannerUnlocked ? "Unlocked in this browser" : "Locked"], ["Sign out other sessions", "Not supported by current backend"]]],
-    ["System Information", [["Firebase", "Connected when Firestore requests succeed"], ["Email service", "Uses Netlify function / SMTP environment"], ["App version", "1.0.0"]]],
+    ["Notifications", [["Email connected", state.emails?.some((email) => email.status === "Sent") ? "Yes" : "Pending setup"], ["Approval email", "Enabled"], ["Rejection email", "Enabled"]]],
+    ["System information", [["Firebase", "Connected"], ["Application version", "1.0.0"]]],
   ];
   container.innerHTML = sections.map(([title, rows]) => `
     <article class="settings-card">
@@ -1453,7 +1446,19 @@ function switchAdminSection(section = "dashboard") {
   $$(".admin-menu-item[data-admin-section]").forEach((item) => item.classList.toggle("active", item.dataset.adminSection === section));
   if ($("#admin-page-title")) $("#admin-page-title").textContent = labels[section] || "Dashboard";
   if ($("#admin-page-subtitle")) $("#admin-page-subtitle").textContent = subtitles[section] || "";
+  updateAdminHeaderTools(section);
   document.body.classList.remove("admin-drawer-open");
+}
+
+function updateAdminHeaderTools(section = currentAdminSection) {
+  const search = $("#admin-header-search");
+  const range = $("#admin-date-range");
+  const customDate = $("#admin-header-date");
+  const searchable = ["dashboard", "check-in-logs", "access-exceptions", "reports", "notifications"];
+  const datePages = ["dashboard", "check-in-logs", "access-exceptions", "reports"];
+  if (search) search.hidden = !searchable.includes(section);
+  if (range) range.hidden = !datePages.includes(section);
+  if (customDate) customDate.hidden = range?.hidden || range?.value !== "custom";
 }
 
 function updateAdminHeaderSearch(event) {
@@ -3625,9 +3630,17 @@ document.addEventListener("click", (event) => {
   const deleteButton = event.target.closest("[data-delete-user]");
   const updateFacilityButton = event.target.closest("[data-update-facility]");
   const deleteFacilityButton = event.target.closest("[data-delete-facility]");
+  const rowMenuSummary = event.target.closest(".row-menu summary");
+
+  if (!event.target.closest(".row-menu")) {
+    closeRowMenus();
+  }
 
   if (tab) switchView(tab.dataset.view);
-  if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
+  if (adminSection) {
+    closeRowMenus();
+    routeTo(adminPathForSection(adminSection.dataset.adminSection));
+  }
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
   if (drawerClose) document.body.classList.remove("admin-drawer-open");
   if (sidebarCollapse) {
@@ -3671,7 +3684,23 @@ document.addEventListener("click", (event) => {
   if (deleteButton) deleteUser(deleteButton.dataset.deleteUser);
   if (updateFacilityButton) updateFacility(updateFacilityButton.dataset.updateFacility);
   if (deleteFacilityButton) deleteFacility(deleteFacilityButton.dataset.deleteFacility);
+  if (rowMenuSummary) {
+    $$(".row-menu").forEach((menu) => {
+      if (menu !== rowMenuSummary.parentElement) menu.removeAttribute("open");
+    });
+  }
 });
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeRowMenus();
+    document.body.classList.remove("admin-drawer-open");
+  }
+});
+
+function closeRowMenus() {
+  $$(".row-menu[open]").forEach((menu) => menu.removeAttribute("open"));
+}
 
 $("#registration-form").addEventListener("submit", registerUser);
 $("#user-search-form")?.addEventListener("submit", searchUsers);
