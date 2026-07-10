@@ -957,12 +957,11 @@ function renderEmailOutbox() {
 function renderRegistrationAccessOptions() {
   const container = $("#registration-access-options");
   if (!container) return;
-  const icons = ["SW", "GY", "FB", "BB", "TN", "KB", "GM", "TK", "EV"];
-  container.innerHTML = getFacilityOptions().map((option, index) => `
+  container.innerHTML = getFacilityOptions().map((option) => `
     <label class="facility-choice-card">
       <input type="checkbox" value="${escapeHtml(option.name)}" />
       <span>
-        <span class="activity-icon">${icons[index % icons.length]}</span>
+        <span class="activity-icon">${escapeHtml(getFacilityIcon(option.name))}</span>
         <strong>${escapeHtml(option.name)}</strong>
         <small>${escapeHtml(option.location || "Location to be confirmed")}</small>
         <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
@@ -978,6 +977,20 @@ function renderRegistrationAccessOptions() {
     </label>
   `).join("");
   updateFacilityMonthControls();
+}
+
+function getFacilityIcon(name) {
+  const value = String(name || "").toLowerCase();
+  if (/swim|pool/.test(value)) return "SW";
+  if (/gym|fitness/.test(value)) return "GY";
+  if (/football|soccer/.test(value)) return "FB";
+  if (/basket/.test(value)) return "BB";
+  if (/tennis/.test(value)) return "TN";
+  if (/box|kick/.test(value)) return "KB";
+  if (/gymnastic/.test(value)) return "GM";
+  if (/taekwando|taekwondo|karate/.test(value)) return "TK";
+  if (/party|event/.test(value)) return "EV";
+  return "AC";
 }
 
 function renderRegistrationWizard() {
