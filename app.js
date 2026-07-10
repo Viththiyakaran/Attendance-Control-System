@@ -72,6 +72,7 @@ let userStatusFilter = "all";
 let reportPage = 1;
 let registrationStep = 1;
 let registrationFacilityMonths = {};
+let usagePeriod = "today";
 let adminLoggedIn = sessionStorage.getItem("facility-admin-auth") === "true";
 let scannerUnlocked = sessionStorage.getItem("facility-scanner-auth") === "true";
 let currentAdminSection = "dashboard";
@@ -312,6 +313,57 @@ function escapeHtml(value) {
   })[char]);
 }
 
+function maskEmail(email) {
+  const [name = "", domain = ""] = String(email || "").split("@");
+  if (!domain) return email || "-";
+  const visible = name.slice(0, Math.min(3, name.length));
+  return `${visible}${name.length > 3 ? "***" : "*"}@${domain}`;
+}
+
+function maskToken(token) {
+  const value = String(token || "");
+  if (value.length <= 8) return value ? "****" : "-";
+  return `${value.slice(0, 4)}...${value.slice(-4)}`;
+}
+
+function maskName(name) {
+  const value = String(name || "").trim();
+  if (!value) return "Unknown resident";
+  const parts = value.split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[1][0]}.` : value;
+}
+
+function sanitizeNotificationText(value) {
+  return String(value || "")
+    .replace(/https?:\/\/\S+/gi, "[pass link hidden]")
+    .replace(/Pass token:\s*[A-Z0-9]+/gi, "Pass token: [hidden]")
+    .replace(/[A-Z0-9]{14,}/g, (token) => maskToken(token))
+    .slice(0, 180);
+}
+
+function displayFacilityName(name) {
+  const labels = {
+    "Swimming at Club-1": "Club 1 Swimming Pool",
+    Gymnastic: "Gymnastics",
+    "Kick Boxing": "Kickboxing",
+  };
+  return labels[name] || name || "Unknown facility";
+}
+
+function formatRelativeTime(value) {
+  if (!value) return "No activity yet";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No activity yet";
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.max(0, Math.round(diff / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -438,6 +490,11 @@ function render() {
   renderFacilities();
   renderWeeklyUsageChart();
   renderFacilityStats();
+  renderQuickActions();
+  renderScannerStatus();
+  renderRecentCheckIns();
+  renderRecentActivity();
+  renderAccessExceptions();
   renderAttendance();
   renderEmailOutbox();
   renderRegistrationAccessOptions();
@@ -476,12 +533,21 @@ function renderAdminKpis() {
   });
   const pending = state.users.filter((user) => ["Pending", "Renewal Pending"].includes(user.status)).length;
   const active = state.users.filter((user) => user.status === "Approved").length;
-  const outside = state.logs.filter((log) => /outside time|denied/i.test(`${log.scanResult || ""} ${log.state || ""}`)).length;
+  const outside = todayLogs.filter((log) => isAccessException(log)).length;
 
   if ($("#kpi-today-checkins")) $("#kpi-today-checkins").textContent = todayLogs.length;
   if ($("#kpi-pending-applications")) $("#kpi-pending-applications").textContent = pending;
   if ($("#kpi-active-users")) $("#kpi-active-users").textContent = active;
   if ($("#kpi-outside-time")) $("#kpi-outside-time").textContent = outside;
+  if ($("#kpi-today-note")) $("#kpi-today-note").textContent = `${todayLogs.filter((log) => /checked/i.test(log.state || "")).length} successful scans today`;
+  if ($("#kpi-pending-note")) $("#kpi-pending-note").textContent = pending ? `${pending} application${pending === 1 ? "" : "s"} need review` : "No applications waiting";
+  if ($("#kpi-active-note")) $("#kpi-active-note").textContent = `${active} approved resident${active === 1 ? "" : "s"}`;
+  if ($("#kpi-denied-note")) $("#kpi-denied-note").textContent = outside ? `${outside} issue${outside === 1 ? "" : "s"} to inspect today` : "No issues today";
+  const badge = $("#sidebar-pending-badge");
+  if (badge) {
+    badge.hidden = pending === 0;
+    badge.textContent = pending;
+  }
 }
 
 function getFilteredUsers() {
@@ -619,8 +685,10 @@ function renderScannerTools() {
 }
 
 function renderFacilityStats() {
+  const container = $("#facility-stats");
+  if (!container) return;
   const facilities = getFacilityOptions();
-  $("#facility-stats").innerHTML = facilities.length ? facilities.map((facility) => {
+  container.innerHTML = facilities.length ? facilities.map((facility) => {
     const users = state.users.filter((user) => user.status === "Approved" && getUserAccess(user).includes(facility.name));
     return `
       <div class="facility-stat">
@@ -650,22 +718,23 @@ function renderFacilityBadges(facility) {
 function renderWeeklyUsageChart() {
   const container = $("#weekly-usage-chart");
   if (!container) return;
-  const weekLogs = getCurrentWeekLogs();
+  const logs = getDashboardPeriodLogs(usagePeriod);
   const usage = getFacilityOptions().map((facility) => ({
     name: facility.name,
-    count: weekLogs.filter((log) => log.facilityId === facility.id || log.facilityName === facility.name).length,
-  }));
+    count: logs.filter((log) => log.facilityId === facility.id || log.facilityName === facility.name).length,
+  })).sort((a, b) => b.count - a.count).slice(0, 5);
   const max = Math.max(1, ...usage.map((item) => item.count));
+  const periodLabel = usagePeriod === "today" ? "Today" : usagePeriod === "month" ? "This month" : "This week";
 
-  container.innerHTML = `
+  container.innerHTML = logs.length ? `
     <div class="chart-heading">
-      <strong>This week usage</strong>
-      <small>${weekLogs.length} check-ins</small>
+      <strong>${periodLabel} usage</strong>
+      <small>${logs.length} scanner event${logs.length === 1 ? "" : "s"}</small>
     </div>
     <div class="chart-bars">
       ${usage.map((item) => `
         <div class="chart-row">
-          <span>${escapeHtml(item.name)}</span>
+          <span>${escapeHtml(displayFacilityName(item.name))}</span>
           <div class="chart-track">
             <div class="chart-bar" style="width: ${Math.max(4, (item.count / max) * 100)}%"></div>
           </div>
@@ -673,7 +742,7 @@ function renderWeeklyUsageChart() {
         </div>
       `).join("")}
     </div>
-  `;
+  ` : emptyState("No scanner activity", `${periodLabel} check-ins and exceptions will appear here.`);
 }
 
 function getCurrentWeekLogs() {
@@ -688,6 +757,199 @@ function getCurrentWeekLogs() {
     const checkIn = new Date(log.checkInAt);
     return checkIn >= start && checkIn <= end;
   });
+}
+
+function getDashboardPeriodLogs(period = usagePeriod) {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  if (period === "week") {
+    start.setDate(now.getDate() - now.getDay());
+  }
+
+  if (period === "month") {
+    start.setDate(1);
+  }
+
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
+  return state.logs
+    .filter((log) => {
+      if (isSeedLog(log)) return false;
+      const checkIn = new Date(log.checkInAt);
+      return checkIn >= start && checkIn <= end;
+    })
+    .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
+}
+
+function renderQuickActions() {
+  const container = $("#quick-actions");
+  if (!container) return;
+  const pending = state.users.filter((user) => ["Pending", "Renewal Pending"].includes(user.status)).length;
+  container.innerHTML = `
+    <button type="button" data-admin-section="applications">
+      <span>Review</span>
+      <strong>${pending ? `${pending} pending application${pending === 1 ? "" : "s"}` : "No pending applications"}</strong>
+    </button>
+    <a href="/scanner">
+      <span>Scanner</span>
+      <strong>Open gate scanner</strong>
+    </a>
+    <button type="button" data-admin-section="facilities">
+      <span>Facilities</span>
+      <strong>Add or edit facility access</strong>
+    </button>
+    <button type="button" data-export-today>
+      <span>Reports</span>
+      <strong>Export today check-ins</strong>
+    </button>
+  `;
+}
+
+function renderScannerStatus() {
+  const container = $("#scanner-status-list");
+  if (!container) return;
+  const logs = state.logs.filter((log) => !isSeedLog(log)).sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
+  const facilityRows = getFacilityOptions().slice(0, 3).map((facility) => {
+    const latest = logs.find((log) => log.facilityId === facility.id || log.facilityName === facility.name);
+    return scannerStatusRow(`${displayFacilityName(facility.name)} scanner`, latest);
+  });
+
+  container.innerHTML = [
+    scannerStatusRow("Main gate scanner", logs[0]),
+    ...facilityRows,
+  ].join("");
+}
+
+function scannerStatusRow(label, latest) {
+  const lastDate = latest?.checkInAt ? new Date(latest.checkInAt) : null;
+  const active = lastDate && Date.now() - lastDate.getTime() < 15 * 60 * 1000;
+  const stale = lastDate && !active;
+  const stateLabel = active ? "Online" : stale ? "Idle" : "No recent activity";
+  const className = active ? "online" : stale ? "idle" : "offline";
+  return `
+    <div class="scanner-status-row">
+      <span class="status-dot ${className}"></span>
+      <div>
+        <strong>${escapeHtml(label)}</strong>
+        <small>${escapeHtml(stateLabel)} - ${escapeHtml(formatRelativeTime(latest?.checkInAt))}</small>
+      </div>
+    </div>
+  `;
+}
+
+function renderRecentCheckIns() {
+  const container = $("#recent-checkins");
+  if (!container) return;
+  const logs = state.logs
+    .filter((log) => !isSeedLog(log))
+    .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt))
+    .slice(0, 8);
+
+  container.innerHTML = logs.length ? logs.map((log) => {
+    const user = state.users.find((item) => item.id === log.userId);
+    const facility = state.facilities.find((item) => item.id === log.facilityId);
+    return `
+      <div class="recent-row">
+        <div>
+          <strong>${escapeHtml(maskName(user?.fullName || user?.email || "Unknown resident"))}</strong>
+          <small>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Unknown facility"))}</small>
+        </div>
+        <span class="scan-chip ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
+        <small>${escapeHtml(formatRelativeTime(log.checkInAt))}</small>
+      </div>
+    `;
+  }).join("") : emptyState("No scans yet", "Latest approved and denied scanner attempts will appear here.");
+}
+
+function renderRecentActivity() {
+  const container = $("#recent-activity");
+  if (!container) return;
+  const emailItems = (state.emails || []).map((email) => ({
+    type: "Notification",
+    title: email.subject || "Email notification",
+    detail: `${maskEmail(email.to)} - ${sanitizeNotificationText(email.body)}`,
+    createdAt: email.createdAt,
+  }));
+  const applicationItems = state.users.map((user) => ({
+    type: user.status || "Application",
+    title: user.status === "Approved" ? "Resident approved" : "Application received",
+    detail: `${maskName(user.fullName || user.email)} - ${maskEmail(user.email)}`,
+    createdAt: user.createdAt,
+  }));
+  const items = [...emailItems, ...applicationItems]
+    .filter((item) => item.createdAt)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 6);
+
+  container.innerHTML = items.length ? items.map((item) => `
+    <div class="activity-row">
+      <span>${escapeHtml(item.type)}</span>
+      <div>
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>${escapeHtml(item.detail)}</small>
+      </div>
+      <small>${escapeHtml(formatRelativeTime(item.createdAt))}</small>
+    </div>
+  `).join("") : emptyState("No recent notifications", "Application and email activity will appear here.");
+}
+
+function renderAccessExceptions() {
+  const container = $("#access-exceptions-list");
+  if (!container) return;
+  const exceptions = state.logs
+    .filter((log) => !isSeedLog(log) && isAccessException(log))
+    .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt))
+    .slice(0, 30);
+
+  container.innerHTML = exceptions.length ? exceptions.map((log) => {
+    const user = state.users.find((item) => item.id === log.userId);
+    return `
+      <div class="exception-row">
+        <div>
+          <strong>${escapeHtml(scanResultLabel(log))}</strong>
+          <small>${escapeHtml(displayFacilityName(log.facilityName || "Unknown facility"))}</small>
+        </div>
+        <span>${escapeHtml(maskName(user?.fullName || user?.email || "Unknown resident"))}</span>
+        <small>Token ${escapeHtml(maskToken(log.token))}</small>
+        <small>${escapeHtml(formatDateTime(log.checkInAt))}</small>
+        <p>${escapeHtml(log.scanResult || log.state || "Access exception")}</p>
+      </div>
+    `;
+  }).join("") : emptyState("No access exceptions", "Denied, invalid, expired, and outside-time attempts will appear here.");
+}
+
+function isAccessException(log) {
+  return /outside|denied|invalid|expired|missing|closed|not approved/i.test(`${log.state || ""} ${log.scanResult || ""}`);
+}
+
+function scanResultLabel(log) {
+  const value = `${log.state || ""} ${log.scanResult || ""}`;
+  if (/checked out/i.test(value)) return "Checked out";
+  if (/checked in/i.test(value)) return "Approved";
+  if (/outside/i.test(value)) return "Outside time";
+  if (/expired/i.test(value)) return "Expired";
+  if (/invalid|missing/i.test(value)) return "Invalid QR";
+  if (/denied|closed|not approved/i.test(value)) return "Denied";
+  return log.state || "Scanner event";
+}
+
+function scanResultClass(log) {
+  const label = scanResultLabel(log).toLowerCase();
+  if (/approved|checked/.test(label)) return "approved";
+  if (/outside/.test(label)) return "warning";
+  return "denied";
+}
+
+function emptyState(title, detail) {
+  return `
+    <div class="empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <small>${escapeHtml(detail)}</small>
+    </div>
+  `;
 }
 
 function renderAttendance() {
@@ -747,7 +1009,7 @@ function changeReportPage(direction) {
 }
 
 function switchAdminSection(section = "dashboard") {
-  const allowedSections = ["dashboard", "applications", "users", "facilities", "payments", "scanner-stations", "check-in-logs", "reports", "settings"];
+  const allowedSections = ["dashboard", "applications", "users", "facilities", "payments", "scanner-stations", "check-in-logs", "access-exceptions", "reports", "notifications", "settings"];
   if (!allowedSections.includes(section)) section = "dashboard";
   currentAdminSection = section;
   const labels = {
@@ -758,13 +1020,29 @@ function switchAdminSection(section = "dashboard") {
     payments: "Payments",
     "scanner-stations": "Scanner Stations",
     "check-in-logs": "Check-in Logs",
+    "access-exceptions": "Access Exceptions",
     reports: "Reports",
+    notifications: "Notifications",
     settings: "Settings",
+  };
+  const subtitles = {
+    dashboard: "Overview of facility access, QR scanning, and attendance",
+    applications: "Review resident applications, payment proofs, and QID checks",
+    users: "Approved residents and active facility memberships",
+    facilities: "Create, edit, disable, and delete facility access options",
+    payments: "Verify submitted payment proof against calculated totals",
+    "scanner-stations": "Links and setup for guard scanner devices",
+    "check-in-logs": "Filter attendance records and export audit reports",
+    "access-exceptions": "Denied, invalid, expired, and outside-time scanner attempts",
+    reports: "Reporting shortcuts and export guidance",
+    notifications: "Email delivery logs with sensitive pass data hidden",
+    settings: "Admin settings and environment configuration notes",
   };
 
   $$(".admin-page").forEach((page) => page.classList.toggle("active", page.dataset.adminPage === section));
   $$(".admin-menu-item[data-admin-section]").forEach((item) => item.classList.toggle("active", item.dataset.adminSection === section));
   if ($("#admin-page-title")) $("#admin-page-title").textContent = labels[section] || "Dashboard";
+  if ($("#admin-page-subtitle")) $("#admin-page-subtitle").textContent = subtitles[section] || "";
   document.body.classList.remove("admin-drawer-open");
 }
 
@@ -782,6 +1060,37 @@ function applyAdminHeaderDate(event) {
   if ($("#report-period")) $("#report-period").value = value ? "custom" : "all";
   reportPage = 1;
   renderAttendance();
+}
+
+function applyAdminDateRange(value) {
+  const dateInput = $("#admin-header-date");
+  if (dateInput) dateInput.hidden = value !== "custom";
+  if (value === "today") {
+    const today = toDateInputValue(new Date());
+    if ($("#from-date")) $("#from-date").value = today;
+    if ($("#to-date")) $("#to-date").value = today;
+    if ($("#report-period")) $("#report-period").value = "custom";
+  }
+  if (value === "week" || value === "month") {
+    if ($("#report-period")) $("#report-period").value = value;
+    setReportPeriod(value);
+  }
+  if (value === "custom") {
+    applyAdminHeaderDate({ target: { value: dateInput?.value || "" } });
+    return;
+  }
+  reportPage = 1;
+  renderAttendance();
+}
+
+function exportTodayReport() {
+  const today = toDateInputValue(new Date());
+  if ($("#report-period")) $("#report-period").value = "custom";
+  if ($("#from-date")) $("#from-date").value = today;
+  if ($("#to-date")) $("#to-date").value = today;
+  reportPage = 1;
+  renderAttendance();
+  exportReportPdf();
 }
 
 function getFilteredAttendanceLogs() {
@@ -933,22 +1242,24 @@ function isSeedLog(log) {
 }
 
 function renderEmailOutbox() {
+  const container = $("#email-outbox");
+  if (!container) return;
   const emails = [...(state.emails || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  $("#email-outbox").innerHTML = emails.length
+  container.innerHTML = emails.length
     ? emails.map((email) => {
       const canOpen = email.to && email.to !== "admin";
       const mailto = `mailto:${encodeURIComponent(email.to)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
       return `
         <div class="email-item">
           <strong>${escapeHtml(email.subject)}</strong>
-          <span>To: ${escapeHtml(email.to)}</span>
+          <span>To: ${escapeHtml(maskEmail(email.to))}</span>
           <span>Status: ${escapeHtml(email.status || "Local draft only")}</span>
-          ${email.messageId ? `<span>Message ID: ${escapeHtml(email.messageId)}</span>` : ""}
-          ${email.accepted?.length ? `<span>Accepted: ${escapeHtml(email.accepted.join(", "))}</span>` : ""}
-          ${email.rejected?.length ? `<span class="email-error">Rejected: ${escapeHtml(email.rejected.join(", "))}</span>` : ""}
+          ${email.messageId ? `<span>Message ID: ${escapeHtml(maskToken(email.messageId))}</span>` : ""}
+          ${email.accepted?.length ? `<span>Accepted: ${escapeHtml(email.accepted.map(maskEmail).join(", "))}</span>` : ""}
+          ${email.rejected?.length ? `<span class="email-error">Rejected: ${escapeHtml(email.rejected.map(maskEmail).join(", "))}</span>` : ""}
           ${email.error ? `<span class="email-error">Error: ${escapeHtml(email.error)}</span>` : ""}
           <span>${formatDateTime(email.createdAt)}</span>
-          <p>${escapeHtml(email.body)}</p>
+          <p>${escapeHtml(sanitizeNotificationText(email.body))}</p>
           ${canOpen ? `<a href="${mailto}">Open Email</a>` : ""}
         </div>
       `;
@@ -2765,6 +3076,9 @@ document.addEventListener("click", (event) => {
   const tab = event.target.closest(".tab");
   const adminSection = event.target.closest("[data-admin-section]");
   const drawerToggle = event.target.closest("[data-admin-drawer-toggle]");
+  const sidebarCollapse = event.target.closest("[data-sidebar-collapse]");
+  const usagePeriodButton = event.target.closest("[data-usage-period]");
+  const exportToday = event.target.closest("[data-export-today]");
   const copyPayment = event.target.closest("[data-copy-payment]");
   const facilityMonthButton = event.target.closest("[data-facility-month]");
   const openUser = event.target.closest("[data-open-user]");
@@ -2781,6 +3095,16 @@ document.addEventListener("click", (event) => {
   if (tab) switchView(tab.dataset.view);
   if (adminSection) routeTo(adminPathForSection(adminSection.dataset.adminSection));
   if (drawerToggle) document.body.classList.toggle("admin-drawer-open");
+  if (sidebarCollapse) {
+    const collapsed = document.body.classList.toggle("admin-sidebar-collapsed");
+    sidebarCollapse.setAttribute("aria-expanded", String(!collapsed));
+  }
+  if (usagePeriodButton) {
+    usagePeriod = usagePeriodButton.dataset.usagePeriod || "today";
+    $$("[data-usage-period]").forEach((button) => button.classList.toggle("active", button === usagePeriodButton));
+    renderWeeklyUsageChart();
+  }
+  if (exportToday) exportTodayReport();
   if (copyPayment) copyPaymentValue(copyPayment.dataset.copyPayment);
   if (facilityMonthButton) {
     event.preventDefault();
@@ -2805,8 +3129,10 @@ $("#clear-user-search")?.addEventListener("click", clearUserSearch);
 $("#user-status-filter")?.addEventListener("change", (event) => filterUsersByStatus(event.target.value));
 $("#admin-header-search")?.addEventListener("input", updateAdminHeaderSearch);
 $("#admin-header-date")?.addEventListener("change", applyAdminHeaderDate);
+$("#admin-date-range")?.addEventListener("change", (event) => applyAdminDateRange(event.target.value));
 $("#admin-login-form").addEventListener("submit", loginAdmin);
 $("#admin-logout").addEventListener("click", logoutAdmin);
+$("#admin-logout-menu")?.addEventListener("click", logoutAdmin);
 $("#scanner-pin-form").addEventListener("submit", unlockScanner);
 $("#scanner-lock").addEventListener("click", lockScanner);
 $("#facility-form").addEventListener("submit", addFacility);

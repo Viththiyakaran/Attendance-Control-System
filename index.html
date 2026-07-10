@@ -156,16 +156,24 @@
                 <small>Admin console</small>
               </div>
             </div>
+            <button class="sidebar-collapse" type="button" data-sidebar-collapse aria-expanded="true" aria-label="Collapse sidebar">Collapse</button>
             <nav class="admin-menu" aria-label="Admin navigation">
-              <button class="admin-menu-item active" type="button" data-admin-section="dashboard">Dashboard</button>
-              <button class="admin-menu-item" type="button" data-admin-section="applications">Applications</button>
-              <button class="admin-menu-item" type="button" data-admin-section="users">Users / Residents</button>
-              <button class="admin-menu-item" type="button" data-admin-section="facilities">Facilities</button>
-              <button class="admin-menu-item" type="button" data-admin-section="payments">Payments</button>
-              <button class="admin-menu-item" type="button" data-admin-section="scanner-stations">Scanner Stations</button>
-              <button class="admin-menu-item" type="button" data-admin-section="check-in-logs">Check-in Logs</button>
-              <button class="admin-menu-item" type="button" data-admin-section="reports">Reports</button>
-              <button class="admin-menu-item" type="button" data-admin-section="settings">Settings</button>
+              <p>Overview</p>
+              <button class="admin-menu-item active" type="button" data-admin-section="dashboard"><span>H</span><b>Dashboard</b></button>
+              <p>Access Management</p>
+              <button class="admin-menu-item" type="button" data-admin-section="applications"><span>A</span><b>Applications</b><em id="sidebar-pending-badge" hidden>0</em></button>
+              <button class="admin-menu-item" type="button" data-admin-section="users"><span>U</span><b>Users / Residents</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="facilities"><span>F</span><b>Facilities</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="payments"><span>P</span><b>Payments</b></button>
+              <p>Operations</p>
+              <button class="admin-menu-item" type="button" data-admin-section="scanner-stations"><span>S</span><b>Scanner Stations</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="check-in-logs"><span>L</span><b>Check-in Logs</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="access-exceptions"><span>!</span><b>Access Exceptions</b></button>
+              <p>Analytics</p>
+              <button class="admin-menu-item" type="button" data-admin-section="reports"><span>R</span><b>Reports</b></button>
+              <p>System</p>
+              <button class="admin-menu-item" type="button" data-admin-section="notifications"><span>N</span><b>Notifications</b></button>
+              <button class="admin-menu-item" type="button" data-admin-section="settings"><span>*</span><b>Settings</b></button>
               <button class="admin-menu-item danger-link" id="admin-logout" type="button">Logout</button>
             </nav>
           </aside>
@@ -174,58 +182,111 @@
             <header class="admin-header">
               <button class="admin-drawer-toggle" type="button" data-admin-drawer-toggle aria-label="Open admin menu">Menu</button>
               <div>
-                <p class="eyebrow">Admin Console</p>
                 <h2 id="admin-page-title">Dashboard</h2>
+                <p id="admin-page-subtitle">Overview of facility access and attendance</p>
               </div>
               <div class="admin-header-tools">
-                <input id="admin-header-search" type="search" placeholder="Search admin" aria-label="Search admin" />
-                <input id="admin-header-date" type="date" aria-label="Admin date filter" />
-                <div class="admin-profile" aria-label="Admin profile">
-                  <span>AD</span>
-                  <div>
-                    <strong>Manager</strong>
-                    <small>Admin</small>
-                  </div>
-                </div>
+                <input id="admin-header-search" type="search" placeholder="Search residents, applications or payments" aria-label="Search residents, applications or payments" />
+                <select id="admin-date-range" aria-label="Admin date range">
+                  <option value="today">Today</option>
+                  <option value="week">This week</option>
+                  <option value="month">This month</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                <input id="admin-header-date" type="date" aria-label="Custom admin date" hidden />
+                <button class="notification-button" type="button" data-admin-section="notifications" aria-label="Open notifications">N</button>
+                <details class="admin-profile">
+                  <summary><span>AD</span><strong>Manager</strong></summary>
+                  <button type="button" data-admin-section="settings">Profile</button>
+                  <button type="button" data-admin-section="settings">Settings</button>
+                  <button type="button" id="admin-logout-menu">Logout</button>
+                </details>
               </div>
             </header>
 
             <section class="admin-page active" data-admin-page="dashboard">
-              <div class="kpi-grid">
-                <article class="kpi-card">
+              <div class="kpi-grid admin-stat-grid">
+                <button class="kpi-card stat-card" type="button" data-admin-section="check-in-logs">
+                  <span class="stat-icon">OK</span>
                   <span>Today Check-ins</span>
                   <strong id="kpi-today-checkins">0</strong>
-                </article>
-                <article class="kpi-card">
+                  <small id="kpi-today-note">QR scans recorded today</small>
+                </button>
+                <button class="kpi-card stat-card" type="button" data-admin-section="applications">
+                  <span class="stat-icon">A</span>
                   <span>Pending Applications</span>
                   <strong id="kpi-pending-applications">0</strong>
-                </article>
-                <article class="kpi-card">
-                  <span>Active Users</span>
+                  <small id="kpi-pending-note">No applications waiting</small>
+                </button>
+                <button class="kpi-card stat-card" type="button" data-admin-section="users">
+                  <span class="stat-icon">U</span>
+                  <span>Active Residents</span>
                   <strong id="kpi-active-users">0</strong>
-                </article>
-                <article class="kpi-card">
-                  <span>Outside Time Attempts</span>
+                  <small id="kpi-active-note">Approved memberships</small>
+                </button>
+                <button class="kpi-card stat-card" type="button" data-admin-section="access-exceptions">
+                  <span class="stat-icon">!</span>
+                  <span>Denied Access Attempts</span>
                   <strong id="kpi-outside-time">0</strong>
-                </article>
+                  <small id="kpi-denied-note">No issues today</small>
+                </button>
               </div>
 
-              <div class="admin-overview-grid">
-                <section class="panel">
+              <div class="dashboard-layout">
+                <section class="panel dashboard-card facility-usage-card">
                   <div class="section-heading">
-                    <p class="eyebrow">Statistics</p>
-                    <h2>Users by facility</h2>
+                    <div>
+                      <p class="eyebrow">Facility Usage</p>
+                      <h2>Top facilities</h2>
+                    </div>
+                    <div class="usage-tabs" role="tablist" aria-label="Facility usage period">
+                      <button class="active" type="button" data-usage-period="today">Today</button>
+                      <button type="button" data-usage-period="week">This week</button>
+                      <button type="button" data-usage-period="month">This month</button>
+                    </div>
                   </div>
                   <div id="weekly-usage-chart" class="usage-chart"></div>
-                  <div id="facility-stats" class="facility-stats"></div>
+                  <button class="text-link" type="button" data-admin-section="facilities">View all facilities</button>
                 </section>
-                <section class="panel">
+
+                <aside class="dashboard-side">
+                  <section class="panel dashboard-card">
+                    <div class="section-heading">
+                      <p class="eyebrow">Quick Actions</p>
+                      <h2>Next steps</h2>
+                    </div>
+                    <div id="quick-actions" class="quick-actions"></div>
+                  </section>
+
+                  <section class="panel dashboard-card">
+                    <div class="section-heading">
+                      <p class="eyebrow">Operations</p>
+                      <h2>Scanner Status</h2>
+                    </div>
+                    <div id="scanner-status-list" class="scanner-status-list"></div>
+                  </section>
+                </aside>
+
+                <section class="panel dashboard-card recent-checkins-card">
                   <div class="section-heading">
-                    <p class="eyebrow">Notifications</p>
-                    <h2>Email outbox</h2>
-                    <p class="helper-text">Local drafts are not delivered until an SMTP or email API service is connected.</p>
+                    <div>
+                      <p class="eyebrow">Attendance</p>
+                      <h2>Recent Check-ins</h2>
+                    </div>
+                    <button class="text-link" type="button" data-admin-section="check-in-logs">View all logs</button>
                   </div>
-                  <div id="email-outbox" class="email-outbox"></div>
+                  <div id="recent-checkins" class="recent-checkins"></div>
+                </section>
+
+                <section class="panel dashboard-card recent-activity-card">
+                  <div class="section-heading">
+                    <div>
+                      <p class="eyebrow">Notifications</p>
+                      <h2>Recent Activity</h2>
+                    </div>
+                    <button class="text-link" type="button" data-admin-section="notifications">View all notifications</button>
+                  </div>
+                  <div id="recent-activity" class="recent-activity"></div>
                 </section>
               </div>
             </section>
@@ -389,6 +450,28 @@
                   <h2>Export reports</h2>
                   <p class="helper-text">Use Check-in Logs to filter dates and export the PDF report.</p>
                 </div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="access-exceptions">
+              <section class="panel report-panel">
+                <div class="section-heading">
+                  <p class="eyebrow">Operations</p>
+                  <h2>Access Exceptions</h2>
+                  <p class="helper-text">Denied, invalid, expired, and outside-time scan attempts.</p>
+                </div>
+                <div id="access-exceptions-list" class="recent-checkins"></div>
+              </section>
+            </section>
+
+            <section class="admin-page" data-admin-page="notifications">
+              <section class="panel">
+                <div class="section-heading">
+                  <p class="eyebrow">System</p>
+                  <h2>Notifications & Email Logs</h2>
+                  <p class="helper-text">Detailed delivery records are kept here instead of on the dashboard.</p>
+                </div>
+                <div id="email-outbox" class="email-outbox"></div>
               </section>
             </section>
 
