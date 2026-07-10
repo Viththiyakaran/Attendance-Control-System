@@ -1996,6 +1996,607 @@ dialog::backdrop {
   }
 }
 
+/* Final clean admin layout pass: one tidy system for every admin page */
+.admin-page,
+.admin-page * {
+  box-sizing: border-box;
+}
+
+.admin-page {
+  overflow-x: hidden;
+  background: #f4f7f6;
+}
+
+.admin-shell {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin-left: 260px !important;
+  padding: 24px !important;
+}
+
+.admin-main {
+  display: grid !important;
+  gap: 18px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.admin-header {
+  position: sticky !important;
+  top: 12px !important;
+  z-index: 40 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(220px, 1fr) minmax(260px, 0.9fr) minmax(150px, 180px) auto auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 16px 18px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 14px 40px rgba(14, 42, 34, 0.08) !important;
+  backdrop-filter: blur(12px);
+}
+
+.admin-title-block,
+.admin-search,
+.admin-date-filter,
+.admin-profile,
+.dashboard-card,
+.summary-card,
+.panel,
+.facility-card,
+.payment-review-item,
+.report-card,
+.settings-card,
+.mobile-record-card,
+.email-item,
+.scanner-status-row,
+.recent-row,
+.activity-row,
+.exception-row {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.admin-title-block h1,
+.dashboard-card h3,
+.summary-card h3,
+.panel h2,
+.panel h3,
+.facility-card h3,
+.payment-review-item h3,
+.report-card h3,
+.settings-card h3,
+.scanner-status-row strong,
+.quick-actions strong {
+  line-height: 1.2 !important;
+}
+
+.admin-search[hidden],
+.admin-date-filter[hidden] {
+  display: none !important;
+}
+
+.admin-header-tools {
+  min-width: 0 !important;
+}
+
+.admin-search input,
+.admin-date-filter select,
+.filters-row input,
+.filters-row select,
+.user-tools input,
+.user-tools select,
+.facility-form input,
+.facility-form select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+}
+
+.admin-sidebar {
+  width: 260px !important;
+  padding: 24px 16px !important;
+}
+
+.admin-brand {
+  gap: 12px !important;
+}
+
+.admin-nav {
+  gap: 7px !important;
+}
+
+.admin-nav button,
+.admin-nav a {
+  min-height: 44px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+  white-space: nowrap !important;
+}
+
+.admin-nav span:last-child {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(190px, 1fr)) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.summary-card,
+.dashboard-card,
+.panel,
+.facility-card,
+.payment-review-item,
+.report-card,
+.settings-card,
+.mobile-record-card,
+.email-item {
+  border: 1px solid var(--line) !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 12px 34px rgba(18, 46, 38, 0.07) !important;
+}
+
+.summary-card {
+  display: grid !important;
+  grid-template-columns: 54px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 138px !important;
+  padding: 20px !important;
+}
+
+.dashboard-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.dashboard-side {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.dashboard-card {
+  padding: 20px !important;
+  overflow: hidden !important;
+}
+
+.quick-actions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.quick-actions button,
+.quick-actions a {
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  align-items: center !important;
+  gap: 4px 10px !important;
+  min-height: 76px !important;
+  padding: 12px !important;
+  text-align: left !important;
+}
+
+.quick-actions .quick-icon {
+  grid-row: 1 / span 2 !important;
+}
+
+.quick-actions > * > span:not(.quick-icon) {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+}
+
+.quick-actions strong {
+  grid-column: 2 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.quick-actions small {
+  grid-column: 3 !important;
+  grid-row: 1 / span 2 !important;
+  align-self: center !important;
+  color: var(--subtle) !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.scanner-status-list,
+.recent-checkins,
+.recent-activity,
+.exception-list,
+.payment-review-list,
+.email-list,
+.report-card-list,
+.settings-grid {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.scanner-status-row {
+  grid-template-columns: 12px minmax(0, 1fr) !important;
+  padding: 12px !important;
+}
+
+.scanner-status-row strong,
+.scanner-status-row small {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.chart-row {
+  grid-template-columns: minmax(150px, 0.85fr) minmax(180px, 1fr) auto !important;
+  gap: 12px !important;
+}
+
+.table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  border-radius: 14px !important;
+}
+
+.user-table,
+.resident-table,
+.report-table {
+  width: 100% !important;
+  min-width: 880px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+.user-table th,
+.user-table td,
+.resident-table th,
+.resident-table td,
+.report-table th,
+.report-table td {
+  padding: 14px 12px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.user-table th,
+.resident-table th,
+.report-table th {
+  color: var(--subtle) !important;
+  font-size: 0.76rem !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+}
+
+.user-table th:nth-child(1),
+.user-table td:nth-child(1) {
+  width: 12% !important;
+}
+
+.user-table th:nth-child(2),
+.user-table td:nth-child(2) {
+  width: 22% !important;
+}
+
+.user-table th:nth-child(3),
+.user-table td:nth-child(3) {
+  width: 10% !important;
+}
+
+.user-table th:nth-child(4),
+.user-table td:nth-child(4) {
+  width: 25% !important;
+}
+
+.user-table th:nth-child(5),
+.user-table td:nth-child(5) {
+  width: 10% !important;
+}
+
+.user-table th:nth-child(6),
+.user-table td:nth-child(6) {
+  width: 12% !important;
+}
+
+.user-table th:nth-child(7),
+.user-table td:nth-child(7) {
+  width: 9% !important;
+}
+
+.status,
+.badge,
+.scan-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.actions-cell,
+.card-actions,
+.facility-actions,
+.payment-actions,
+.record-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.actions-cell button,
+.card-actions button,
+.facility-actions button,
+.payment-actions button,
+.record-actions button,
+.panel button,
+.dashboard-card button {
+  min-height: 40px !important;
+  border-radius: 11px !important;
+}
+
+.row-menu {
+  position: relative !important;
+  display: inline-grid !important;
+}
+
+.row-menu summary {
+  list-style: none !important;
+  cursor: pointer !important;
+}
+
+.row-menu summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.row-menu[open] > :not(summary) {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  z-index: 80 !important;
+  display: grid !important;
+  min-width: 180px !important;
+  padding: 8px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 18px 40px rgba(18, 46, 38, 0.16) !important;
+}
+
+.filters-row,
+.user-tools,
+.section-actions,
+.report-controls {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 10px !important;
+  align-items: end !important;
+}
+
+.facility-form {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.facility-form.is-collapsed {
+  display: none !important;
+}
+
+.facility-list,
+.scanner-station-grid,
+.report-card-list,
+.settings-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.facility-card {
+  display: grid !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+.facility-meta {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.payment-review-item {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.5fr) minmax(180px, 0.75fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+
+.admin-info-card,
+.settings-card,
+.report-card {
+  padding: 18px !important;
+}
+
+.mobile-record-list {
+  display: none !important;
+}
+
+.admin-dialog,
+#user-dialog,
+#confirm-dialog {
+  width: min(920px, calc(100vw - 32px)) !important;
+  max-height: min(86dvh, 780px) !important;
+  overflow: auto !important;
+  border-radius: 18px !important;
+}
+
+@media (max-width: 1280px) {
+  .admin-header {
+    grid-template-columns: auto minmax(220px, 1fr) minmax(220px, 0.8fr) minmax(140px, 160px) auto !important;
+  }
+
+  .admin-profile {
+    grid-column: 1 / -1 !important;
+    justify-self: end !important;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  .admin-shell {
+    margin-left: 0 !important;
+    padding: 16px !important;
+  }
+
+  .admin-sidebar {
+    transform: translateX(-105%) !important;
+  }
+
+  .admin-drawer-open .admin-sidebar {
+    transform: translateX(0) !important;
+  }
+
+  .admin-header {
+    top: 8px !important;
+    grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+  }
+
+  .admin-search,
+  .admin-date-filter,
+  .admin-profile {
+    grid-column: 1 / -1 !important;
+    justify-self: stretch !important;
+  }
+
+  .admin-date-filter {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .dashboard-side,
+  .kpi-grid,
+  .quick-actions,
+  .facility-list,
+  .scanner-station-grid,
+  .report-card-list,
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chart-heading,
+  .chart-row,
+  .recent-row,
+  .activity-row,
+  .exception-row,
+  .payment-review-item {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quick-actions button,
+  .quick-actions a {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+  }
+
+  .quick-actions small {
+    grid-column: 2 !important;
+    grid-row: auto !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-shell {
+    padding: 12px !important;
+  }
+
+  .admin-header {
+    padding: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .admin-title-block h1 {
+    font-size: 1.35rem !important;
+  }
+
+  .dashboard-card,
+  .summary-card,
+  .panel,
+  .facility-card,
+  .payment-review-item,
+  .report-card,
+  .settings-card,
+  .mobile-record-card,
+  .email-item {
+    border-radius: 14px !important;
+    padding: 14px !important;
+  }
+
+  .summary-card {
+    grid-template-columns: 46px minmax(0, 1fr) !important;
+    min-height: auto !important;
+  }
+
+  .table-wrap {
+    display: none !important;
+  }
+
+  .mobile-record-list {
+    display: grid !important;
+    gap: 12px !important;
+  }
+
+  .actions-cell,
+  .card-actions,
+  .facility-actions,
+  .payment-actions,
+  .record-actions {
+    align-items: stretch !important;
+  }
+
+  .actions-cell button,
+  .card-actions button,
+  .facility-actions button,
+  .payment-actions button,
+  .record-actions button {
+    flex: 1 1 140px !important;
+  }
+
+  .admin-dialog,
+  #user-dialog,
+  #confirm-dialog {
+    width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-radius: 14px !important;
+  }
+}
+
 /* Absolute final admin dashboard fix: prevent narrow/overlapping panels */
 .admin-shell {
   min-width: 0 !important;

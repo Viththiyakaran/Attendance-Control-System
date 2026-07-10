@@ -977,22 +977,26 @@ function renderQuickActions() {
     <button type="button" data-admin-section="applications">
       <span class="quick-icon">${adminIcon("clipboard")}</span>
       <span>Review</span>
-      <strong>${pending ? `${pending} pending application${pending === 1 ? "" : "s"}` : "No pending applications"}</strong>
+      <strong>Applications</strong>
+      <small>${pending ? `${pending} pending` : "All clear"}</small>
     </button>
     <a href="/scanner">
       <span class="quick-icon">${adminIcon("scan")}</span>
       <span>Scanner</span>
-      <strong>Open gate scanner</strong>
+      <strong>Open scanner</strong>
+      <small>Gate access</small>
     </a>
     <button type="button" data-admin-section="facilities">
       <span class="quick-icon">${adminIcon("building")}</span>
       <span>Facilities</span>
-      <strong>Add or edit facility access</strong>
+      <strong>Manage facilities</strong>
+      <small>Add or edit access</small>
     </button>
     <button type="button" data-export-today>
       <span class="quick-icon">${adminIcon("history")}</span>
       <span>Reports</span>
-      <strong>Export today check-ins</strong>
+      <strong>Export check-ins</strong>
+      <small>Today report</small>
     </button>
   `;
 }
@@ -1003,11 +1007,11 @@ function renderScannerStatus() {
   const logs = state.logs.filter((log) => !isSeedLog(log)).sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
   const facilityRows = getFacilityOptions().slice(0, 3).map((facility) => {
     const latest = logs.find((log) => log.facilityId === facility.id || log.facilityName === facility.name);
-    return scannerStatusRow(`${displayFacilityName(facility.name)} scanner`, latest);
+    return scannerStatusRow(displayFacilityName(facility.name), latest);
   });
 
   container.innerHTML = [
-    scannerStatusRow("Main gate scanner", logs[0]),
+    scannerStatusRow("Main gate", logs[0]),
     ...facilityRows,
   ].join("");
 }
@@ -1168,7 +1172,7 @@ function renderScannerStations() {
   const logs = state.logs.filter((log) => !isSeedLog(log)).sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
   container.innerHTML = getFacilityOptions().slice(0, 6).map((facility) => {
     const latest = logs.find((log) => log.facilityId === facility.id || log.facilityName === facility.name);
-    return scannerStatusRow(`${displayFacilityName(facility.name)} station`, latest);
+    return scannerStatusRow(displayFacilityName(facility.name), latest);
   }).join("") || emptyState("No scanner stations", "Scanner station activity will appear after the first scan.");
 }
 
