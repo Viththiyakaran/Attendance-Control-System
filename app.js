@@ -53,9 +53,9 @@ const DEFAULT_FACILITIES = [
 ];
 
 const MAX_QID_FILE_SIZE = 5 * 1024 * 1024;
-const MAX_INLINE_QID_FILE_SIZE = 750 * 1024;
-const MAX_COMPRESSED_QID_SIZE = 900 * 1024;
-const MAX_QID_IMAGE_DIMENSION = 1600;
+const MAX_INLINE_QID_FILE_SIZE = 350 * 1024;
+const MAX_COMPRESSED_QID_SIZE = 450 * 1024;
+const MAX_QID_IMAGE_DIMENSION = 1200;
 const ALLOWED_QID_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 const initialState = {
@@ -1737,17 +1737,31 @@ async function compressQidImage(file) {
 }
 
 async function canvasToCompressedJpeg(canvas) {
-  const qualities = [0.82, 0.72, 0.62, 0.52];
+  const qualities = [0.76, 0.66, 0.56, 0.46, 0.38];
   let bestBlob = null;
+  let workingCanvas = canvas;
 
-  for (const quality of qualities) {
-    const blob = await canvasToBlob(canvas, "image/jpeg", quality);
-    if (!blob) continue;
-    bestBlob = blob;
-    if (blob.size <= MAX_COMPRESSED_QID_SIZE) break;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (const quality of qualities) {
+      const blob = await canvasToBlob(workingCanvas, "image/jpeg", quality);
+      if (!blob) continue;
+      if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob;
+      if (blob.size <= MAX_COMPRESSED_QID_SIZE) return blob;
+    }
+
+    if (Math.max(workingCanvas.width, workingCanvas.height) <= 720) break;
+    workingCanvas = resizeCanvas(workingCanvas, 0.82);
   }
 
   return bestBlob;
+}
+
+function resizeCanvas(sourceCanvas, scale) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sourceCanvas.width * scale));
+  canvas.height = Math.max(1, Math.round(sourceCanvas.height * scale));
+  canvas.getContext("2d").drawImage(sourceCanvas, 0, 0, canvas.width, canvas.height);
+  return canvas;
 }
 
 function canvasToBlob(canvas, type, quality) {
@@ -1822,6 +1836,16 @@ function openUserDialog(userId) {
         <input id="review-dob" type="date" value="${escapeHtml(user.dob)}" required />
       </label>
     </div>
+    <div class="approval-checklist">
+      <label>
+        <input id="review-qid-match" type="checkbox" />
+        I confirm the personal details entered above match the uploaded Qatar ID / QID document.
+      </label>
+      <label>
+        <input id="review-payment-match" type="checkbox" />
+        I confirm the payment proof amount matches the calculated total of QAR ${Number(user.totalQar || 0)}.
+      </label>
+    </div>
     <div class="access-picker">
       <p class="eyebrow">Facility Access</p>
       <div class="access-options">
@@ -1874,6 +1898,16 @@ async function approveUser(userId) {
 
   if (!isPastDate(dob)) {
     alert("Date of Birth must be a valid past date.");
+    return;
+  }
+
+  if (!$("#review-qid-match")?.checked) {
+    alert("Confirm that the personal details match the uploaded Qatar ID before approving.");
+    return;
+  }
+
+  if (!$("#review-payment-match")?.checked) {
+    alert("Confirm that the payment proof matches the calculated total before approving.");
     return;
   }
 
