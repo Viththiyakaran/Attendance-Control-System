@@ -961,7 +961,7 @@ function renderRegistrationAccessOptions() {
     <label class="facility-choice-card">
       <input type="checkbox" value="${escapeHtml(option.name)}" />
       <span>
-        <span class="activity-icon">${escapeHtml(getFacilityIcon(option.name))}</span>
+        <span class="activity-icon">${getFacilityIcon(option.name)}</span>
         <strong>${escapeHtml(option.name)}</strong>
         <small>${escapeHtml(option.location || "Location to be confirmed")}</small>
         <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
@@ -981,16 +981,20 @@ function renderRegistrationAccessOptions() {
 
 function getFacilityIcon(name) {
   const value = String(name || "").toLowerCase();
-  if (/swim|pool/.test(value)) return "SW";
-  if (/gym|fitness/.test(value)) return "GY";
-  if (/football|soccer/.test(value)) return "FB";
-  if (/basket/.test(value)) return "BB";
-  if (/tennis/.test(value)) return "TN";
-  if (/box|kick/.test(value)) return "KB";
-  if (/gymnastic/.test(value)) return "GM";
-  if (/taekwando|taekwondo|karate/.test(value)) return "TK";
-  if (/party|event/.test(value)) return "EV";
-  return "AC";
+  if (/swim|pool/.test(value)) return iconSvg(`<path d="M4 14c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M4 18c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1"/><path d="M11 6l4 3-3 4"/>`);
+  if (/gym|fitness/.test(value)) return iconSvg(`<path d="M5 10v4"/><path d="M19 10v4"/><path d="M7 12h10"/><path d="M3 9v6"/><path d="M21 9v6"/>`);
+  if (/football|soccer/.test(value)) return iconSvg(`<circle cx="12" cy="12" r="8"/><path d="M12 8l3 2-1 4h-4l-1-4 3-2z"/><path d="M7 10l2 1"/><path d="M17 10l-2 1"/><path d="M9 17l1-3"/><path d="M15 17l-1-3"/>`);
+  if (/basket/.test(value)) return iconSvg(`<circle cx="12" cy="12" r="8"/><path d="M4.5 10h15"/><path d="M4.5 14h15"/><path d="M12 4a12 12 0 0 0 0 16"/><path d="M12 4a12 12 0 0 1 0 16"/>`);
+  if (/tennis/.test(value)) return iconSvg(`<circle cx="10" cy="9" r="5"/><path d="M13.5 12.5l6 6"/><path d="M8 5l7 7"/><path d="M5.5 8.5l7 7"/><circle cx="18" cy="6" r="2"/>`);
+  if (/box|kick/.test(value)) return iconSvg(`<path d="M7 7h6a4 4 0 0 1 4 4v2a5 5 0 0 1-5 5H8a3 3 0 0 1-3-3v-5a3 3 0 0 1 2-3z"/><path d="M9 7V5h4v2"/><path d="M8 12h7"/>`);
+  if (/gymnastic/.test(value)) return iconSvg(`<circle cx="12" cy="5" r="2"/><path d="M12 7v5"/><path d="M6 10h12"/><path d="M12 12l-4 6"/><path d="M12 12l4 6"/>`);
+  if (/taekwando|taekwondo|karate/.test(value)) return iconSvg(`<circle cx="9" cy="5" r="2"/><path d="M9 7l3 4"/><path d="M12 11l6-2"/><path d="M11 12l-4 6"/><path d="M13 12l4 5"/>`);
+  if (/party|event/.test(value)) return iconSvg(`<path d="M5 19l4-12 8 8-12 4z"/><path d="M14 5l1-2"/><path d="M18 9l2-1"/><path d="M16 4l2-2"/><path d="M8 13l3 3"/>`);
+  return iconSvg(`<path d="M12 3l8 5-8 5-8-5 8-5z"/><path d="M4 13l8 5 8-5"/>`);
+}
+
+function iconSvg(paths) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
 }
 
 function renderRegistrationWizard() {
