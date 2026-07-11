@@ -90,42 +90,47 @@
             <li data-step-indicator="4"><span>4</span><strong>Upload</strong></li>
           </ol>
 
-          <section class="wizard-step" data-wizard-step="2">
+          <section class="wizard-step" data-wizard-step="2" aria-labelledby="personal-step-title">
             <div class="wizard-copy">
               <p class="eyebrow">Step 2</p>
-              <h3>Personal Details</h3>
+              <h3 id="personal-step-title">Personal Details</h3>
               <p>Enter the resident information exactly as it should appear for admin review.</p>
             </div>
             <div class="form-grid two-col">
               <label>
-                Full Name
-                <input id="full-name" name="fullName" autocomplete="name" required />
+                <span>Full Name <b aria-hidden="true">*</b></span>
+                <input id="full-name" name="fullName" autocomplete="name" placeholder="Example: Ahmed Mohamed" required aria-describedby="full-name-error" />
+                <small class="field-error" id="full-name-error"></small>
               </label>
               <label>
-                Qatar ID Number
-                <input id="qid-number" name="qidNumber" inputmode="numeric" maxlength="11" required />
+                <span>Qatar ID Number <b aria-hidden="true">*</b></span>
+                <input id="qid-number" name="qidNumber" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" placeholder="11 digits" required aria-describedby="qid-number-error" />
+                <small class="field-error" id="qid-number-error"></small>
               </label>
             </div>
             <div class="form-grid two-col">
               <label>
-                Email Address
-                <input id="email" name="email" type="email" required autocomplete="email" />
+                <span>Email Address <b aria-hidden="true">*</b></span>
+                <input id="email" name="email" type="email" required autocomplete="email" placeholder="name@example.com" aria-describedby="email-error" />
+                <small class="field-error" id="email-error"></small>
               </label>
               <label>
-                Contact Number
-                <input id="contact-number" name="contactNumber" type="tel" autocomplete="tel" required />
+                <span>Contact Number <b aria-hidden="true">*</b></span>
+                <input id="contact-number" name="contactNumber" type="tel" autocomplete="tel" inputmode="tel" placeholder="+974 1234 5678" required aria-describedby="contact-number-error" />
+                <small class="field-error" id="contact-number-error"></small>
               </label>
             </div>
             <label>
-              Unit / Villa / Address
-              <input id="villa-number" name="villaNumber" autocomplete="address-line1" required />
+              <span>Unit / Villa / Address <b aria-hidden="true">*</b></span>
+              <input id="villa-number" name="villaNumber" autocomplete="address-line1" placeholder="Villa 15, Zone 00, Street 00" required aria-describedby="villa-number-error" />
+              <small class="field-error" id="villa-number-error"></small>
             </label>
           </section>
 
-          <section class="wizard-step active" data-wizard-step="1">
+          <section class="wizard-step active" data-wizard-step="1" aria-labelledby="facility-step-title">
             <div class="wizard-copy">
               <p class="eyebrow">Step 1</p>
-              <h3>Select Facility and Months</h3>
+              <h3 id="facility-step-title">Select Facility and Months</h3>
               <p>Choose one or more facilities. Your payment total updates as you select facilities and months.</p>
             </div>
             <div class="registration-access">
@@ -141,41 +146,55 @@
             </div>
           </section>
 
-          <section class="wizard-step" data-wizard-step="3">
+          <section class="wizard-step" data-wizard-step="3" aria-labelledby="payment-step-title">
             <div class="wizard-copy">
               <p class="eyebrow">Step 3</p>
-              <h3>Payment Details</h3>
+              <h3 id="payment-step-title">Payment Details</h3>
               <p>Please pay the exact total amount before submitting the application. After payment, upload your payment screenshot in the next step.</p>
             </div>
-            <div class="payment-total payment-total-large">
-              <span>Total QAR to pay</span>
-              <strong id="payment-total-review">QAR 0</strong>
-              <small id="payment-review-note">Your selected facilities and months will appear here.</small>
-            </div>
-            <div class="bank-details">
-              <p class="eyebrow">Bank / Fowran details</p>
-              <h3 id="bank-account-name">HTS Facility Access</h3>
-              <img class="bank-qr" id="bank-qr-code" alt="Bank QR Code" />
-              <dl id="bank-details-list"></dl>
+            <div class="payment-card">
+              <div class="payment-qr-panel">
+                <img class="bank-qr" id="bank-qr-code" alt="Bank QR Code" />
+                <div class="payment-total payment-total-large">
+                  <span>Amount to pay</span>
+                  <strong id="payment-total-review">QAR 0</strong>
+                  <small id="payment-review-note">Your selected facilities and months will appear here.</small>
+                </div>
+              </div>
+              <div class="bank-details">
+                <p class="eyebrow">Bank / Fowran details</p>
+                <h3 id="bank-account-name">HTS Facility Access</h3>
+                <dl id="bank-details-list"></dl>
+                <p class="copy-feedback" id="copy-feedback" role="status" aria-live="polite"></p>
+              </div>
             </div>
           </section>
 
-          <section class="wizard-step" data-wizard-step="4">
+          <section class="wizard-step" data-wizard-step="4" aria-labelledby="upload-step-title">
             <div class="wizard-copy">
               <p class="eyebrow">Step 4</p>
-              <h3>Upload Documents</h3>
+              <h3 id="upload-step-title">Upload Documents</h3>
               <p>Upload JPG, PNG, or PDF files for both required documents.</p>
             </div>
-            <label class="upload-box">
-              Qatar ID / QID Document
-              <input id="qatar-id" name="qatarId" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
-              <span id="qatar-id-file-name">No file selected</span>
-            </label>
-            <label class="upload-box">
-              Payment Screenshot / Proof of Payment
-              <input id="payment-proof" name="paymentProof" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required />
-              <span id="payment-proof-file-name">No file selected</span>
-            </label>
+            <div id="application-review-summary" class="application-review-summary"></div>
+            <div class="upload-grid">
+              <label class="upload-box upload-card" for="qatar-id">
+                <span class="upload-title">Qatar ID / QID Document <b aria-hidden="true">*</b></span>
+                <span class="upload-help">Drop file here or choose JPG, PNG, or PDF up to 5 MB.</span>
+                <input id="qatar-id" name="qatarId" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required aria-describedby="qatar-id-file-name" />
+                <span class="upload-file-name" id="qatar-id-file-name">Choose file</span>
+                <span class="upload-preview" id="qatar-id-preview" aria-hidden="true"></span>
+                <span class="upload-actions"><button type="button" data-clear-file="qatar-id">Remove</button></span>
+              </label>
+              <label class="upload-box upload-card" for="payment-proof">
+                <span class="upload-title">Payment Screenshot / Proof of Payment <b aria-hidden="true">*</b></span>
+                <span class="upload-help">Upload the exact payment proof for the total amount.</span>
+                <input id="payment-proof" name="paymentProof" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" required aria-describedby="payment-proof-file-name" />
+                <span class="upload-file-name" id="payment-proof-file-name">Choose file</span>
+                <span class="upload-preview" id="payment-proof-preview" aria-hidden="true"></span>
+                <span class="upload-actions"><button type="button" data-clear-file="payment-proof">Remove</button></span>
+              </label>
+            </div>
           </section>
 
           <div class="wizard-actions">

@@ -1790,13 +1790,14 @@ function renderRegistrationAccessOptions() {
     <label class="facility-choice-card">
       <input type="checkbox" value="${escapeHtml(option.name)}" />
       <span>
-        <span class="activity-icon">${getFacilityIcon(option.name)}</span>
-        <strong>${escapeHtml(option.name)}</strong>
+        <span class="facility-card-head">
+          <span class="activity-icon">${getFacilityIcon(option.name)}</span>
+          <strong>${escapeHtml(option.name)}</strong>
+        </span>
         <small>${escapeHtml(option.location || "Location to be confirmed")}</small>
-        <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
         <small>${escapeHtml(option.timing || "Time to be confirmed")}</small>
-        <small>QAR ${getFacilityPrice(option.name)} / month</small>
-        <small>${escapeHtml(getFacilityAvailability(option).label)}</small>
+        <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
+        <span class="facility-price">QAR ${getFacilityPrice(option.name)} / month</span>
         <span class="facility-month-control" data-facility-month-control="${escapeHtml(option.name)}">
           <button type="button" data-facility-month="${escapeHtml(option.name)}" data-month-delta="-1" aria-label="Decrease ${escapeHtml(option.name)} months">-</button>
           <span><strong data-facility-month-value="${escapeHtml(option.name)}">${getFacilityMonths(option.name)}</strong> month(s)</span>
@@ -1829,23 +1830,42 @@ function iconSvg(paths) {
 function renderRegistrationWizard() {
   $$(".wizard-step").forEach((step) => {
     step.classList.toggle("active", Number(step.dataset.wizardStep) === registrationStep);
+    step.hidden = Number(step.dataset.wizardStep) !== registrationStep;
   });
   $$("[data-step-indicator]").forEach((item) => {
     const step = Number(item.dataset.stepIndicator);
     item.classList.toggle("active", step === registrationStep);
     item.classList.toggle("complete", step < registrationStep);
+    item.setAttribute("aria-current", step === registrationStep ? "step" : "false");
+    const marker = item.querySelector("span");
+    if (marker) marker.textContent = step < registrationStep ? "✓" : step;
   });
   const back = $("#wizard-back");
   const next = $("#wizard-next");
   const submit = $("#wizard-submit");
-  if (back) back.hidden = registrationStep === 1;
-  if (next) next.hidden = registrationStep === 4;
+  const total = calculateApplicationTotal().total;
+  if (back) {
+    back.hidden = false;
+    back.disabled = registrationStep === 1;
+    back.textContent = "Back";
+  }
+  if (next) {
+    next.hidden = registrationStep === 4;
+    next.textContent = registrationStep === 1
+      ? `Continue — QAR ${total}`
+      : registrationStep === 3
+      ? "Continue to upload proof"
+      : "Continue";
+  }
   if (submit) {
     submit.hidden = registrationStep !== 4;
     submit.disabled = !isRegistrationReady();
+    submit.textContent = "Submit application";
   }
   updateFileName("qatar-id", "qatar-id-file-name");
   updateFileName("payment-proof", "payment-proof-file-name");
+  updatePersonalFieldErrors(registrationStep === 2);
+  renderApplicationReviewSummary();
 }
 
 function changeRegistrationStep(direction) {
@@ -1901,10 +1921,16 @@ function validateRegistrationStep(step) {
 }
 
 function isRegistrationReady() {
+  const qidFile = $("#qatar-id")?.files?.[0];
+  const paymentFile = $("#payment-proof")?.files?.[0];
   return validateRegistrationStepSilently(1)
     && validateRegistrationStepSilently(2)
-    && Boolean($("#qatar-id")?.files?.[0])
-    && Boolean($("#payment-proof")?.files?.[0]);
+    && Boolean(qidFile)
+    && Boolean(paymentFile)
+    && isAllowedQidFile(qidFile)
+    && isAllowedQidFile(paymentFile)
+    && qidFile.size <= MAX_QID_FILE_SIZE
+    && paymentFile.size <= MAX_QID_FILE_SIZE;
 }
 
 function validateRegistrationStepSilently(step) {
@@ -1965,13 +1991,19 @@ function updateFileName(inputId, labelId) {
   const label = $(`#${labelId}`);
   if (!input || !label) return;
   const file = input.files?.[0];
-  label.textContent = file ? file.name : "No file selected";
+  label.textContent = file ? file.name : "Choose file";
   label.classList.toggle("file-selected", Boolean(file));
+  const card = input.closest(".upload-card");
+  if (card) card.classList.toggle("has-file", Boolean(file));
+  updateUploadPreview(inputId, file);
 }
 
 function validateUploadFile(input) {
   const file = input.files?.[0];
-  if (!file) return true;
+  if (!file) {
+    renderRegistrationWizard();
+    return true;
+  }
   const allowed = ["image/jpeg", "image/png", "application/pdf"];
   if (!allowed.includes(file.type)) {
     input.value = "";
@@ -1979,9 +2011,60 @@ function validateUploadFile(input) {
     renderRegistrationWizard();
     return false;
   }
+  if (file.size > MAX_QID_FILE_SIZE) {
+    input.value = "";
+    $("#registration-message").textContent = "File must be 5 MB or smaller.";
+    renderRegistrationWizard();
+    return false;
+  }
   $("#registration-message").textContent = "";
   renderRegistrationWizard();
   return true;
+}
+
+function updateUploadPreview(inputId, file) {
+  const preview = $(`#${inputId}-preview`);
+  if (!preview) return;
+  if (!file) {
+    preview.innerHTML = "";
+    return;
+  }
+  const sizeLabel = `${Math.max(1, Math.round(file.size / 1024))} KB`;
+  if (file.type.startsWith("image/")) {
+    preview.innerHTML = `<span>Image selected</span><small>${escapeHtml(sizeLabel)}</small>`;
+    return;
+  }
+  preview.innerHTML = `<span>PDF selected</span><small>${escapeHtml(sizeLabel)}</small>`;
+}
+
+function renderApplicationReviewSummary() {
+  const container = $("#application-review-summary");
+  if (!container) return;
+  const selected = getSelectedRegistrationFacilities();
+  const payment = calculateApplicationTotal(selected);
+  const fullName = $("#full-name")?.value.trim() || "Resident";
+  container.innerHTML = `
+    <strong>Application review</strong>
+    <span>${escapeHtml(fullName)} · ${selected.length} facilit${selected.length === 1 ? "y" : "ies"} · QAR ${payment.total}</span>
+  `;
+}
+
+function updatePersonalFieldErrors(showErrors = true) {
+  const fields = [
+    ["full-name", "Enter your full name.", (value) => hasLetters(normalizeName(value)) && normalizeName(value).length >= 2],
+    ["qid-number", "QID must be exactly 11 digits.", (value) => isValidQid(value.trim())],
+    ["email", "Enter a valid email address.", (value) => isValidEmail(value.trim().toLowerCase())],
+    ["contact-number", "Enter a Qatar contact number.", (value) => normalizeName(value).length >= 6],
+    ["villa-number", "Enter your unit, villa, or address.", (value) => normalizeName(value).length >= 2],
+  ];
+  fields.forEach(([id, message, isValid]) => {
+    const input = $(`#${id}`);
+    const error = $(`#${id}-error`);
+    if (!input || !error) return;
+    const invalid = Boolean(input.value) && !isValid(input.value);
+    error.textContent = showErrors && invalid ? message : "";
+    input.toggleAttribute("aria-invalid", showErrors && invalid);
+  });
 }
 function getFacilityPrice(facilityName) {
   const facility = state.facilities.find((item) => item.name === facilityName);
@@ -3615,8 +3698,24 @@ async function copyPaymentValue(key) {
   }[key];
   if (!value) return;
   await navigator.clipboard.writeText(value);
-  if ($("#registration-message")) $("#registration-message").textContent = "Copied payment detail.";
+  const feedback = $("#copy-feedback");
+  if (feedback) feedback.textContent = "Copied.";
+  if ($("#registration-message")) $("#registration-message").textContent = "";
   notify("Payment detail copied.");
+}
+
+function formatQatarPhoneInput(input) {
+  if (!input) return;
+  const digits = input.value.replace(/\D/g, "").replace(/^974/, "").slice(0, 8);
+  input.value = digits ? `+974 ${digits.slice(0, 4)}${digits.length > 4 ? ` ${digits.slice(4)}` : ""}` : "+974 ";
+}
+
+function clearUploadFile(inputId) {
+  const input = $(`#${inputId}`);
+  if (!input) return;
+  input.value = "";
+  $("#registration-message").textContent = "";
+  renderRegistrationWizard();
 }
 
 function getFacilityNames() {
@@ -3871,10 +3970,22 @@ $("#registration-access-options")?.addEventListener("change", () => {
   renderRegistrationWizard();
 });
 ["full-name", "qid-number", "email", "contact-number", "villa-number"].forEach((id) => {
-  $(`#${id}`)?.addEventListener("input", renderRegistrationWizard);
+  $(`#${id}`)?.addEventListener("input", (event) => {
+    if (id === "contact-number") formatQatarPhoneInput(event.target);
+    if (id === "qid-number") event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11);
+    updatePersonalFieldErrors(true);
+    renderRegistrationWizard();
+  });
 });
 $("#qatar-id")?.addEventListener("change", (event) => validateUploadFile(event.target));
 $("#payment-proof")?.addEventListener("change", (event) => validateUploadFile(event.target));
+$$("[data-clear-file]").forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clearUploadFile(button.dataset.clearFile);
+  });
+});
 window.addEventListener("popstate", handleRoute);
 
 render();

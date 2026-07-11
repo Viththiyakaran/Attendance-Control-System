@@ -1,414 +1,579 @@
-/* Compact customer application wizard. Loaded after global styles. */
+/* Customer application wizard. Loaded after global styles. */
 .customer-mode {
-  --wizard-bg: #F5F7F6;
-  --wizard-green: #087F65;
-  --wizard-green-dark: #055B49;
-  --wizard-card: #FFFFFF;
-  --wizard-border: #E1E7E4;
-  --wizard-text: #17211F;
-  --wizard-muted: #66736F;
+  --wizard-bg: #f5f7f6;
+  --wizard-green: #087f65;
+  --wizard-green-dark: #055b49;
+  --wizard-card: #ffffff;
+  --wizard-border: #e1e7e4;
+  --wizard-text: #17211f;
+  --wizard-muted: #66736f;
   background: var(--wizard-bg) !important;
+  color: var(--wizard-text) !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   overflow-x: hidden !important;
 }
 
-.customer-mode .public-header {
-  display: none !important;
+.customer-mode::before {
+  opacity: 0.2 !important;
+  filter: saturate(0.8) brightness(1.08) !important;
 }
 
-.customer-mode .public-header h1 {
-  max-width: 760px !important;
-  font-size: clamp(1.45rem, 2.15vw, 2.15rem) !important;
-  line-height: 1.05 !important;
-}
-
-.customer-mode .public-header .helper-text {
-  max-width: 720px !important;
-  margin-top: 4px !important;
-  font-size: 0.9rem !important;
-  line-height: 1.35 !important;
-}
-
-.customer-mode main {
-  display: grid !important;
-  place-items: center !important;
-  min-height: 100dvh !important;
-  height: 100dvh !important;
-  padding: 10px 16px !important;
-  overflow: hidden !important;
-}
-
-#register-view.active {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-  align-items: stretch !important;
-  gap: 0 !important;
-  width: min(980px, 100%) !important;
-  max-width: 980px !important;
-  min-height: 0 !important;
-  height: min(760px, calc(100dvh - 20px)) !important;
-  margin: 0 auto !important;
-}
-
+.customer-mode .public-header,
 .public-showcase {
   display: none !important;
 }
 
-.public-brand-card,
-.role-card,
-.public-info-card {
-  border-radius: 14px !important;
-  border: 1px solid var(--wizard-border) !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 22px rgba(23, 33, 31, 0.06) !important;
+.customer-mode main {
+  min-height: 100dvh !important;
+  padding: 24px !important;
+  display: grid !important;
+  place-items: start center !important;
+  overflow: auto !important;
 }
 
-.public-brand-card {
-  grid-template-columns: 44px minmax(0, 1fr) !important;
-  gap: 10px !important;
-  padding: 12px !important;
-}
-
-.public-brand-mark {
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 12px !important;
-}
-
-.public-brand-card h2 {
-  font-size: 1rem !important;
-  line-height: 1.18 !important;
-}
-
-.public-brand-card p:not(.eyebrow) {
-  margin-top: 4px !important;
-  font-size: 0.82rem !important;
-  line-height: 1.38 !important;
-}
-
-.role-card-grid {
-  grid-template-columns: 1fr !important;
-  gap: 8px !important;
-}
-
-.role-card {
-  grid-template-columns: 34px minmax(0, 1fr) !important;
-  justify-items: start !important;
-  align-items: center !important;
-  gap: 6px 10px !important;
-  padding: 10px !important;
-  text-align: left !important;
-}
-
-.role-card p {
-  grid-column: 2 !important;
-  font-size: 0.76rem !important;
-}
-
-.public-info-card {
-  padding: 12px !important;
-}
-
-.public-info-card h3 {
-  font-size: 0.9rem !important;
-}
-
-.feature-list {
-  gap: 6px !important;
-  margin-top: 8px !important;
-}
-
-.feature-list li {
-  font-size: 0.78rem !important;
-  line-height: 1.25 !important;
-}
-
-.public-info-card:nth-of-type(n + 2),
-.process-list,
-.trust-strip {
-  display: none !important;
+#register-view.active {
+  display: block !important;
+  width: min(1080px, 100%) !important;
+  max-width: 1080px !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
 }
 
 .registration-panel {
   display: grid !important;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+  grid-template-rows: auto minmax(0, 1fr) auto auto !important;
+  gap: 18px !important;
   width: 100% !important;
-  max-width: none !important;
+  max-width: 1080px !important;
   min-height: 0 !important;
-  height: 100% !important;
-  max-height: min(760px, calc(100dvh - 20px)) !important;
-  padding: 12px 14px !important;
+  padding: 24px !important;
   border: 1px solid var(--wizard-border) !important;
-  border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  box-shadow: 0 14px 34px rgba(23, 33, 31, 0.08) !important;
-  overflow: hidden !important;
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  box-shadow: 0 16px 40px rgba(23, 33, 31, 0.09) !important;
+  overflow: visible !important;
 }
 
 .registration-panel .section-heading {
   display: none !important;
 }
 
-.registration-panel .section-heading h2 {
-  font-size: 1.18rem !important;
-}
-
-.registration-panel .section-heading .helper-text {
-  display: none !important;
-}
-
 .wizard-stepper {
+  display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 7px !important;
-  margin-bottom: 7px !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
 }
 
 .wizard-stepper li {
-  min-height: 32px !important;
-  padding: 5px 8px !important;
-  border-radius: 10px !important;
-  font-size: 0.78rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  min-height: 46px !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 14px !important;
+  background: #fbfdfc !important;
+  color: var(--wizard-muted) !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
+.wizard-stepper li.active {
+  border-color: rgba(8, 127, 101, 0.42) !important;
+  background: #e6f6ef !important;
+  color: var(--wizard-green-dark) !important;
+  box-shadow: inset 0 0 0 1px rgba(8, 127, 101, 0.1) !important;
+}
+
+.wizard-stepper li.complete {
+  border-color: rgba(8, 127, 101, 0.22) !important;
+  background: #f0fbf6 !important;
+  color: var(--wizard-green) !important;
 }
 
 .wizard-stepper span {
-  width: 23px !important;
-  height: 23px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  flex: 0 0 auto !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: var(--wizard-green-dark) !important;
+  border: 1px solid rgba(8, 127, 101, 0.16) !important;
+}
+
+.wizard-stepper li.active span,
+.wizard-stepper li.complete span {
+  background: var(--wizard-green) !important;
+  color: #ffffff !important;
 }
 
 .wizard-step {
+  display: none !important;
   min-height: 0 !important;
-  overflow: hidden !important;
 }
 
 .wizard-step.active {
   display: grid !important;
-  grid-template-rows: auto minmax(0, 1fr) auto !important;
-  gap: 6px !important;
+  gap: 16px !important;
 }
 
 .wizard-copy {
-  gap: 3px !important;
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.wizard-copy .eyebrow {
+  margin: 0 !important;
+  color: var(--wizard-green) !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
 }
 
 .wizard-copy h3 {
-  font-size: 0.94rem !important;
+  margin: 0 !important;
+  font-size: 1.35rem !important;
+  line-height: 1.15 !important;
 }
 
 .wizard-copy p:not(.eyebrow) {
-  display: none !important;
+  margin: 0 !important;
+  color: var(--wizard-muted) !important;
+  font-size: 0.92rem !important;
 }
 
 .registration-access {
-  display: grid !important;
-  grid-template-rows: minmax(0, 1fr) auto !important;
-  gap: 6px !important;
   min-height: 0 !important;
-  overflow: hidden !important;
 }
 
 .wizard-facilities {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  gap: 6px !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: hidden !important;
-  align-content: start !important;
+  gap: 12px !important;
 }
 
-.wizard-facilities .facility-choice-card {
-  min-height: 118px !important;
-  padding: 6px !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-.wizard-facilities .facility-choice-card > span {
+.facility-choice-card {
+  position: relative !important;
   display: grid !important;
-  gap: 1px !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  min-height: 0 !important;
+  padding: 12px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(23, 33, 31, 0.04) !important;
+  cursor: pointer !important;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease !important;
+}
+
+.facility-choice-card:hover,
+.facility-choice-card:focus-within {
+  border-color: rgba(8, 127, 101, 0.48) !important;
+  box-shadow: 0 8px 18px rgba(8, 127, 101, 0.08) !important;
+}
+
+.facility-choice-card:has(input:checked) {
+  border-color: var(--wizard-green) !important;
+  background: #eaf8f2 !important;
+  box-shadow: 0 8px 24px rgba(8, 127, 101, 0.12) !important;
+}
+
+.facility-choice-card input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  margin: 2px 0 0 !important;
+  accent-color: var(--wizard-green) !important;
+}
+
+.facility-choice-card > span {
+  display: grid !important;
+  gap: 5px !important;
   min-width: 0 !important;
 }
 
-.wizard-facilities input[type="checkbox"] {
-  width: 14px !important;
-  min-width: 14px !important;
-  height: 14px !important;
-  min-height: 14px !important;
-  margin-top: 2px !important;
-  padding: 0 !important;
+.facility-card-head {
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
 }
 
-.wizard-facilities .activity-icon {
-  width: 24px !important;
-  height: 24px !important;
-  margin-bottom: 1px !important;
+.activity-icon {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 999px !important;
+  background: var(--wizard-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 16px rgba(8, 127, 101, 0.16) !important;
 }
 
-.wizard-facilities .facility-choice-card strong {
-  font-size: 0.72rem !important;
-  line-height: 1.02 !important;
+.activity-icon svg {
+  width: 19px !important;
+  height: 19px !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  fill: none !important;
 }
 
-.wizard-facilities .facility-choice-card small {
-  font-size: 0.56rem !important;
-  line-height: 1.04 !important;
+.facility-choice-card strong {
+  min-width: 0 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.12 !important;
 }
 
-.wizard-facilities .facility-choice-card small:last-of-type {
-  display: none !important;
+.facility-choice-card small,
+.facility-price {
+  color: var(--wizard-muted) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.25 !important;
 }
 
-.wizard-facilities .facility-choice-card small:nth-of-type(4) {
-  display: none !important;
+.facility-price {
+  color: var(--wizard-green-dark) !important;
+  font-weight: 900 !important;
 }
 
 .facility-month-control {
   display: grid !important;
-  grid-template-columns: 24px minmax(42px, 1fr) 24px !important;
-  gap: 3px !important;
-  margin-top: 2px !important;
-  width: 100% !important;
-  min-width: 0 !important;
+  grid-template-columns: 34px minmax(64px, 1fr) 34px !important;
+  gap: 6px !important;
+  align-items: center !important;
+  margin-top: 4px !important;
+  opacity: 0.58 !important;
+}
+
+.facility-month-control.active,
+.facility-choice-card:has(input:checked) .facility-month-control {
   opacity: 1 !important;
 }
 
 .facility-month-control button {
-  display: grid !important;
-  place-items: center !important;
-  min-height: 24px !important;
-  border-radius: 7px !important;
+  min-height: 34px !important;
   padding: 0 !important;
+  border: 1px solid rgba(8, 127, 101, 0.28) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: var(--wizard-green-dark) !important;
+  font-weight: 900 !important;
 }
 
 .facility-month-control > span {
-  min-height: 24px !important;
-  font-size: 0.56rem !important;
-  min-width: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: 34px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: var(--wizard-muted) !important;
+  font-size: 0.68rem !important;
 }
 
 .facility-month-control strong {
-  font-size: 0.74rem !important;
+  color: var(--wizard-green-dark) !important;
+  font-size: 1rem !important;
 }
 
 .payment-summary.live-summary {
-  grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr) !important;
-  gap: 6px !important;
-  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(220px, 0.32fr) minmax(0, 1fr) !important;
+  gap: 12px !important;
 }
 
 .payment-total,
 .selected-facility-summary,
 .bank-details,
-.upload-box {
-  padding: 10px !important;
-  border-radius: 10px !important;
+.upload-card,
+.application-review-summary {
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  padding: 14px !important;
+}
+
+.payment-total {
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.payment-total span,
+.selected-facility-summary strong {
+  color: var(--wizard-text) !important;
+  font-weight: 800 !important;
 }
 
 .payment-total strong {
-  font-size: 1.08rem !important;
+  color: var(--wizard-green-dark) !important;
+  font-size: 1.7rem !important;
+  line-height: 1.05 !important;
 }
 
 .payment-total small,
 .selected-facility-summary,
 .selected-facility-summary small {
-  font-size: 0.68rem !important;
+  color: var(--wizard-muted) !important;
+  font-size: 0.86rem !important;
+  line-height: 1.4 !important;
 }
 
-.wizard-actions {
-  align-items: center !important;
-  min-height: 42px !important;
-  padding-top: 6px !important;
-  margin-top: 6px !important;
+.selected-facility-summary {
+  display: grid !important;
+  gap: 5px !important;
 }
 
-.wizard-actions button {
-  min-height: 36px !important;
-  border-radius: 9px !important;
-  padding-inline: 14px !important;
+.payment-card {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 0.35fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
 }
 
-.form-grid.two-col {
+.payment-qr-panel {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.bank-qr {
+  display: block !important;
+  width: min(100%, 220px) !important;
+  aspect-ratio: 1 !important;
+  object-fit: contain !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 16px !important;
+  background: #f8fbf9 !important;
+  padding: 10px !important;
+}
+
+.bank-details {
+  display: grid !important;
   gap: 10px !important;
 }
 
+.bank-details h3 {
+  margin: 0 !important;
+  font-size: 1.1rem !important;
+}
+
+.bank-details dl {
+  display: grid !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.bank-details dl > div {
+  display: grid !important;
+  grid-template-columns: 130px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding: 8px 0 !important;
+  border-bottom: 1px solid #edf2ef !important;
+}
+
+.bank-details dt {
+  color: var(--wizard-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+}
+
+.bank-details dd {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.bank-details dd span {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.bank-details button,
+.upload-actions button {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+}
+
+.copy-feedback {
+  min-height: 20px !important;
+  margin: 0 !important;
+  color: var(--wizard-green) !important;
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+}
+
+.form-grid.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
 .registration-panel label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--wizard-text) !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
+.registration-panel label b {
+  color: #b42318 !important;
+}
+
+.registration-panel input:not([type="checkbox"]):not([type="file"]) {
+  width: 100% !important;
+  min-height: 46px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 12px !important;
+  padding: 0 12px !important;
+  font: inherit !important;
+  font-weight: 600 !important;
+}
+
+.field-error {
+  min-height: 17px !important;
+  color: #b42318 !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+}
+
+.application-review-summary {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.application-review-summary span {
+  color: var(--wizard-muted) !important;
+}
+
+.upload-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.upload-card {
+  position: relative !important;
+  min-height: 170px !important;
+  border-style: dashed !important;
+  cursor: pointer !important;
+}
+
+.upload-card:hover,
+.upload-card:focus-within,
+.upload-card.has-file {
+  border-color: rgba(8, 127, 101, 0.48) !important;
+  background: #f7fcfa !important;
+}
+
+.upload-title {
+  font-weight: 900 !important;
+}
+
+.upload-help,
+.upload-file-name,
+.upload-preview {
+  color: var(--wizard-muted) !important;
   font-size: 0.82rem !important;
 }
 
-.registration-panel input {
-  min-height: 40px !important;
-  height: 40px !important;
-  border-radius: 10px !important;
+.upload-file-name.file-selected {
+  color: var(--wizard-green-dark) !important;
+  font-weight: 900 !important;
 }
 
-@media (max-width: 1280px) {
-  #register-view.active {
-    grid-template-columns: 1fr !important;
-    width: min(940px, 100%) !important;
-  }
+.upload-card input[type="file"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  cursor: pointer !important;
+}
 
-  .public-showcase {
-    display: none !important;
-  }
+.upload-preview {
+  display: grid !important;
+  gap: 2px !important;
+}
 
-  .registration-panel {
-    height: 100% !important;
-  }
+.upload-actions {
+  position: relative !important;
+  z-index: 2 !important;
+}
 
+.wizard-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-height: 52px !important;
+  padding-top: 14px !important;
+  border-top: 1px solid var(--wizard-border) !important;
+}
+
+.wizard-actions button {
+  min-width: 116px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  padding: 0 18px !important;
+  font-weight: 900 !important;
+}
+
+.wizard-actions button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+.registration-panel button:focus-visible,
+.registration-panel input:focus-visible,
+.facility-choice-card:focus-within,
+.upload-card:focus-within {
+  outline: 3px solid rgba(8, 127, 101, 0.2) !important;
+  outline-offset: 2px !important;
+}
+
+.registration-panel .notice {
+  min-height: 22px !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1100px) {
   .wizard-facilities {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (max-width: 900px) {
-  .customer-mode {
-    overflow: auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .customer-mode main {
-    min-height: auto !important;
-    height: auto !important;
-    display: block !important;
-    padding: 10px !important;
-    overflow: visible !important;
+    place-items: start center !important;
   }
+}
 
-  .customer-mode .public-header {
-    display: none !important;
-  }
-
-  .customer-mode .public-header h1 {
-    font-size: 1.55rem !important;
-  }
-
-  .customer-mode .public-header .helper-text {
-    font-size: 0.84rem !important;
-  }
-
-  #register-view.active {
-    min-height: auto !important;
-    height: auto !important;
+@media (max-width: 760px) {
+  .customer-mode main {
+    padding: 12px !important;
   }
 
   .registration-panel {
-    display: grid !important;
-    height: auto !important;
-    max-height: none !important;
-    min-height: calc(100dvh - 20px) !important;
-    padding: 14px !important;
-    overflow: visible !important;
-  }
-
-  .wizard-step.active {
-    overflow: visible !important;
-  }
-
-  .registration-access {
-    overflow: visible !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    gap: 14px !important;
   }
 
   .wizard-stepper {
-    grid-template-columns: repeat(4, minmax(54px, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 6px !important;
   }
 
@@ -416,95 +581,80 @@
     display: grid !important;
     justify-items: center !important;
     gap: 4px !important;
+    min-height: 58px !important;
     padding: 7px 4px !important;
     text-align: center !important;
-    font-size: 0.72rem !important;
+    font-size: 0.68rem !important;
   }
 
   .wizard-stepper span {
-    width: 24px !important;
-    height: 24px !important;
+    width: 25px !important;
+    height: 25px !important;
   }
 
-  .wizard-facilities {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    overflow: visible !important;
+  .wizard-copy h3 {
+    font-size: 1.16rem !important;
   }
 
+  .wizard-facilities,
   .payment-summary.live-summary,
-  .payment-summary,
-  .form-grid.two-col {
+  .payment-card,
+  .form-grid.two-col,
+  .upload-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .facility-choice-card {
+    min-height: 0 !important;
+  }
+
+  .payment-qr-panel {
+    grid-template-columns: 120px minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .bank-qr {
+    width: 120px !important;
+  }
+
+  .bank-details dl > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .application-review-summary {
+    display: grid !important;
   }
 
   .wizard-actions {
     position: sticky !important;
     bottom: 0 !important;
     z-index: 5 !important;
-    margin-inline: -14px !important;
-    padding: 10px 14px !important;
+    margin: 0 -16px -16px !important;
+    padding: 10px 16px !important;
     background: rgba(255, 255, 255, 0.96) !important;
     backdrop-filter: blur(10px) !important;
-  }
-}
-
-@media (max-width: 520px) {
-  .customer-mode .public-header h1 {
-    font-size: 1.32rem !important;
-  }
-
-  .customer-mode .public-header .helper-text {
-    display: none !important;
-  }
-
-  .registration-panel .section-heading {
-    margin-bottom: 8px !important;
-  }
-
-  .registration-panel .section-heading h2 {
-    font-size: 1.02rem !important;
-  }
-
-  .registration-panel .section-heading .helper-text {
-    display: none !important;
-  }
-
-  .wizard-facilities {
-    grid-template-columns: 1fr !important;
-  }
-
-  .wizard-facilities .facility-choice-card {
-    padding: 11px !important;
-  }
-
-  .wizard-facilities .facility-choice-card > span {
-    grid-template-columns: 36px minmax(0, 1fr) !important;
-    gap: 2px 10px !important;
-    align-items: center !important;
-  }
-
-  .wizard-facilities .activity-icon {
-    grid-row: 1 / span 4 !important;
-  }
-
-  .facility-month-control {
-    grid-column: 1 / -1 !important;
-    grid-template-columns: 44px minmax(0, 1fr) 44px !important;
-    margin-top: 8px !important;
-  }
-
-  .facility-month-control button,
-  .facility-month-control > span,
-  .wizard-actions button {
-    min-height: 44px !important;
-  }
-
-  .wizard-actions {
-    gap: 8px !important;
   }
 
   .wizard-actions button {
     flex: 1 1 0 !important;
-    padding-inline: 10px !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .wizard-stepper strong {
+    display: none !important;
+  }
+
+  .wizard-stepper li {
+    min-height: 42px !important;
+  }
+
+  .payment-qr-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bank-qr {
+    width: min(180px, 100%) !important;
   }
 }
