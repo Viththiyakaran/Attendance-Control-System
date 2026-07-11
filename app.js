@@ -654,9 +654,9 @@ function renderPendingUsers() {
         <td><span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span></td>
         <td>${formatDateTime(user.createdAt)}</td>
         <td class="action-cell">
-          ${user.status !== "Rejected" ? `<button data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
+          ${user.status !== "Rejected" ? `<button class="application-action-primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
           <details class="row-menu">
-            <summary aria-label="More actions">More</summary>
+            <summary aria-label="More actions">...</summary>
             <button type="button" data-delete-user="${user.id}">Delete application</button>
           </details>
         </td>

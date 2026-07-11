@@ -786,7 +786,7 @@
 
 .admin-page[data-admin-page="applications"] .user-table {
   width: 100% !important;
-  min-width: 1060px !important;
+  min-width: 1120px !important;
   table-layout: fixed !important;
   border-collapse: collapse !important;
 }
@@ -812,7 +812,7 @@
 
 .admin-page[data-admin-page="applications"] .user-table th:nth-child(1),
 .admin-page[data-admin-page="applications"] .user-table td:nth-child(1) {
-  width: 24% !important;
+  width: 22% !important;
 }
 
 .admin-page[data-admin-page="applications"] .user-table th:nth-child(2),
@@ -822,7 +822,7 @@
 
 .admin-page[data-admin-page="applications"] .user-table th:nth-child(3),
 .admin-page[data-admin-page="applications"] .user-table td:nth-child(3) {
-  width: 22% !important;
+  width: 21% !important;
 }
 
 .admin-page[data-admin-page="applications"] .user-table th:nth-child(4),
@@ -837,7 +837,7 @@
 
 .admin-page[data-admin-page="applications"] .user-table th:nth-child(6),
 .admin-page[data-admin-page="applications"] .user-table td:nth-child(6) {
-  width: 13% !important;
+  width: 16% !important;
 }
 
 .admin-page[data-admin-page="applications"] .person-cell {
@@ -848,17 +848,19 @@
 .admin-page[data-admin-page="applications"] .person-cell strong {
   color: var(--dashboard-text) !important;
   font-size: 0.94rem !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 .admin-page[data-admin-page="applications"] .person-cell small {
   color: var(--dashboard-muted) !important;
   font-size: 0.8rem !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 .admin-page[data-admin-page="applications"] .facility-summary {
@@ -880,11 +882,12 @@
 }
 
 .admin-page[data-admin-page="applications"] .action-cell {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: minmax(86px, 1fr) 42px !important;
   align-items: center !important;
   gap: 8px !important;
-  flex-wrap: nowrap !important;
   min-width: 0 !important;
+  white-space: nowrap !important;
 }
 
 .admin-page[data-admin-page="applications"] .action-cell button,
@@ -899,13 +902,30 @@
   white-space: nowrap !important;
 }
 
+.admin-page[data-admin-page="applications"] .application-action-primary {
+  width: 100% !important;
+  max-width: none !important;
+  border: 1px solid rgba(8, 127, 101, 0.28) !important;
+  background: #087F65 !important;
+  color: #fff !important;
+}
+
 .admin-page[data-admin-page="applications"] .row-menu {
   position: relative !important;
+  display: block !important;
+  width: 42px !important;
 }
 
 .admin-page[data-admin-page="applications"] .row-menu summary {
+  width: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  padding: 0 !important;
   border: 1px solid var(--dashboard-border) !important;
   background: #fff !important;
+  color: var(--dashboard-text) !important;
+  font-size: 1.1rem !important;
+  letter-spacing: 0.04em !important;
   cursor: pointer !important;
   list-style: none !important;
 }
