@@ -77,6 +77,7 @@ let userPage = 1;
 let userSearchQuery = "";
 let userStatusFilter = "all";
 let userSubmittedDateFilter = "";
+let selectedUserReviewId = "";
 let reportPage = 1;
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
@@ -2868,6 +2869,9 @@ function openUserDialog(userId) {
     ? uniqueList([...getUserAccess(renewalTarget), ...getRequestedAccess(user)])
     : getRequestedAccess(user);
   const isApproved = user.status === "Approved";
+  selectedUserReviewId = userId;
+  const reviewUsers = getFilteredUsers();
+  const reviewIndex = reviewUsers.findIndex((item) => item.id === userId);
 
   const preview = !user.qatarId?.data
     ? `<p class="empty">No Qatar ID file uploaded for this record.</p>`
@@ -2880,9 +2884,17 @@ function openUserDialog(userId) {
     ? `<iframe title="Payment proof PDF" src="${user.paymentProof.data}"></iframe>`
     : `<img alt="Uploaded payment proof for ${escapeHtml(user.email)}" src="${user.paymentProof.data}" />`;
 
-  $("#dialog-content").innerHTML = `
+  const detailView = $("#application-detail-view");
+  if (!detailView) return;
+  $("#applications-list-view").hidden = true;
+  detailView.hidden = false;
+  detailView.innerHTML = `
+    <div class="application-detail-header">
+      <button class="application-back" type="button" data-close-user-review>\u2190 Back to applications</button>
+      <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
+    </div>
     <div class="section-heading">
-      <p class="eyebrow">${user.status === "Renewal Pending" ? "Renewal Review" : isApproved ? "Manage User Access" : "Extract Details From Qatar ID"}</p>
+      <p class="eyebrow">${user.status === "Renewal Pending" ? "Renewal Review" : isApproved ? "Manage User Access" : "Review Application"}</p>
       <h2>${escapeHtml(user.fullName || user.email)}</h2>
       <p>${escapeHtml(user.email)} | Contact: ${escapeHtml(user.contactNumber || "-")} | Villa: ${escapeHtml(user.villaNumber || "-")}</p>
       ${renewalTarget ? `<p class="helper-text">Existing resident found. Approval will update ${escapeHtml(renewalTarget.fullName || renewalTarget.email)} and keep the same QR pass active.</p>` : ""}
@@ -2942,13 +2954,33 @@ function openUserDialog(userId) {
         `).join("")}
       </div>
     </div>
-    <div class="dialog-actions">
-      <button class="primary" type="button" data-approve-user="${user.id}">${isApproved ? "Save Access" : "Approve"}</button>
+    <div class="dialog-actions application-review-actions">
+      <button type="button" data-review-neighbor="prev" ${reviewIndex <= 0 ? "disabled" : ""}>\u2190 Previous</button>
+      <span class="review-queue-position">${reviewIndex >= 0 ? reviewIndex + 1 : "-"} of ${reviewUsers.length}</span>
+      <button class="primary" type="button" data-approve-user="${user.id}">${isApproved ? "Save Access" : "Approve & Issue QR"}</button>
       ${isApproved ? `<button type="button" data-send-pass-user="${user.id}">Send QR Pass</button>` : ""}
-      ${isApproved ? "" : `<button class="danger" type="button" data-reject-user="${user.id}">Reject</button>`}
+      ${isApproved ? "" : `<button class="danger" type="button" data-reject-user="${user.id}">Reject Application</button>`}
+      <button type="button" data-review-neighbor="next" ${reviewIndex < 0 || reviewIndex >= reviewUsers.length - 1 ? "disabled" : ""}>Next \u2192</button>
     </div>
   `;
-  $("#user-dialog").showModal();
+  detailView.scrollIntoView({ block: "start" });
+}
+
+function closeUserReview() {
+  selectedUserReviewId = "";
+  const detailView = $("#application-detail-view");
+  if (detailView) {
+    detailView.hidden = true;
+    detailView.innerHTML = "";
+  }
+  if ($("#applications-list-view")) $("#applications-list-view").hidden = false;
+}
+
+function openNeighborReview(direction) {
+  const users = getFilteredUsers();
+  const index = users.findIndex((user) => user.id === selectedUserReviewId);
+  const nextIndex = index + (direction === "next" ? 1 : -1);
+  if (nextIndex >= 0 && nextIndex < users.length) openUserDialog(users[nextIndex].id);
 }
 
 async function approveUser(userId) {
@@ -3046,7 +3078,7 @@ async function approveUser(userId) {
   await upsertDoc("users", approvalRecord);
   if (renewalTarget) await upsertDoc("users", user);
   saveState();
-  $("#user-dialog").close();
+  closeUserReview();
   render();
 }
 
@@ -3108,7 +3140,7 @@ async function sendQrPassToUser(userId) {
   await sendAndLogQrPassEmail(user, email);
   await upsertDoc("users", user);
   saveState();
-  $("#user-dialog").close();
+  closeUserReview();
   render();
   notify("QR pass email prepared.");
 }
@@ -3127,7 +3159,7 @@ async function rejectUser(userId) {
     createdAt: new Date().toISOString(),
   });
   saveState();
-  $("#user-dialog").close();
+  closeUserReview();
   render();
 }
 
@@ -3920,6 +3952,8 @@ document.addEventListener("click", (event) => {
   const copyPayment = event.target.closest("[data-copy-payment]");
   const facilityMonthButton = event.target.closest("[data-facility-month]");
   const openUser = event.target.closest("[data-open-user]");
+  const closeUserReviewButton = event.target.closest("[data-close-user-review]");
+  const reviewNeighbor = event.target.closest("[data-review-neighbor]");
   const approve = event.target.closest("[data-approve-user]");
   const sendPass = event.target.closest("[data-send-pass-user]");
   const suspend = event.target.closest("[data-suspend-user]");
@@ -3974,6 +4008,8 @@ document.addEventListener("click", (event) => {
     changeFacilityMonths(facilityMonthButton.dataset.facilityMonth, facilityMonthButton.dataset.monthDelta);
   }
   if (openUser) openUserDialog(openUser.dataset.openUser);
+  if (closeUserReviewButton) closeUserReview();
+  if (reviewNeighbor) openNeighborReview(reviewNeighbor.dataset.reviewNeighbor);
   if (approve) approveUser(approve.dataset.approveUser);
   if (sendPass) sendQrPassToUser(sendPass.dataset.sendPassUser);
   if (suspend) suspendUser(suspend.dataset.suspendUser);

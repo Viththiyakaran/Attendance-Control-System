@@ -371,7 +371,7 @@
             </section>
 
             <section class="admin-page" data-admin-page="applications">
-              <section class="panel user-management-panel">
+              <section class="panel user-management-panel" id="applications-list-view">
                 <div class="section-heading compact-heading">
                   <div>
                     <p class="eyebrow">Verification</p>
@@ -408,6 +408,7 @@
                   <button type="button" data-user-page="next">Next</button>
                 </div>
               </section>
+              <section id="application-detail-view" class="application-detail-view" hidden aria-live="polite"></section>
             </section>
 
             <section class="admin-page" data-admin-page="users">
@@ -666,13 +667,6 @@
         </div>
       </section>
     </main>
-
-    <dialog id="user-dialog">
-      <form method="dialog" class="dialog-card">
-        <button class="icon-close" value="cancel" aria-label="Close">&times;</button>
-        <div id="dialog-content"></div>
-      </form>
-    </dialog>
 
     <dialog id="confirm-dialog" class="confirm-dialog">
       <form method="dialog" class="dialog-card">
