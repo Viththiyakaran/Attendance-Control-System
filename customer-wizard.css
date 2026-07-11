@@ -192,7 +192,7 @@
 }
 
 .wizard-copy h3 {
-  font-size: 1.08rem !important;
+  font-size: 1rem !important;
 }
 
 .wizard-copy p:not(.eyebrow) {
@@ -209,8 +209,8 @@
 
 .wizard-facilities {
   display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 8px !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
   min-height: 0 !important;
   max-height: none !important;
   overflow: hidden !important;
@@ -218,16 +218,16 @@
 }
 
 .wizard-facilities .facility-choice-card {
-  min-height: 126px !important;
-  padding: 8px !important;
-  border-radius: 12px !important;
+  min-height: 144px !important;
+  padding: 7px !important;
+  border-radius: 11px !important;
   box-shadow: none !important;
   overflow: visible !important;
 }
 
 .wizard-facilities .facility-choice-card > span {
   display: grid !important;
-  gap: 3px !important;
+  gap: 2px !important;
   min-width: 0 !important;
 }
 
@@ -241,26 +241,30 @@
 }
 
 .wizard-facilities .activity-icon {
-  width: 30px !important;
-  height: 30px !important;
-  margin-bottom: 2px !important;
+  width: 28px !important;
+  height: 28px !important;
+  margin-bottom: 1px !important;
 }
 
 .wizard-facilities .facility-choice-card strong {
-  font-size: 0.86rem !important;
-  line-height: 1.12 !important;
+  font-size: 0.78rem !important;
+  line-height: 1.06 !important;
 }
 
 .wizard-facilities .facility-choice-card small {
-  font-size: 0.72rem !important;
-  line-height: 1.15 !important;
+  font-size: 0.63rem !important;
+  line-height: 1.08 !important;
+}
+
+.wizard-facilities .facility-choice-card small:last-of-type {
+  display: none !important;
 }
 
 .facility-month-control {
   display: grid !important;
-  grid-template-columns: 28px minmax(54px, 1fr) 28px !important;
-  gap: 4px !important;
-  margin-top: 4px !important;
+  grid-template-columns: 26px minmax(48px, 1fr) 26px !important;
+  gap: 3px !important;
+  margin-top: 3px !important;
   width: 100% !important;
   min-width: 0 !important;
   opacity: 1 !important;
@@ -269,19 +273,19 @@
 .facility-month-control button {
   display: grid !important;
   place-items: center !important;
-  min-height: 28px !important;
-  border-radius: 8px !important;
+  min-height: 26px !important;
+  border-radius: 7px !important;
   padding: 0 !important;
 }
 
 .facility-month-control > span {
-  min-height: 28px !important;
-  font-size: 0.68rem !important;
+  min-height: 26px !important;
+  font-size: 0.62rem !important;
   min-width: 0 !important;
 }
 
 .facility-month-control strong {
-  font-size: 0.9rem !important;
+  font-size: 0.82rem !important;
 }
 
 .payment-summary.live-summary {
@@ -350,7 +354,7 @@
   }
 
   .wizard-facilities {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
 
