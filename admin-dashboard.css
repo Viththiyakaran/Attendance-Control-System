@@ -37,17 +37,17 @@
 
 .admin-mode .admin-shell,
 .admin-mode.admin-sidebar-collapsed .admin-shell {
-  width: 100% !important;
+  width: calc(100% - 240px) !important;
   max-width: none !important;
   margin-left: 240px !important;
-  padding: 24px !important;
+  padding: 20px 24px !important;
 }
 
 .admin-mode .admin-main,
 .admin-mode .admin-header,
 .admin-mode .admin-page[data-admin-page="dashboard"] {
   width: 100% !important;
-  max-width: 1440px !important;
+  max-width: 1480px !important;
   margin-inline: auto !important;
 }
 
@@ -59,8 +59,8 @@
   grid-template-columns: auto minmax(220px, 1fr) minmax(0, auto) !important;
   align-items: center !important;
   gap: 16px !important;
-  min-height: 72px !important;
-  padding: 12px 16px !important;
+  min-height: 64px !important;
+  padding: 10px 14px !important;
   border: 1px solid var(--dashboard-border) !important;
   border-radius: 14px !important;
   background: rgba(255, 255, 255, 0.96) !important;
@@ -144,13 +144,13 @@
 
 .admin-page[data-admin-page="dashboard"].active {
   display: grid !important;
-  gap: 20px !important;
+  gap: 16px !important;
 }
 
 .admin-page[data-admin-page="dashboard"] .kpi-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 16px !important;
+  gap: 12px !important;
 }
 
 .admin-page[data-admin-page="dashboard"] .stat-card {
@@ -160,8 +160,8 @@
   grid-template-rows: auto auto auto !important;
   align-items: center !important;
   gap: 6px 14px !important;
-  min-height: 120px !important;
-  padding: 20px !important;
+  min-height: 104px !important;
+  padding: 16px !important;
   border: 1px solid var(--dashboard-border) !important;
   border-radius: 16px !important;
   background: var(--dashboard-card) !important;
@@ -171,7 +171,7 @@
 }
 
 .admin-page[data-admin-page="dashboard"] .stat-card::after {
-  content: "›" !important;
+  content: ">" !important;
   grid-column: 3 !important;
   grid-row: 1 / span 3 !important;
   color: var(--dashboard-muted) !important;
@@ -214,7 +214,7 @@
 .admin-page[data-admin-page="dashboard"] .stat-card strong {
   grid-column: 2 !important;
   color: #03130F !important;
-  font-size: 2rem !important;
+  font-size: 1.75rem !important;
   line-height: 1 !important;
   letter-spacing: -0.03em !important;
 }
@@ -229,14 +229,14 @@
 .admin-page[data-admin-page="dashboard"] .dashboard-layout {
   display: grid !important;
   grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr) !important;
-  gap: 20px !important;
+  gap: 16px !important;
   align-items: start !important;
 }
 
 .admin-page[data-admin-page="dashboard"] .dashboard-left-column,
 .admin-page[data-admin-page="dashboard"] .dashboard-side {
   display: grid !important;
-  gap: 20px !important;
+  gap: 16px !important;
   align-content: start !important;
   min-width: 0 !important;
 }
@@ -244,7 +244,7 @@
 .admin-page[data-admin-page="dashboard"] .dashboard-card {
   width: 100% !important;
   min-width: 0 !important;
-  padding: 20px !important;
+  padding: 16px !important;
   border: 1px solid var(--dashboard-border) !important;
   border-radius: 14px !important;
   background: var(--dashboard-card) !important;
@@ -257,7 +257,7 @@
   align-items: start !important;
   justify-content: space-between !important;
   gap: 12px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 12px !important;
 }
 
 .admin-page[data-admin-page="dashboard"] .section-heading h2 {
@@ -329,8 +329,8 @@
 
 .admin-page[data-admin-page="dashboard"] .empty-state {
   min-height: 0 !important;
-  max-height: 130px !important;
-  padding: 16px !important;
+  max-height: 110px !important;
+  padding: 12px !important;
   border-radius: 12px !important;
   overflow: hidden !important;
 }
@@ -357,7 +357,7 @@
 
 .admin-page[data-admin-page="dashboard"] .quick-actions button::after,
 .admin-page[data-admin-page="dashboard"] .quick-actions a::after {
-  content: "›" !important;
+  content: ">" !important;
   color: var(--dashboard-muted) !important;
   font-size: 1.25rem !important;
 }
@@ -565,6 +565,7 @@
 
   .admin-mode .admin-shell,
   .admin-mode.admin-sidebar-collapsed .admin-shell {
+    width: 100% !important;
     margin-left: 0 !important;
     padding: 18px !important;
   }
@@ -581,6 +582,16 @@
     grid-column: 1 / -1 !important;
     grid-template-columns: minmax(0, 1fr) 150px auto auto !important;
     width: 100% !important;
+  }
+
+  .admin-page[data-admin-page="dashboard"] .dashboard-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .admin-page[data-admin-page="dashboard"] .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .admin-page[data-admin-page="dashboard"] .dashboard-layout {
