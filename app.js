@@ -1005,7 +1005,7 @@ function renderScannerStatus() {
   const container = $("#scanner-status-list");
   if (!container) return;
   const logs = state.logs.filter((log) => !isSeedLog(log)).sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt));
-  const facilityRows = getFacilityOptions().slice(0, 3).map((facility) => {
+  const facilityRows = getFacilityOptions().slice(0, 4).map((facility) => {
     const latest = logs.find((log) => log.facilityId === facility.id || log.facilityName === facility.name);
     return scannerStatusRow(displayFacilityName(facility.name), latest);
   });
@@ -1020,8 +1020,8 @@ function scannerStatusRow(label, latest) {
   const lastDate = latest?.checkInAt ? new Date(latest.checkInAt) : null;
   const active = lastDate && Date.now() - lastDate.getTime() < 15 * 60 * 1000;
   const stale = lastDate && !active;
-  const stateLabel = active ? "Online" : stale ? "Idle" : "No recent activity";
-  const className = active ? "online" : stale ? "idle" : "offline";
+  const stateLabel = active ? "Online" : stale ? "Idle" : "Unknown";
+  const className = active ? "online" : stale ? "idle" : "unknown";
   return `
     <div class="scanner-status-row">
       <span class="status-dot ${className}"></span>
@@ -1039,22 +1039,50 @@ function renderRecentCheckIns() {
   const logs = state.logs
     .filter((log) => !isSeedLog(log))
     .sort((a, b) => new Date(b.checkInAt) - new Date(a.checkInAt))
-    .slice(0, 8);
+    .slice(0, 5);
 
-  container.innerHTML = logs.length ? logs.map((log) => {
+  const rows = logs.map((log) => {
+    const user = state.users.find((item) => item.id === log.userId);
+    const facility = state.facilities.find((item) => item.id === log.facilityId);
+    const resident = maskName(user?.fullName || user?.email || "Unknown resident");
+    const facilityName = displayFacilityName(facility?.name || log.facilityName || "Unknown facility");
+    return `
+      <div class="recent-row">
+        <strong>${escapeHtml(resident)}</strong>
+        <span>${escapeHtml(facilityName)}</span>
+        <small>${escapeHtml(formatDateTime(log.checkInAt, "time"))}</small>
+        <span class="scan-chip ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
+      </div>
+    `;
+  }).join("");
+
+  const cards = logs.map((log) => {
     const user = state.users.find((item) => item.id === log.userId);
     const facility = state.facilities.find((item) => item.id === log.facilityId);
     return `
-      <div class="recent-row">
+      <article class="dashboard-mobile-card">
         <div>
           <strong>${escapeHtml(maskName(user?.fullName || user?.email || "Unknown resident"))}</strong>
           <small>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Unknown facility"))}</small>
         </div>
         <span class="scan-chip ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
-        <small>${escapeHtml(formatRelativeTime(log.checkInAt))}</small>
-      </div>
+        <small>${escapeHtml(formatDateTime(log.checkInAt, "time"))}</small>
+      </article>
     `;
-  }).join("") : emptyState("No scans yet", "Latest approved and denied scanner attempts will appear here.");
+  }).join("");
+
+  container.innerHTML = logs.length ? `
+    <div class="dashboard-checkins-table">
+      <div class="recent-row recent-row-head">
+        <span>Resident</span>
+        <span>Facility</span>
+        <span>Time</span>
+        <span>Status</span>
+      </div>
+      ${rows}
+    </div>
+    <div class="dashboard-checkins-cards">${cards}</div>
+  ` : emptyState("No scans yet", "Latest approved and denied scanner attempts will appear here.");
 }
 
 function renderRecentActivity() {
@@ -1062,24 +1090,24 @@ function renderRecentActivity() {
   if (!container) return;
   const emailItems = (state.emails || []).map((email) => ({
     type: "Notification",
-    title: email.subject || "Email notification",
-    detail: `${maskEmail(email.to)} - ${sanitizeNotificationText(email.body)}`,
+    title: summarizeEmailActivity(email),
+    detail: maskEmail(email.to),
     createdAt: email.createdAt,
   }));
   const applicationItems = state.users.map((user) => ({
     type: user.status || "Application",
     title: user.status === "Approved" ? "Resident approved" : "Application received",
-    detail: `${maskName(user.fullName || user.email)} - ${maskEmail(user.email)}`,
+    detail: maskName(user.fullName || user.email),
     createdAt: user.createdAt,
   }));
   const items = [...emailItems, ...applicationItems]
     .filter((item) => item.createdAt)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 6);
+    .slice(0, 5);
 
   container.innerHTML = items.length ? items.map((item) => `
     <div class="activity-row">
-      <span>${escapeHtml(item.type)}</span>
+      <span class="activity-icon">${adminIcon(activityIconName(item.type, item.title))}</span>
       <div>
         <strong>${escapeHtml(item.title)}</strong>
         <small>${escapeHtml(item.detail)}</small>
@@ -1087,6 +1115,24 @@ function renderRecentActivity() {
       <small>${escapeHtml(formatRelativeTime(item.createdAt))}</small>
     </div>
   `).join("") : emptyState("No recent notifications", "Application and email activity will appear here.");
+}
+
+function summarizeEmailActivity(email) {
+  const subject = String(email.subject || "Email notification");
+  if (/approved/i.test(subject)) return "Application approved";
+  if (/qr|pass/i.test(subject)) return "QR pass notification sent";
+  if (/received|application/i.test(subject)) return "Application notification sent";
+  if (/payment/i.test(subject)) return "Payment notification sent";
+  return subject.replace(/\s*-\s*.*/, "").slice(0, 64);
+}
+
+function activityIconName(type, title) {
+  const value = `${type || ""} ${title || ""}`.toLowerCase();
+  if (/approved|verified/.test(value)) return "check";
+  if (/payment/.test(value)) return "card";
+  if (/qr|pass|scan/.test(value)) return "scan";
+  if (/pending|application|notification/.test(value)) return "clipboard";
+  return "info";
 }
 
 function renderAccessExceptions() {

@@ -6,6 +6,7 @@ const dist = path.join(root, "dist");
 const files = [
   "index.html",
   "styles.css",
+  "admin-dashboard.css",
   "app.js",
   "payment-config.js",
   "firebase-seed.html",

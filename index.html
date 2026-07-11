@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Facility Access & Attendance</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="admin-dashboard.css" />
   </head>
   <body>
     <header class="topbar public-header">
@@ -292,21 +293,34 @@
               </div>
 
               <div class="dashboard-layout">
-                <section class="panel dashboard-card facility-usage-card">
-                  <div class="section-heading">
-                    <div>
-                      <p class="eyebrow">Facility Usage</p>
-                      <h2>Top facilities</h2>
+                <div class="dashboard-left-column">
+                  <section class="panel dashboard-card facility-usage-card">
+                    <div class="section-heading">
+                      <div>
+                        <p class="eyebrow">Facility Usage</p>
+                        <h2>Top facilities</h2>
+                      </div>
+                      <div class="usage-tabs" role="tablist" aria-label="Facility usage period">
+                        <button class="active" type="button" data-usage-period="today">Today</button>
+                        <button type="button" data-usage-period="week">This week</button>
+                        <button type="button" data-usage-period="month">This month</button>
+                      </div>
                     </div>
-                    <div class="usage-tabs" role="tablist" aria-label="Facility usage period">
-                      <button class="active" type="button" data-usage-period="today">Today</button>
-                      <button type="button" data-usage-period="week">This week</button>
-                      <button type="button" data-usage-period="month">This month</button>
+                    <div id="weekly-usage-chart" class="usage-chart"></div>
+                    <button class="text-link" type="button" data-admin-section="facilities">View all facilities</button>
+                  </section>
+
+                  <section class="panel dashboard-card recent-checkins-card">
+                    <div class="section-heading">
+                      <div>
+                        <p class="eyebrow">Attendance</p>
+                        <h2>Recent Check-ins</h2>
+                      </div>
+                      <button class="text-link" type="button" data-admin-section="check-in-logs">View all logs</button>
                     </div>
-                  </div>
-                  <div id="weekly-usage-chart" class="usage-chart"></div>
-                  <button class="text-link" type="button" data-admin-section="facilities">View all facilities</button>
-                </section>
+                    <div id="recent-checkins" class="recent-checkins"></div>
+                  </section>
+                </div>
 
                 <aside class="dashboard-side">
                   <section class="panel dashboard-card">
@@ -324,29 +338,18 @@
                     </div>
                     <div id="scanner-status-list" class="scanner-status-list"></div>
                   </section>
+
+                  <section class="panel dashboard-card recent-activity-card">
+                    <div class="section-heading">
+                      <div>
+                        <p class="eyebrow">Notifications</p>
+                        <h2>Recent Activity</h2>
+                      </div>
+                      <button class="text-link" type="button" data-admin-section="notifications">View all notifications</button>
+                    </div>
+                    <div id="recent-activity" class="recent-activity"></div>
+                  </section>
                 </aside>
-
-                <section class="panel dashboard-card recent-checkins-card">
-                  <div class="section-heading">
-                    <div>
-                      <p class="eyebrow">Attendance</p>
-                      <h2>Recent Check-ins</h2>
-                    </div>
-                    <button class="text-link" type="button" data-admin-section="check-in-logs">View all logs</button>
-                  </div>
-                  <div id="recent-checkins" class="recent-checkins"></div>
-                </section>
-
-                <section class="panel dashboard-card recent-activity-card">
-                  <div class="section-heading">
-                    <div>
-                      <p class="eyebrow">Notifications</p>
-                      <h2>Recent Activity</h2>
-                    </div>
-                    <button class="text-link" type="button" data-admin-section="notifications">View all notifications</button>
-                  </div>
-                  <div id="recent-activity" class="recent-activity"></div>
-                </section>
               </div>
             </section>
 
