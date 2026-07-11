@@ -628,74 +628,73 @@ function filterUsersByDate(value) {
 }
 
 function renderPendingUsers() {
-  const table = $("#pending-users");
+  const list = $("#pending-users");
   const cards = $("#application-cards");
-  if (!table) return;
+  if (!list) return;
   const users = getFilteredUsers();
   const totalPages = Math.max(1, Math.ceil(users.length / USERS_PAGE_SIZE));
   userPage = Math.min(Math.max(userPage, 1), totalPages);
   const startIndex = (userPage - 1) * USERS_PAGE_SIZE;
   const pageUsers = users.slice(startIndex, startIndex + USERS_PAGE_SIZE);
 
-  table.innerHTML = pageUsers.length
+  list.innerHTML = pageUsers.length
     ? pageUsers.map((user) => {
       const access = getUserAccess(user);
       const applicantName = user.fullName || user.email || user.qidNumber || "Applicant";
       const applicantDetail = [user.email, user.qidNumber ? `QID ${user.qidNumber}` : ""].filter(Boolean).join(" | ");
       return `
-      <tr>
-        <td class="person-cell">
-          <strong>${escapeHtml(applicantName)}</strong>
-          ${applicantDetail ? `<small>${escapeHtml(applicantDetail)}</small>` : ""}
-          ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
-        </td>
-        <td>${escapeHtml(user.villaNumber || "-")}</td>
-        <td>${renderFacilitySummary(access)}</td>
-        <td><span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span></td>
-        <td>${formatDateTime(user.createdAt)}</td>
-        <td class="action-cell">
+      <article class="application-review-card">
+        <div class="application-applicant">
+          <div class="application-avatar">${escapeHtml(getInitials(applicantName))}</div>
+          <div class="application-person">
+            <strong>${escapeHtml(applicantName)}</strong>
+            ${applicantDetail ? `<small>${escapeHtml(applicantDetail)}</small>` : ""}
+            ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
+          </div>
+        </div>
+        <dl class="application-details">
+          <div>
+            <dt>Villa / Address</dt>
+            <dd>${escapeHtml(user.villaNumber || "-")}</dd>
+          </div>
+          <div>
+            <dt>Facilities</dt>
+            <dd>${renderFacilitySummary(access)}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd><span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span></dd>
+          </div>
+          <div>
+            <dt>Submitted</dt>
+            <dd>${formatDateTime(user.createdAt)}</dd>
+          </div>
+        </dl>
+        <div class="application-actions">
           ${user.status !== "Rejected" ? `<button class="application-action-primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
           <details class="row-menu">
             <summary aria-label="More actions">...</summary>
             <button type="button" data-delete-user="${user.id}">Delete application</button>
           </details>
-        </td>
-      </tr>
-    `;
-    }).join("")
-    : `<tr><td colspan="6" class="empty">${emptyState("No applications found", "Applications matching your filters will appear here.")}</td></tr>`;
-
-  if (cards) {
-    cards.innerHTML = pageUsers.length ? pageUsers.map((user) => {
-      const applicantName = user.fullName || user.email || user.qidNumber || "Applicant";
-      const applicantDetail = [user.email, user.qidNumber ? `QID ${user.qidNumber}` : ""].filter(Boolean).join(" | ");
-      return `
-      <article class="mobile-record-card">
-        <div class="record-card-head">
-          <div>
-            <strong>${escapeHtml(applicantName)}</strong>
-            ${applicantDetail ? `<small>${escapeHtml(applicantDetail)}</small>` : ""}
-          </div>
-          <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
-        </div>
-        <dl>
-          <div><dt>Villa</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
-          <div><dt>Requested</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div>
-          <div><dt>Submitted</dt><dd>${formatDateTime(user.createdAt)}</dd></div>
-        </dl>
-        <div class="record-actions">
-          ${user.status !== "Rejected" ? `<button class="primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review application" : "Manage access"}</button>` : ""}
-          <details class="row-menu">
-            <summary>More actions</summary>
-            <button type="button" data-delete-user="${user.id}">Delete application</button>
-          </details>
         </div>
       </article>
     `;
-    }).join("") : emptyState("No applications found", "Applications matching your filters will appear here.");
+    }).join("")
+    : emptyState("No applications found", "Applications matching your filters will appear here.");
+
+  if (cards) {
+    cards.innerHTML = "";
   }
 
   renderUserPagination(users.length, startIndex, pageUsers.length, totalPages);
+}
+
+function getInitials(value) {
+  const parts = String(value || "A").trim().split(/\s+/).filter(Boolean);
+  const initials = parts.length > 1
+    ? `${parts[0][0] || ""}${parts[1][0] || ""}`
+    : String(parts[0] || "A").slice(0, 2);
+  return initials.toUpperCase();
 }
 
 function renderFacilitySummary(facilities) {

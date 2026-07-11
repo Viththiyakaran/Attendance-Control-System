@@ -941,6 +941,118 @@
   gap: 10px !important;
 }
 
+.admin-page[data-admin-page="applications"] .application-review-list {
+  display: grid !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-review-card {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 1.15fr) minmax(0, 2.2fr) minmax(144px, auto) !important;
+  align-items: center !important;
+  gap: 18px !important;
+  padding: 16px !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-applicant {
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-avatar {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 14px !important;
+  background: #E3F4EF !important;
+  color: var(--dashboard-green) !important;
+  font-weight: 900 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-person {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-person strong {
+  color: var(--dashboard-text) !important;
+  font-size: 0.98rem !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-person small {
+  color: var(--dashboard-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-details {
+  display: grid !important;
+  grid-template-columns: minmax(160px, 1.1fr) minmax(150px, 1fr) minmax(100px, auto) minmax(130px, auto) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-details div {
+  display: grid !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-details dt {
+  color: var(--dashboard-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-details dd {
+  margin: 0 !important;
+  color: var(--dashboard-text) !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-actions {
+  display: grid !important;
+  grid-template-columns: minmax(96px, 1fr) 42px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  justify-self: end !important;
+  min-width: 144px !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-actions .application-action-primary {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-actions .row-menu {
+  width: 42px !important;
+}
+
+.admin-page[data-admin-page="applications"] .application-actions .row-menu summary {
+  height: 42px !important;
+  min-height: 42px !important;
+}
+
 @media (max-width: 1100px) {
   .admin-page[data-admin-page="applications"] .compact-heading {
     grid-template-columns: 1fr !important;
@@ -951,6 +1063,20 @@
     justify-self: stretch !important;
     width: 100% !important;
     grid-template-columns: minmax(220px, 1fr) 90px minmax(140px, 0.6fr) minmax(150px, 0.7fr) !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-review-card {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-actions {
+    justify-self: stretch !important;
+    max-width: 220px !important;
   }
 }
 
@@ -968,7 +1094,25 @@
   }
 
   .admin-page[data-admin-page="applications"] .mobile-record-list {
-    display: grid !important;
-    gap: 12px !important;
+    display: none !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-review-card {
+    padding: 14px !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-details {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-actions {
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    max-width: none !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .application-actions .application-action-primary,
+  .admin-page[data-admin-page="applications"] .application-actions .row-menu summary {
+    min-height: 44px !important;
   }
 }
