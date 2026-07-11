@@ -78,6 +78,8 @@ let userSearchQuery = "";
 let userStatusFilter = "all";
 let userSubmittedDateFilter = "";
 let selectedUserReviewId = "";
+let applicationReviewBusy = false;
+const applicationReviewDrafts = {};
 let reportPage = 1;
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
@@ -479,6 +481,13 @@ function handleRoute() {
       return;
     }
     switchView("admin");
+    const applicationRoute = path.match(/^\/admin\/applications\/([^/]+)$/);
+    if (applicationRoute) {
+      switchAdminSection("applications");
+      openUserDialog(decodeURIComponent(applicationRoute[1]), { fromRoute: true });
+      return;
+    }
+    resetUserReviewView();
     switchAdminSection(adminSectionFromPath(path));
     return;
   }
@@ -2859,9 +2868,84 @@ function readFile(file) {
   });
 }
 
-function openUserDialog(userId) {
+function maskQidNumber(value) {
+  const digits = String(value || "");
+  return digits.length > 4 ? `${"\u2022".repeat(Math.max(0, digits.length - 4))}${digits.slice(-4)}` : digits || "-";
+}
+
+function getReviewTab() {
+  const tab = new URLSearchParams(window.location.search).get("tab") || "overview";
+  return ["overview", "documents", "verification", "activity"].includes(tab) ? tab : "overview";
+}
+
+function reviewDocumentCard(label, document, key, user) {
+  if (!document?.data) return `<article class="review-document-card"><h3>${escapeHtml(label)}</h3>${emptyState("Document unavailable", "No file was uploaded for this application.")}</article>`;
+  const isPdf = String(document.type || "").includes("pdf");
+  const preview = isPdf
+    ? `<iframe title="${escapeHtml(label)} PDF" src="${document.data}"></iframe>`
+    : `<img alt="${escapeHtml(label)} for ${escapeHtml(user.fullName || user.email)}" src="${document.data}" />`;
+  return `
+    <article class="review-document-card" data-review-document="${key}">
+      <div class="review-document-heading"><div><h3>${escapeHtml(label)}</h3><small>${escapeHtml(document.name || (isPdf ? "PDF document" : "Image document"))}</small></div>
+        <div class="document-tools" aria-label="${escapeHtml(label)} controls">
+          <button type="button" data-document-action="zoom-out" aria-label="Zoom out">\u2212</button>
+          <button type="button" data-document-action="zoom-in" aria-label="Zoom in">+</button>
+          <button type="button" data-document-action="rotate" aria-label="Rotate clockwise">\u21bb</button>
+          <button type="button" data-document-action="fullscreen" aria-label="View full screen">\u26f6</button>
+          <a href="${document.data}" download="${escapeHtml(document.name || key)}" aria-label="Download ${escapeHtml(label)}">Download</a>
+        </div>
+      </div>
+      <div class="review-document-preview is-sensitive" data-document-preview tabindex="0">
+        <div class="document-transform">${preview}</div>
+        <button class="document-reveal" type="button" data-reveal-document>Click to reveal</button>
+      </div>
+    </article>`;
+}
+
+function renderFacilityPaymentRows(user) {
+  const requested = getRequestedAccess(user);
+  if (!requested.length) return emptyState("No facilities requested", "This application does not contain facility selections.");
+  return requested.map((name) => {
+    const months = Number(user.facilityMonths?.[name] || user.accessMonths || 1);
+    const price = getFacilityPrice(name);
+    return `<div class="facility-payment-row"><strong>${escapeHtml(name)}</strong><span>${months} month${months === 1 ? "" : "s"}</span><span>QAR ${price}/month</span><b>QAR ${price * months}</b></div>`;
+  }).join("");
+}
+
+function captureReviewDraft(userId = selectedUserReviewId) {
+  if (!userId) return;
+  const checks = [...document.querySelectorAll("[data-verification-check]")].map((input) => input.checked);
+  applicationReviewDrafts[userId] = {
+    ...(applicationReviewDrafts[userId] || {}),
+    fullName: $("#review-full-name")?.value,
+    qidNumber: $("#review-qid-number")?.value,
+    dob: $("#review-dob")?.value,
+    checks,
+    note: $("#review-internal-note")?.value || applicationReviewDrafts[userId]?.note || "",
+  };
+}
+
+function reviewVerificationProgress() {
+  const checks = [...document.querySelectorAll("[data-verification-check]")];
+  const completed = checks.filter((input) => input.checked).length;
+  const progress = $("#review-verification-progress");
+  if (progress) progress.textContent = `${completed} of ${checks.length} checks completed`;
+  $$('[data-request-approve]').forEach((button) => {
+    button.disabled = completed !== checks.length || applicationReviewBusy;
+  });
+}
+
+function openUserDialog(userId, { fromRoute = false } = {}) {
+  if (!fromRoute) {
+    routeTo(`/admin/applications/${encodeURIComponent(userId)}`);
+    return;
+  }
   const user = state.users.find((item) => item.id === userId);
-  if (!user) return;
+  if (!user) {
+    notify("Application not found.", "warning");
+    routeTo("/admin/applications", { replace: true });
+    return;
+  }
   const renewalTarget = getRenewalTarget(user);
   const selectedAccess = user.accessFacilities?.length
     ? getUserAccess(user)
@@ -2869,104 +2953,63 @@ function openUserDialog(userId) {
     ? uniqueList([...getUserAccess(renewalTarget), ...getRequestedAccess(user)])
     : getRequestedAccess(user);
   const isApproved = user.status === "Approved";
+  const isPending = user.status === "Pending" || user.status === "Renewal Pending";
   selectedUserReviewId = userId;
   const reviewUsers = getFilteredUsers();
   const reviewIndex = reviewUsers.findIndex((item) => item.id === userId);
 
-  const preview = !user.qatarId?.data
-    ? `<p class="empty">No Qatar ID file uploaded for this record.</p>`
-    : user.qatarId.type.includes("pdf")
-    ? `<iframe title="Qatar ID PDF" src="${user.qatarId.data}"></iframe>`
-    : `<img alt="Uploaded Qatar ID for ${escapeHtml(user.email)}" src="${user.qatarId.data}" />`;
-  const paymentPreview = !user.paymentProof?.data
-    ? `<p class="empty">No payment screenshot uploaded for this record.</p>`
-    : user.paymentProof.type.includes("pdf")
-    ? `<iframe title="Payment proof PDF" src="${user.paymentProof.data}"></iframe>`
-    : `<img alt="Uploaded payment proof for ${escapeHtml(user.email)}" src="${user.paymentProof.data}" />`;
+  const activeTab = getReviewTab();
+  const draft = applicationReviewDrafts[userId] || {};
+  const extractedName = draft.fullName ?? user.fullName ?? "";
+  const extractedQid = draft.qidNumber ?? user.qidNumber ?? "";
+  const extractedDob = draft.dob ?? user.dob ?? "";
+  const checks = draft.checks || Array(7).fill(false);
+  const emailLog = [...(state.emails || [])].reverse().find((email) => email.to === user.email);
 
   const detailView = $("#application-detail-view");
   if (!detailView) return;
   $("#applications-list-view").hidden = true;
   detailView.hidden = false;
   detailView.innerHTML = `
-    <div class="application-detail-header">
+    <header class="review-page-header">
       <button class="application-back" type="button" data-close-user-review>\u2190 Back to applications</button>
+      <div class="review-header-main"><p class="eyebrow">Application ${escapeHtml(user.id)}</p><h2>${escapeHtml(user.fullName || user.email)}</h2><p>Submitted ${formatDateTime(user.createdAt)}</p></div>
       <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
-    </div>
-    <div class="section-heading">
-      <p class="eyebrow">${user.status === "Renewal Pending" ? "Renewal Review" : isApproved ? "Manage User Access" : "Review Application"}</p>
-      <h2>${escapeHtml(user.fullName || user.email)}</h2>
-      <p>${escapeHtml(user.email)} | Contact: ${escapeHtml(user.contactNumber || "-")} | Villa: ${escapeHtml(user.villaNumber || "-")}</p>
-      ${renewalTarget ? `<p class="helper-text">Existing resident found. Approval will update ${escapeHtml(renewalTarget.fullName || renewalTarget.email)} and keep the same QR pass active.</p>` : ""}
-      <p class="helper-text">Requested activities: ${escapeHtml(getRequestedAccess(user).join(", ") || "-")}</p>
-    </div>
-    <div class="application-review-grid">
-      <div>
-        <p class="eyebrow">Uploaded Qatar ID</p>
-        <div class="id-preview">${preview}</div>
-      </div>
-      <div>
-        <p class="eyebrow">Payment Screenshot</p>
-        <div class="id-preview">${paymentPreview}</div>
-      </div>
-    </div>
-    <div class="payment-check-card">
-      <strong>Calculated payment: QAR ${Number(user.totalQar || 0)}</strong>
-      ${renderUserPaymentLines(user)}
-      <small>Compare this amount with the uploaded payment screenshot before approving.</small>
-    </div>
-    <div class="identity-form">
-      <label>
-        Full Name
-        <input id="review-full-name" value="${escapeHtml(user.fullName)}" required />
-      </label>
-      <label>
-        Qatar ID Number
-        <input id="review-qid-number" value="${escapeHtml(user.qidNumber)}" inputmode="numeric" required />
-      </label>
-      <label>
-        Date of Birth
-        <input id="review-dob" type="date" value="${escapeHtml(user.dob)}" required />
-      </label>
-    </div>
-    <div class="approval-checklist">
-      <label>
-        <input id="review-qid-match" type="checkbox" />
-        I confirm the personal details entered above match the uploaded Qatar ID / QID document.
-      </label>
-      <label>
-        <input id="review-payment-match" type="checkbox" />
-        I confirm the payment proof amount matches the calculated total of QAR ${Number(user.totalQar || 0)}.
-      </label>
-    </div>
-    <div class="access-picker">
-      <p class="eyebrow">Facility Access</p>
-      <div class="access-options">
-        ${getFacilityOptions().map((option) => `
-          <label>
-            <input type="checkbox" value="${escapeHtml(option.name)}" ${selectedAccess.includes(option.name) ? "checked" : ""} />
-            <span>
-              <strong>${escapeHtml(option.name)}</strong>
-              <small>${escapeHtml(formatFacilitySchedule(option))}</small>
-              <small>${escapeHtml(getFacilityAvailability(option).label)}</small>
-            </span>
-          </label>
-        `).join("")}
-      </div>
-    </div>
-    <div class="dialog-actions application-review-actions">
-      <button type="button" data-review-neighbor="prev" ${reviewIndex <= 0 ? "disabled" : ""}>\u2190 Previous</button>
-      <span class="review-queue-position">${reviewIndex >= 0 ? reviewIndex + 1 : "-"} of ${reviewUsers.length}</span>
-      <button class="primary" type="button" data-approve-user="${user.id}">${isApproved ? "Save Access" : "Approve & Issue QR"}</button>
-      ${isApproved ? `<button type="button" data-send-pass-user="${user.id}">Send QR Pass</button>` : ""}
-      ${isApproved ? "" : `<button class="danger" type="button" data-reject-user="${user.id}">Reject Application</button>`}
-      <button type="button" data-review-neighbor="next" ${reviewIndex < 0 || reviewIndex >= reviewUsers.length - 1 ? "disabled" : ""}>Next \u2192</button>
-    </div>
-  `;
+      <div class="review-header-navigation"><button type="button" data-review-neighbor="prev" ${reviewIndex <= 0 ? "disabled" : ""}>\u2190 Previous</button><span>${reviewIndex >= 0 ? reviewIndex + 1 : "-"} of ${reviewUsers.length}</span><button type="button" data-review-neighbor="next" ${reviewIndex < 0 || reviewIndex >= reviewUsers.length - 1 ? "disabled" : ""}>Next \u2192</button></div>
+      ${isPending ? `<div class="review-header-actions"><button class="danger" type="button" data-request-reject="${user.id}">Reject</button><button class="primary" type="button" data-request-approve="${user.id}" disabled>Approve</button></div>` : ""}
+    </header>
+    <nav class="review-tabs" aria-label="Application review sections">
+      ${["overview", "documents", "verification", "activity"].map((tab) => `<button type="button" data-review-tab="${tab}" class="${activeTab === tab ? "active" : ""}" aria-current="${activeTab === tab ? "page" : "false"}">${tab[0].toUpperCase() + tab.slice(1)}</button>`).join("")}
+    </nav>
+    <main class="review-tab-content">
+      <section class="review-tab-panel ${activeTab === "overview" ? "active" : ""}" data-review-panel="overview">
+        <article class="review-card"><h3>Applicant information</h3><div class="applicant-field-grid">
+          <div><span>Full name</span><strong>${escapeHtml(user.fullName || "-")}</strong></div><div><span>Email</span><strong>${escapeHtml(user.email || "-")}</strong></div><div><span>Contact number</span><strong>${escapeHtml(user.contactNumber || "-")}</strong></div>
+          <div><span>Qatar ID number</span><strong data-qid-value data-masked="true">${escapeHtml(maskQidNumber(user.qidNumber))}</strong><button type="button" class="show-qid" data-toggle-qid aria-pressed="false">Show number</button></div>
+          <div><span>Villa or address</span><strong>${escapeHtml(user.villaNumber || "-")}</strong></div><div><span>Submitted</span><strong>${formatDateTime(user.createdAt)}</strong></div><div><span>Application status</span><strong><span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span></strong></div>
+        </div></article>
+        <article class="review-card"><h3>Facilities and payment</h3><div class="facility-payment-list"><div class="facility-payment-head"><span>Facility</span><span>Duration</span><span>Monthly price</span><span>Line total</span></div>${renderFacilityPaymentRows(user)}</div><div class="review-payment-total"><span>Calculated total</span><strong>QAR ${Number(user.totalQar || 0)}</strong></div></article>
+      </section>
+      <section class="review-tab-panel ${activeTab === "documents" ? "active" : ""}" data-review-panel="documents"><div class="review-document-grid">${reviewDocumentCard("Qatar ID", user.qatarId, "qid", user)}${reviewDocumentCard("Payment proof", user.paymentProof, "payment", user)}</div></section>
+      <section class="review-tab-panel ${activeTab === "verification" ? "active" : ""}" data-review-panel="verification">
+        <article class="review-card"><h3>Submitted and extracted values</h3><div class="comparison-list">
+          ${[["Full name", user.fullName, "review-full-name", "text", extractedName], ["Qatar ID number", user.qidNumber, "review-qid-number", "text", extractedQid], ["Date of birth", user.dob, "review-dob", "date", extractedDob]].map(([label, submitted, id, type, value]) => `<div class="comparison-row"><div><span>Field</span><strong>${escapeHtml(label)}</strong></div><div><span>Submitted</span><strong>${escapeHtml(submitted || "Not provided")}</strong></div><label><span>Extracted</span><input id="${id}" type="${type}" value="${escapeHtml(value || "")}" ${id === "review-qid-number" ? "inputmode=\"numeric\"" : ""}></label><span class="comparison-status ${value && submitted && normalizeName(String(value)).toLowerCase() === normalizeName(String(submitted)).toLowerCase() ? "match" : value ? "mismatch" : "review"}">${value && submitted && normalizeName(String(value)).toLowerCase() === normalizeName(String(submitted)).toLowerCase() ? "Match" : value ? "Mismatch" : "Needs review"}</span></div>`).join("")}
+        </div></article>
+        <article class="review-card"><h3>Required verification</h3><div class="verification-checklist">
+          ${["Qatar ID is readable", "Name has been verified", "Qatar ID number has been verified", "Date of birth has been verified", "Payment proof is readable", "Paid amount matches the calculated total", "Requested facilities match the calculated payment"].map((label, index) => `<label><input type="checkbox" data-verification-check ${index === 2 ? "id=\"review-qid-match\"" : index === 5 ? "id=\"review-payment-match\"" : ""} ${checks[index] ? "checked" : ""}>${label}</label>`).join("")}
+        </div></article>
+        <div class="access-options review-access-options" hidden>${getFacilityOptions().map((option) => `<label><input type="checkbox" value="${escapeHtml(option.name)}" ${selectedAccess.includes(option.name) ? "checked" : ""}><span><strong>${escapeHtml(option.name)}</strong></span></label>`).join("")}</div>
+      </section>
+      <section class="review-tab-panel ${activeTab === "activity" ? "active" : ""}" data-review-panel="activity"><article class="review-card"><h3>Application activity</h3><div class="activity-timeline"><div><span>Application submitted</span><strong>${formatDateTime(user.createdAt)}</strong></div><div><span>Current status</span><strong>${escapeHtml(user.status)}</strong></div><div><span>Approval date</span><strong>${user.approvedAt ? formatDateTime(user.approvedAt) : "Not approved"}</strong></div><div><span>Rejection date</span><strong>${user.rejectedAt ? formatDateTime(user.rejectedAt) : "Not rejected"}</strong></div><div><span>Email notification</span><strong>${escapeHtml(emailLog?.status || "Not sent")}</strong></div><div><span>QR pass</span><strong>${user.token ? "Generated" : "Not generated"}</strong></div></div><label class="internal-note-field">Administrator notes<textarea id="review-internal-note" rows="4" placeholder="Session-only internal note">${escapeHtml(draft.note || "")}</textarea><small>Notes are kept only for this review session because database changes are disabled.</small></label></article></section>
+    </main>
+    <div class="application-review-actions">
+      ${isPending ? `<strong id="review-verification-progress">${checks.filter(Boolean).length} of 7 checks completed</strong><button type="button" data-review-tab="activity">Internal note</button><button class="danger" type="button" data-request-reject="${user.id}">Reject application</button><button class="primary" type="button" data-request-approve="${user.id}" disabled>Approve application</button>` : isApproved ? `<div class="approved-review-summary"><span>Approved ${user.approvedAt ? formatDateTime(user.approvedAt) : "date unavailable"}</span><button type="button" data-admin-section="users">View resident</button>${user.token ? `<a class="button" href="${escapeHtml(buildPassUrl(user.token))}" target="_blank" rel="noopener">View QR pass</a>` : ""}<button type="button" data-send-pass-user="${user.id}">Resend approval email</button></div>` : `<strong>${escapeHtml(user.status)} ${user.rejectedAt ? formatDateTime(user.rejectedAt) : ""}</strong>`}
+    </div>`;
+  reviewVerificationProgress();
   detailView.scrollIntoView({ block: "start" });
 }
 
-function closeUserReview() {
+function resetUserReviewView() {
   selectedUserReviewId = "";
   const detailView = $("#application-detail-view");
   if (detailView) {
@@ -2976,11 +3019,97 @@ function closeUserReview() {
   if ($("#applications-list-view")) $("#applications-list-view").hidden = false;
 }
 
+function closeUserReview({ replace = false } = {}) {
+  resetUserReviewView();
+  routeTo("/admin/applications", { replace });
+}
+
 function openNeighborReview(direction) {
+  captureReviewDraft();
   const users = getFilteredUsers();
   const index = users.findIndex((user) => user.id === selectedUserReviewId);
   const nextIndex = index + (direction === "next" ? 1 : -1);
-  if (nextIndex >= 0 && nextIndex < users.length) openUserDialog(users[nextIndex].id);
+  if (nextIndex >= 0 && nextIndex < users.length) {
+    routeTo(`/admin/applications/${encodeURIComponent(users[nextIndex].id)}`);
+  }
+}
+
+function switchReviewTab(tab) {
+  captureReviewDraft();
+  routeTo(`${window.location.pathname}?tab=${encodeURIComponent(tab)}`);
+}
+
+function toggleReviewQid() {
+  const user = state.users.find((item) => item.id === selectedUserReviewId);
+  const value = $("[data-qid-value]");
+  const button = $("[data-toggle-qid]");
+  if (!user || !value || !button) return;
+  const isMasked = value.dataset.masked === "true";
+  value.textContent = isMasked ? user.qidNumber || "-" : maskQidNumber(user.qidNumber);
+  value.dataset.masked = String(!isMasked);
+  button.textContent = isMasked ? "Hide number" : "Show number";
+  button.setAttribute("aria-pressed", String(isMasked));
+}
+
+function handleDocumentAction(button) {
+  const card = button.closest("[data-review-document]");
+  const preview = card?.querySelector("[data-document-preview]");
+  const transform = card?.querySelector(".document-transform");
+  if (!preview || !transform) return;
+  const action = button.dataset.documentAction;
+  if (action === "fullscreen") {
+    preview.requestFullscreen?.();
+    return;
+  }
+  let scale = Number(transform.dataset.scale || 1);
+  let rotation = Number(transform.dataset.rotation || 0);
+  if (action === "zoom-in") scale = Math.min(2.5, scale + .25);
+  if (action === "zoom-out") scale = Math.max(.5, scale - .25);
+  if (action === "rotate") rotation = (rotation + 90) % 360;
+  transform.dataset.scale = String(scale);
+  transform.dataset.rotation = String(rotation);
+  transform.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+}
+
+function rejectionReasonDialog() {
+  const dialog = $("#confirm-dialog");
+  const content = $("#confirm-dialog-content");
+  if (!dialog || !content) return Promise.resolve("");
+  return new Promise((resolve) => {
+    content.innerHTML = `<div class="section-heading"><p class="eyebrow">Reject application</p><h2>Provide a rejection reason</h2></div><label>Reason<textarea id="rejection-reason" rows="4" required></textarea><small id="rejection-reason-error" class="field-error"></small></label><div class="dialog-actions"><button type="button" data-rejection-cancel>Cancel</button><button class="danger" type="button" data-rejection-confirm>Reject application</button></div>`;
+    const cleanup = (value) => { dialog.close(); content.innerHTML = ""; resolve(value); };
+    content.querySelector("[data-rejection-cancel]").addEventListener("click", () => cleanup(""), { once: true });
+    content.querySelector("[data-rejection-confirm]").addEventListener("click", () => {
+      const reason = content.querySelector("#rejection-reason").value.trim();
+      if (!reason) { content.querySelector("#rejection-reason-error").textContent = "A rejection reason is required."; return; }
+      cleanup(reason);
+    });
+    dialog.addEventListener("cancel", () => cleanup(""), { once: true });
+    dialog.showModal();
+  });
+}
+
+async function requestApplicationApproval(userId) {
+  if (applicationReviewBusy) return;
+  captureReviewDraft(userId);
+  if ([...document.querySelectorAll("[data-verification-check]")].some((input) => !input.checked)) {
+    notify("Complete every required verification check before approving.", "warning");
+    return;
+  }
+  const confirmed = await confirmAction({ title: "Approve this application?", message: "This will approve access, generate the QR pass, and prepare the approval email.", confirmText: "Approve application", danger: false });
+  if (!confirmed) return;
+  applicationReviewBusy = true;
+  reviewVerificationProgress();
+  try { await approveUser(userId); } finally { applicationReviewBusy = false; }
+}
+
+async function requestApplicationRejection(userId) {
+  if (applicationReviewBusy) return;
+  const reason = await rejectionReasonDialog();
+  if (!reason) return;
+  applicationReviewDrafts[userId] = { ...(applicationReviewDrafts[userId] || {}), rejectionReason: reason };
+  applicationReviewBusy = true;
+  try { await rejectUser(userId); } finally { applicationReviewBusy = false; }
 }
 
 async function approveUser(userId) {
@@ -3078,7 +3207,7 @@ async function approveUser(userId) {
   await upsertDoc("users", approvalRecord);
   if (renewalTarget) await upsertDoc("users", user);
   saveState();
-  closeUserReview();
+  closeUserReview({ replace: true });
   render();
 }
 
@@ -3140,7 +3269,7 @@ async function sendQrPassToUser(userId) {
   await sendAndLogQrPassEmail(user, email);
   await upsertDoc("users", user);
   saveState();
-  closeUserReview();
+  closeUserReview({ replace: true });
   render();
   notify("QR pass email prepared.");
 }
@@ -3159,7 +3288,7 @@ async function rejectUser(userId) {
     createdAt: new Date().toISOString(),
   });
   saveState();
-  closeUserReview();
+  closeUserReview({ replace: true });
   render();
 }
 
@@ -3954,6 +4083,12 @@ document.addEventListener("click", (event) => {
   const openUser = event.target.closest("[data-open-user]");
   const closeUserReviewButton = event.target.closest("[data-close-user-review]");
   const reviewNeighbor = event.target.closest("[data-review-neighbor]");
+  const reviewTab = event.target.closest("[data-review-tab]");
+  const toggleQid = event.target.closest("[data-toggle-qid]");
+  const revealDocument = event.target.closest("[data-reveal-document]");
+  const documentAction = event.target.closest("[data-document-action]");
+  const requestApprove = event.target.closest("[data-request-approve]");
+  const requestReject = event.target.closest("[data-request-reject]");
   const approve = event.target.closest("[data-approve-user]");
   const sendPass = event.target.closest("[data-send-pass-user]");
   const suspend = event.target.closest("[data-suspend-user]");
@@ -4010,6 +4145,12 @@ document.addEventListener("click", (event) => {
   if (openUser) openUserDialog(openUser.dataset.openUser);
   if (closeUserReviewButton) closeUserReview();
   if (reviewNeighbor) openNeighborReview(reviewNeighbor.dataset.reviewNeighbor);
+  if (reviewTab) switchReviewTab(reviewTab.dataset.reviewTab);
+  if (toggleQid) toggleReviewQid();
+  if (revealDocument) revealDocument.closest("[data-document-preview]")?.classList.remove("is-sensitive");
+  if (documentAction) handleDocumentAction(documentAction);
+  if (requestApprove) requestApplicationApproval(requestApprove.dataset.requestApprove);
+  if (requestReject) requestApplicationRejection(requestReject.dataset.requestReject);
   if (approve) approveUser(approve.dataset.approveUser);
   if (sendPass) sendQrPassToUser(sendPass.dataset.sendPassUser);
   if (suspend) suspendUser(suspend.dataset.suspendUser);
@@ -4131,6 +4272,15 @@ $$("[data-clear-file]").forEach((button) => {
   });
 });
 window.addEventListener("popstate", handleRoute);
+document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-verification-check]")) {
+    captureReviewDraft();
+    reviewVerificationProgress();
+  }
+});
+document.addEventListener("input", (event) => {
+  if (event.target.matches("#review-full-name, #review-qid-number, #review-dob, #review-internal-note")) captureReviewDraft();
+});
 
 render();
 handleRoute();

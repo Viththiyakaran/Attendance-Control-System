@@ -686,6 +686,194 @@
   }
 }
 
+/* Dedicated application review route */
+.admin-page[data-admin-page="applications"]:has(.application-detail-view:not([hidden])) {
+  padding-bottom: 120px;
+}
+
+.application-detail-view {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  gap: 16px;
+}
+
+.review-page-header,
+.review-card,
+.review-document-card {
+  border: 1px solid #dce6e1;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(15, 55, 46, .04);
+}
+
+.review-page-header {
+  display: grid;
+  grid-template-columns: auto minmax(240px, 1fr) auto auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 20px 24px;
+}
+
+.review-header-main h2 { margin: 2px 0 4px; }
+.review-header-main p { margin: 0; color: #64736f; }
+.review-header-navigation,
+.review-header-actions { display: flex; align-items: center; gap: 8px; }
+.review-header-navigation { grid-column: 2; }
+.review-header-actions { grid-column: 4; grid-row: 1 / span 2; }
+
+.review-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid #dce6e1;
+  background: #fff;
+  padding: 0 12px;
+}
+
+.review-tabs button {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 14px 16px 11px;
+  color: #5b6c67;
+  font-weight: 700;
+}
+
+.review-tabs button.active { border-color: #08735f; color: #075f50; }
+.review-tab-panel { display: none; gap: 16px; }
+.review-tab-panel.active { display: grid; }
+.review-card { padding: 20px 24px; }
+.review-card > h3,
+.review-document-card h3 { margin: 0 0 16px; }
+
+.applicant-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.applicant-field-grid > div { min-width: 0; }
+.applicant-field-grid span,
+.comparison-row span,
+.activity-timeline span {
+  display: block;
+  margin-bottom: 5px;
+  color: #6a7975;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.applicant-field-grid strong { overflow-wrap: anywhere; }
+.show-qid { margin-top: 7px; border: 0; background: none; padding: 0; color: #08735f; font-size: 13px; }
+
+.facility-payment-list { display: grid; }
+.facility-payment-head,
+.facility-payment-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(110px, .7fr));
+  gap: 12px;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 1px solid #e7ece9;
+}
+.facility-payment-head { color: #657570; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.review-payment-total { display: flex; justify-content: flex-end; align-items: baseline; gap: 24px; padding-top: 18px; }
+.review-payment-total strong { color: #075f50; font-size: 26px; }
+
+.review-document-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.review-document-card { min-width: 0; padding: 16px; }
+.review-document-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.review-document-heading h3 { margin-bottom: 3px; }
+.document-tools { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.document-tools button,
+.document-tools a { min-width: 36px; min-height: 36px; padding: 7px 10px; border: 1px solid #ccd9d4; border-radius: 8px; background: #fff; color: #174a3f; text-decoration: none; font-size: 13px; }
+.review-document-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 360px;
+  overflow: auto;
+  border: 1px solid #dce6e1;
+  border-radius: 12px;
+  background: #f2f6f4;
+}
+.document-transform { display: grid; place-items: center; width: 100%; height: 100%; transform-origin: center; transition: transform .18s ease; }
+.document-transform img,
+.document-transform iframe { display: block; width: 100%; height: 100%; object-fit: contain; border: 0; }
+.review-document-preview.is-sensitive .document-transform { filter: blur(18px); pointer-events: none; }
+.document-reveal { display: none; position: absolute; z-index: 2; border: 1px solid #fff; background: rgba(3, 52, 42, .9); color: #fff; }
+.review-document-preview.is-sensitive .document-reveal { display: block; }
+.review-document-preview:fullscreen { width: 100vw; height: 100vh; background: #18211f; }
+
+.comparison-list { display: grid; gap: 10px; }
+.comparison-row { display: grid; grid-template-columns: .7fr 1fr 1fr auto; gap: 16px; align-items: end; padding: 12px; border: 1px solid #e0e8e4; border-radius: 12px; }
+.comparison-row input { width: 100%; }
+.comparison-status { align-self: center; min-width: 100px; padding: 7px 9px; border-radius: 999px; text-align: center; font-size: 12px; font-weight: 800; }
+.comparison-status.match { background: #dcf4e9; color: #08735f; }
+.comparison-status.mismatch { background: #fde5e2; color: #a52a22; }
+.comparison-status.review { background: #fff2cc; color: #826100; }
+.verification-checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.verification-checklist label { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #dde7e2; border-radius: 10px; }
+.verification-checklist input { margin-top: 3px; }
+
+.activity-timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.activity-timeline > div { padding: 14px; border-radius: 10px; background: #f4f7f6; }
+.internal-note-field { display: grid; gap: 8px; margin-top: 18px; }
+
+.application-detail-view .application-review-actions {
+  left: auto;
+  width: min(calc(100% - 32px), 1248px);
+  margin: 0 auto;
+  align-items: center;
+}
+.application-review-actions > strong { margin-right: auto; }
+.approved-review-summary { display: flex; align-items: center; gap: 10px; width: 100%; }
+.approved-review-summary > span { margin-right: auto; color: #08735f; font-weight: 800; }
+
+.review-page-header button:focus-visible,
+.review-tabs button:focus-visible,
+.document-tools :focus-visible,
+.application-review-actions :focus-visible,
+.show-qid:focus-visible,
+.review-document-preview:focus-visible {
+  outline: 3px solid rgba(16, 137, 112, .35);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1050px) {
+  .review-page-header { grid-template-columns: auto 1fr auto; }
+  .review-header-actions { grid-column: 2 / -1; grid-row: auto; justify-content: flex-end; }
+  .review-header-navigation { grid-column: 2 / -1; }
+  .applicant-field-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .review-document-grid { grid-template-columns: 1fr; }
+  .review-document-preview { height: 340px; }
+  .activity-timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .admin-page[data-admin-page="applications"]:has(.application-detail-view:not([hidden])) { padding-bottom: 230px; }
+  .review-page-header { grid-template-columns: 1fr; padding: 16px; }
+  .review-page-header > * { grid-column: 1; grid-row: auto; }
+  .review-header-navigation,
+  .review-header-actions { justify-content: flex-start; flex-wrap: wrap; }
+  .applicant-field-grid,
+  .verification-checklist,
+  .activity-timeline { grid-template-columns: 1fr; }
+  .review-card { padding: 16px; }
+  .facility-payment-head { display: none; }
+  .facility-payment-row { grid-template-columns: 1fr 1fr; }
+  .review-document-heading { display: grid; }
+  .document-tools { justify-content: flex-start; }
+  .review-document-preview { height: 320px; }
+  .comparison-row { grid-template-columns: 1fr; align-items: stretch; }
+  .application-detail-view .application-review-actions { width: calc(100% - 24px); }
+  .approved-review-summary { display: grid; }
+  .approved-review-summary > span { margin: 0; }
+}
+
 @media (max-width: 430px) {
   .admin-mode .admin-header-tools {
     grid-template-columns: 42px auto !important;
