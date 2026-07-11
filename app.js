@@ -19,6 +19,8 @@ const STORAGE_KEY = "facility-access-system-v1";
 const PUBLIC_SITE_URL = "https://clinquant-faun-77644a.netlify.app";
 const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
+const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
+const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
 const firebaseConfig = {
   apiKey: "AIzaSyAXfE01pzRdwK6YUGo50AafKhZHdAgCAIw",
@@ -569,8 +571,17 @@ function renderAdminKpis() {
 
 function getFilteredUsers() {
   const query = userSearchQuery.trim().toLowerCase();
-  const users = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const statusFiltered = userStatusFilter === "all" ? users : users.filter((user) => user.status === userStatusFilter);
+  const users = [...state.users]
+    .filter((user) => user.status !== "Archived")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const allRecords = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const statusFiltered = userStatusFilter === "all"
+    ? users.filter(isApplicationReviewRecord)
+    : userStatusFilter === "records"
+    ? allRecords
+    : userStatusFilter === "Archived"
+    ? allRecords.filter((user) => user.status === "Archived")
+    : users.filter((user) => user.status === userStatusFilter);
   const dateFiltered = userSubmittedDateFilter
     ? statusFiltered.filter((user) => toDateInputValue(new Date(user.createdAt)) === userSubmittedDateFilter)
     : statusFiltered;
@@ -642,6 +653,7 @@ function renderPendingUsers() {
       const access = getUserAccess(user);
       const applicantName = user.fullName || user.email || user.qidNumber || "Applicant";
       const applicantDetail = [user.email, user.qidNumber ? `QID ${user.qidNumber}` : ""].filter(Boolean).join(" | ");
+      const canManageApplication = !["Rejected", "Archived", "Renewal Approved"].includes(user.status);
       return `
       <article class="application-review-card">
         <div class="application-applicant">
@@ -671,10 +683,10 @@ function renderPendingUsers() {
           </div>
         </dl>
         <div class="application-actions">
-          ${user.status !== "Rejected" ? `<button class="application-action-primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
+          ${canManageApplication ? `<button class="application-action-primary" type="button" data-open-user="${user.id}">${user.status.includes("Pending") ? "Review" : "Manage"}</button>` : ""}
           <details class="row-menu">
             <summary aria-label="More actions">...</summary>
-            <button type="button" data-delete-user="${user.id}">Delete application</button>
+            <button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button>
           </details>
         </div>
       </article>
@@ -711,24 +723,28 @@ function renderApprovedResidents() {
   const summary = $("#resident-summary");
   if (!list && !cards && !summary) return;
 
-  const approved = state.users.filter((user) => user.status === "Approved");
+  const residents = state.users.filter(isResidentRecord);
+  const approved = residents.filter((user) => user.status === "Approved");
   const active = approved.filter(isMembershipActive).length;
+  const expired = approved.filter((user) => !isMembershipActive(user)).length;
   const expiringSoon = approved.filter((user) => daysUntil(user.accessEndAt) <= 30 && daysUntil(user.accessEndAt) >= 0).length;
-  const suspended = state.users.filter((user) => /suspend/i.test(user.status || "")).length;
+  const suspended = residents.filter((user) => /suspend/i.test(user.status || "")).length;
 
   if (summary) {
     summary.innerHTML = [
-      summaryCard("Total approved residents", approved.length, "Approved applicants"),
+      summaryCard("Resident records", residents.length, "Approved and suspended"),
       summaryCard("Active memberships", active, "Currently valid"),
       summaryCard("Expiring soon", expiringSoon, "Within 30 days"),
-      summaryCard("Suspended users", suspended, "Access disabled"),
+      summaryCard("Suspended / expired", suspended + expired, "Need review"),
     ].join("");
   }
 
-  const rows = approved.sort((a, b) => new Date(b.approvedAt || b.createdAt) - new Date(a.approvedAt || a.createdAt));
+  const rows = residents.sort((a, b) => new Date(b.updatedAt || b.approvedAt || b.createdAt) - new Date(a.updatedAt || a.approvedAt || a.createdAt));
   if (list) {
     list.innerHTML = rows.length ? rows.map((user) => {
       const residentName = user.fullName || user.email || "Resident";
+      const membershipLabel = getResidentMembershipLabel(user);
+      const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
       return `
         <article class="application-review-card resident-review-card">
           <div class="application-applicant">
@@ -742,7 +758,7 @@ function renderApprovedResidents() {
           <dl class="application-details resident-details">
             <div><dt>Villa / Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
             <div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div>
-            <div><dt>Membership</dt><dd><span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span></dd></div>
+            <div><dt>Membership</dt><dd><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></dd></div>
             <div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div>
             <div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div>
           </dl>
@@ -751,8 +767,9 @@ function renderApprovedResidents() {
             <details class="row-menu">
               <summary aria-label="More resident actions">...</summary>
               <button type="button" data-open-user="${user.id}">Edit access</button>
-              <button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>
-              <button type="button" data-suspend-user="${user.id}">Suspend access</button>
+              ${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>` : ""}
+              ${user.status === "Approved" ? `<button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}
+              <button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button>
             </details>
           </div>
         </article>
@@ -783,6 +800,19 @@ function daysUntil(dateValue) {
 
 function isDemoRecord(record) {
   return /demo|test/i.test(`${record.fullName || ""} ${record.email || ""} ${record.name || ""}`);
+}
+
+function isApplicationReviewRecord(user) {
+  return APPLICATION_REVIEW_STATUSES.includes(user.status);
+}
+
+function isResidentRecord(user) {
+  return RESIDENT_STATUSES.includes(user.status);
+}
+
+function getResidentMembershipLabel(user) {
+  if (user.status === "Suspended") return "Suspended";
+  return isMembershipActive(user) ? "Active" : "Expired";
 }
 
 function renderUserPagination(totalUsers, startIndex, visibleCount, totalPages) {
@@ -2040,9 +2070,9 @@ function renderBankDetails() {
 function renderPaymentReviewList() {
   const container = $("#payment-review-list");
   if (!container) return;
-  const users = [...state.users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  container.innerHTML = users.length
-    ? users.map((user) => {
+  const paymentUsers = getPaymentReviewRecords();
+  container.innerHTML = paymentUsers.length
+    ? paymentUsers.map((user) => {
       const payment = getPaymentStatus(user);
       return `
       <div class="payment-review-item">
@@ -2063,18 +2093,26 @@ function renderPaymentReviewList() {
 function renderPaymentSummaryCards() {
   const container = $("#payment-summary-cards");
   if (!container) return;
-  const pending = state.users.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
-  const verified = state.users.filter((user) => getPaymentStatus(user).label === "Verified").length;
-  const totalReceived = state.users
+  const paymentUsers = getPaymentReviewRecords();
+  const pending = paymentUsers.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
+  const verified = paymentUsers.filter((user) => getPaymentStatus(user).label === "Verified").length;
+  const totalReceived = paymentUsers
     .filter((user) => user.status === "Approved")
     .reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
-  const issues = state.users.filter((user) => /Rejected|issue/i.test(getPaymentStatus(user).label)).length;
+  const issues = paymentUsers.filter((user) => /Rejected|issue/i.test(getPaymentStatus(user).label)).length;
   container.innerHTML = [
     summaryCard("Pending verification", pending, "Need admin review"),
     summaryCard("Verified payments", verified, "Approved applications"),
     summaryCard("Total received", `QAR ${totalReceived}`, "Approved totals"),
     summaryCard("Payment issues", issues, "Rejected or failed checks"),
   ].join("");
+}
+
+function getPaymentReviewRecords() {
+  return [...state.users]
+    .filter((user) => user.status !== "Archived")
+    .filter((user) => Number(user.totalQar || 0) > 0 || Boolean(user.paymentProof?.data))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 function getPaymentStatus(user) {
@@ -2087,7 +2125,7 @@ function getPaymentStatus(user) {
       action: "View application",
     };
   }
-  if (user.status === "Approved") {
+  if (["Approved", "Renewal Approved"].includes(user.status)) {
     return {
       label: "Verified",
       className: "Approved",
@@ -2767,8 +2805,7 @@ async function approveUser(userId) {
     item.id !== user.id
     && item.id !== renewalTarget?.id
     && item.qidNumber === qidNumber
-    && item.status !== "Rejected"
-    && item.status !== "Renewal Pending"
+    && !["Rejected", "Renewal Pending", "Renewal Approved", "Archived"].includes(item.status)
   );
   if (duplicateQid) {
     notify("Another active user already has this Qatar ID Number.", "warning");
@@ -2907,29 +2944,44 @@ async function deleteUser(userId) {
   const user = state.users.find((item) => item.id === userId);
   if (!user) return;
   const label = user.fullName || user.email;
+  const hardDelete = isDemoRecord(user);
+  const hasAttendanceHistory = state.logs.some((log) => log.userId === userId);
 
   const confirmed = await confirmAction({
-    title: `Delete ${label}?`,
-    message: "This removes the profile and related attendance history. This action cannot be undone.",
-    confirmText: "Delete",
+    title: `${hardDelete ? "Delete" : "Archive"} ${label}?`,
+    message: hardDelete
+      ? "This removes the demo/test profile and related attendance history. This action cannot be undone."
+      : hasAttendanceHistory
+      ? "This hides the record from active workflows but keeps attendance history for audit reporting."
+      : "This hides the record from active workflows. You can still see it from All records.",
+    confirmText: hardDelete ? "Delete" : "Archive",
   });
   if (!confirmed) return;
 
-  state.users = state.users.filter((item) => item.id !== userId);
-  const deletedLogs = state.logs.filter((log) => log.userId === userId);
-  state.logs = state.logs.filter((log) => log.userId !== userId);
-  await deleteCollectionDoc("users", userId);
-  await Promise.all(deletedLogs.map((log) => deleteCollectionDoc("attendance_logs", log.id)));
+  if (hardDelete) {
+    state.users = state.users.filter((item) => item.id !== userId);
+    const deletedLogs = state.logs.filter((log) => log.userId === userId);
+    state.logs = state.logs.filter((log) => log.userId !== userId);
+    await deleteCollectionDoc("users", userId);
+    await Promise.all(deletedLogs.map((log) => deleteCollectionDoc("attendance_logs", log.id)));
+  } else {
+    user.status = "Archived";
+    user.archivedAt = new Date().toISOString();
+    await upsertDoc("users", user);
+  }
+
   await createEmailLog({
     id: uid("email"),
     to: "admin",
-    subject: `User deleted: ${label}`,
-    body: `${user.email} and related attendance logs were deleted by admin.`,
+    subject: hardDelete ? `User deleted: ${label}` : `User archived: ${label}`,
+    body: hardDelete
+      ? `${user.email} and related attendance logs were deleted by admin.`
+      : `${user.email} was archived by admin. Attendance logs were kept for audit reporting.`,
     createdAt: new Date().toISOString(),
   });
   saveState();
   render();
-  notify("Application deleted.");
+  notify(hardDelete ? "Record deleted." : "Record archived.");
 }
 
 async function suspendUser(userId) {
