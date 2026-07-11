@@ -7,6 +7,7 @@ const files = [
   "index.html",
   "styles.css",
   "admin-dashboard.css",
+  "customer-wizard.css",
   "app.js",
   "payment-config.js",
   "firebase-seed.html",

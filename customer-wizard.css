@@ -1,0 +1,477 @@
+/* Compact customer application wizard. Loaded after global styles. */
+.customer-mode {
+  --wizard-bg: #F5F7F6;
+  --wizard-green: #087F65;
+  --wizard-green-dark: #055B49;
+  --wizard-card: #FFFFFF;
+  --wizard-border: #E1E7E4;
+  --wizard-text: #17211F;
+  --wizard-muted: #66736F;
+  background: var(--wizard-bg) !important;
+  overflow-x: hidden !important;
+}
+
+.customer-mode .public-header {
+  position: relative !important;
+  max-width: 1440px !important;
+  margin: 0 auto !important;
+  padding: 12px 20px 8px !important;
+  border: 0 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: none !important;
+}
+
+.customer-mode .public-header h1 {
+  max-width: 760px !important;
+  font-size: clamp(1.45rem, 2.15vw, 2.15rem) !important;
+  line-height: 1.05 !important;
+}
+
+.customer-mode .public-header .helper-text {
+  max-width: 720px !important;
+  margin-top: 4px !important;
+  font-size: 0.9rem !important;
+  line-height: 1.35 !important;
+}
+
+.customer-mode main {
+  min-height: calc(100dvh - 108px) !important;
+  padding: 12px 20px 18px !important;
+  overflow: hidden !important;
+}
+
+#register-view.active {
+  display: grid !important;
+  grid-template-columns: minmax(240px, 0.34fr) minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  width: min(1440px, 100%) !important;
+  min-height: calc(100dvh - 138px) !important;
+  margin: 0 auto !important;
+}
+
+.public-showcase {
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+  gap: 10px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.public-brand-card,
+.role-card,
+.public-info-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--wizard-border) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(23, 33, 31, 0.06) !important;
+}
+
+.public-brand-card {
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  padding: 12px !important;
+}
+
+.public-brand-mark {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+}
+
+.public-brand-card h2 {
+  font-size: 1rem !important;
+  line-height: 1.18 !important;
+}
+
+.public-brand-card p:not(.eyebrow) {
+  margin-top: 4px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.38 !important;
+}
+
+.role-card-grid {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+.role-card {
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  justify-items: start !important;
+  align-items: center !important;
+  gap: 6px 10px !important;
+  padding: 10px !important;
+  text-align: left !important;
+}
+
+.role-card p {
+  grid-column: 2 !important;
+  font-size: 0.76rem !important;
+}
+
+.public-info-card {
+  padding: 12px !important;
+}
+
+.public-info-card h3 {
+  font-size: 0.9rem !important;
+}
+
+.feature-list {
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.feature-list li {
+  font-size: 0.78rem !important;
+  line-height: 1.25 !important;
+}
+
+.public-info-card:nth-of-type(n + 2),
+.process-list,
+.trust-strip {
+  display: none !important;
+}
+
+.registration-panel {
+  display: grid !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  height: calc(100dvh - 138px) !important;
+  padding: 16px 18px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 14px 34px rgba(23, 33, 31, 0.08) !important;
+  overflow: hidden !important;
+}
+
+.registration-panel .section-heading {
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+  border-bottom: 1px solid var(--wizard-border) !important;
+}
+
+.registration-panel .section-heading h2 {
+  font-size: 1.18rem !important;
+}
+
+.registration-panel .section-heading .helper-text {
+  font-size: 0.86rem !important;
+  line-height: 1.32 !important;
+}
+
+.wizard-stepper {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+}
+
+.wizard-stepper li {
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+  border-radius: 11px !important;
+  font-size: 0.9rem !important;
+}
+
+.wizard-stepper span {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.wizard-step {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.wizard-step.active {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+}
+
+.wizard-copy {
+  gap: 3px !important;
+}
+
+.wizard-copy h3 {
+  font-size: 1.08rem !important;
+}
+
+.wizard-copy p:not(.eyebrow) {
+  font-size: 0.86rem !important;
+  line-height: 1.3 !important;
+}
+
+.registration-access {
+  min-height: 0 !important;
+}
+
+.wizard-facilities {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.wizard-facilities .facility-choice-card {
+  min-height: 0 !important;
+  padding: 9px !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.wizard-facilities .facility-choice-card > span {
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.wizard-facilities .activity-icon {
+  width: 34px !important;
+  height: 34px !important;
+  margin-bottom: 2px !important;
+}
+
+.wizard-facilities .facility-choice-card strong {
+  font-size: 0.86rem !important;
+  line-height: 1.12 !important;
+}
+
+.wizard-facilities .facility-choice-card small {
+  font-size: 0.72rem !important;
+  line-height: 1.15 !important;
+}
+
+.facility-month-control {
+  grid-template-columns: 28px minmax(54px, 1fr) 28px !important;
+  gap: 4px !important;
+  margin-top: 5px !important;
+}
+
+.facility-month-control button {
+  min-height: 28px !important;
+  border-radius: 8px !important;
+}
+
+.facility-month-control > span {
+  min-height: 28px !important;
+  font-size: 0.68rem !important;
+}
+
+.facility-month-control strong {
+  font-size: 0.9rem !important;
+}
+
+.payment-summary.live-summary {
+  grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+}
+
+.payment-total,
+.selected-facility-summary,
+.bank-details,
+.upload-box {
+  padding: 10px !important;
+  border-radius: 12px !important;
+}
+
+.payment-total strong {
+  font-size: 1.25rem !important;
+}
+
+.payment-total small,
+.selected-facility-summary,
+.selected-facility-summary small {
+  font-size: 0.78rem !important;
+}
+
+.wizard-actions {
+  align-items: center !important;
+  min-height: 52px !important;
+  padding-top: 10px !important;
+  margin-top: 10px !important;
+}
+
+.wizard-actions button {
+  min-height: 42px !important;
+  border-radius: 10px !important;
+  padding-inline: 16px !important;
+}
+
+.form-grid.two-col {
+  gap: 10px !important;
+}
+
+.registration-panel label {
+  font-size: 0.82rem !important;
+}
+
+.registration-panel input {
+  min-height: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+}
+
+@media (max-width: 1280px) {
+  #register-view.active {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-showcase {
+    display: none !important;
+  }
+
+  .registration-panel {
+    height: calc(100dvh - 128px) !important;
+  }
+
+  .wizard-facilities {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .customer-mode {
+    overflow: auto !important;
+  }
+
+  .customer-mode main {
+    min-height: auto !important;
+    padding: 10px !important;
+    overflow: visible !important;
+  }
+
+  .customer-mode .public-header {
+    padding: 12px 10px 6px !important;
+  }
+
+  .customer-mode .public-header h1 {
+    font-size: 1.55rem !important;
+  }
+
+  .customer-mode .public-header .helper-text {
+    font-size: 0.84rem !important;
+  }
+
+  #register-view.active {
+    min-height: auto !important;
+  }
+
+  .registration-panel {
+    display: grid !important;
+    height: auto !important;
+    min-height: calc(100dvh - 110px) !important;
+    padding: 14px !important;
+    overflow: visible !important;
+  }
+
+  .wizard-step.active {
+    overflow: visible !important;
+  }
+
+  .wizard-stepper {
+    grid-template-columns: repeat(4, minmax(54px, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .wizard-stepper li {
+    display: grid !important;
+    justify-items: center !important;
+    gap: 4px !important;
+    padding: 7px 4px !important;
+    text-align: center !important;
+    font-size: 0.72rem !important;
+  }
+
+  .wizard-stepper span {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .wizard-facilities {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+  }
+
+  .payment-summary.live-summary,
+  .payment-summary,
+  .form-grid.two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wizard-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 5 !important;
+    margin-inline: -14px !important;
+    padding: 10px 14px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .customer-mode .public-header h1 {
+    font-size: 1.32rem !important;
+  }
+
+  .customer-mode .public-header .helper-text {
+    display: none !important;
+  }
+
+  .registration-panel .section-heading {
+    margin-bottom: 8px !important;
+  }
+
+  .registration-panel .section-heading h2 {
+    font-size: 1.02rem !important;
+  }
+
+  .registration-panel .section-heading .helper-text {
+    display: none !important;
+  }
+
+  .wizard-facilities {
+    grid-template-columns: 1fr !important;
+  }
+
+  .wizard-facilities .facility-choice-card {
+    padding: 11px !important;
+  }
+
+  .wizard-facilities .facility-choice-card > span {
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    gap: 2px 10px !important;
+    align-items: center !important;
+  }
+
+  .wizard-facilities .activity-icon {
+    grid-row: 1 / span 4 !important;
+  }
+
+  .facility-month-control {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+    margin-top: 8px !important;
+  }
+
+  .facility-month-control button,
+  .facility-month-control > span,
+  .wizard-actions button {
+    min-height: 44px !important;
+  }
+
+  .wizard-actions {
+    gap: 8px !important;
+  }
+
+  .wizard-actions button {
+    flex: 1 1 0 !important;
+    padding-inline: 10px !important;
+  }
+}
