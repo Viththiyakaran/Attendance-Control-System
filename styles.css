@@ -6204,6 +6204,67 @@ dialog::backdrop {
   padding-top: 10px;
 }
 
+.brand-mark.brand-mark-image {
+  background: #fff;
+  padding: 5px;
+}
+
+.brand-mark.brand-mark-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.branding-settings-card {
+  display: grid;
+  gap: 14px;
+}
+
+.branding-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fbf9;
+}
+
+.branding-preview img {
+  width: 150px;
+  max-width: 42%;
+  max-height: 72px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px;
+}
+
+.branding-preview div {
+  display: grid;
+  gap: 4px;
+}
+
+.branding-preview small,
+.branding-settings-card .helper-text {
+  color: var(--subtle);
+}
+
+.branding-settings-card label {
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.branding-settings-card input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
 .email-item {
   border-radius: 12px;
 }

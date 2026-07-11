@@ -22,6 +22,10 @@ const REPORT_PAGE_SIZE = 8;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
+const DEFAULT_BRANDING = {
+  publicLogoData: "/assets/qua-logo.png",
+  publicLogoName: "QUA Facilities Management",
+};
 const firebaseConfig = {
   apiKey: "AIzaSyAXfE01pzRdwK6YUGo50AafKhZHdAgCAIw",
   authDomain: "qrcodehts.firebaseapp.com",
@@ -65,6 +69,7 @@ const initialState = {
   facilities: DEFAULT_FACILITIES.map((facility) => ({ id: uid("facility"), open: true, ...facility })),
   logs: [],
   emails: [],
+  settings: { ...DEFAULT_BRANDING },
 };
 
 let state = await loadState();
@@ -100,18 +105,22 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 async function loadState() {
   try {
-    const [users, facilities, logs, emails] = await Promise.all([
+    const storedSettings = getStoredSettings();
+    const [users, facilities, logs, emails, appSettings] = await Promise.all([
       loadCollection("users"),
       loadCollection("facilities"),
       loadCollection("attendance_logs"),
       loadCollection("email_logs"),
+      loadCollection("app_settings").catch(() => []),
     ]);
+    const brandingSettings = appSettings.find((item) => item.id === "branding") || {};
 
     const nextState = {
       users,
       facilities: mergeDefaultFacilities(facilities),
       logs,
       emails,
+      settings: { ...DEFAULT_BRANDING, ...storedSettings, ...brandingSettings },
     };
 
     await Promise.all(nextState.facilities
@@ -130,6 +139,15 @@ async function loadState() {
     } catch {
       return structuredClone(initialState);
     }
+  }
+}
+
+function getStoredSettings() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return stored.settings || {};
+  } catch {
+    return {};
   }
 }
 
@@ -497,6 +515,7 @@ function adminPathForSection(section) {
 }
 
 function render() {
+  renderPublicBranding();
   renderAdminKpis();
   renderPendingUsers();
   renderFacilities();
@@ -539,6 +558,27 @@ function renderScannerAccess() {
 function renderAdminAccess() {
   $("#admin-login-panel").hidden = adminLoggedIn;
   $("#admin-dashboard").hidden = !adminLoggedIn;
+}
+
+function getBrandingSettings() {
+  state.settings ||= { ...DEFAULT_BRANDING };
+  return { ...DEFAULT_BRANDING, ...state.settings };
+}
+
+function renderPublicBranding() {
+  const branding = getBrandingSettings();
+  const logo = $("#public-logo");
+  const name = $("#public-logo-name");
+  if (logo) {
+    logo.src = branding.publicLogoData || DEFAULT_BRANDING.publicLogoData;
+    logo.alt = branding.publicLogoName || DEFAULT_BRANDING.publicLogoName;
+  }
+  if (name) name.textContent = branding.publicLogoName || DEFAULT_BRANDING.publicLogoName;
+  const adminMark = $(".brand-mark");
+  if (adminMark && branding.publicLogoData) {
+    adminMark.innerHTML = `<img src="${escapeHtml(branding.publicLogoData)}" alt="" />`;
+    adminMark.classList.add("brand-mark-image");
+  }
 }
 
 function renderAdminKpis() {
@@ -1273,19 +1313,87 @@ function renderReportCards() {
 function renderSettingsSections() {
   const container = $("#settings-sections");
   if (!container) return;
+  const branding = getBrandingSettings();
   const sections = [
     ["General", [["Organisation name", "HTS Facility Access"], ["Admin display name", "Manager"], ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Date format", "Local browser format"]]],
     ["Notifications", [["Email connected", state.emails?.some((email) => email.status === "Sent") ? "Yes" : "Pending setup"], ["Approval email", "Enabled"], ["Rejection email", "Enabled"]]],
     ["System information", [["Firebase", "Connected"], ["Application version", "1.0.0"]]],
   ];
-  container.innerHTML = sections.map(([title, rows]) => `
+  container.innerHTML = `
+    <article class="settings-card branding-settings-card">
+      <h3>Branding</h3>
+      <div class="branding-preview">
+        <img id="settings-logo-preview" src="${escapeHtml(branding.publicLogoData)}" alt="${escapeHtml(branding.publicLogoName)}" />
+        <div>
+          <strong>${escapeHtml(branding.publicLogoName)}</strong>
+          <small>This logo appears on the public application page.</small>
+        </div>
+      </div>
+      <label>
+        Logo name
+        <input id="branding-logo-name" value="${escapeHtml(branding.publicLogoName)}" placeholder="Organisation logo name" />
+      </label>
+      <label class="branding-upload">
+        Upload logo
+        <input id="branding-logo-input" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+      </label>
+      <div class="record-actions">
+        <button type="button" id="save-branding-settings" class="primary">Update logo</button>
+        <button type="button" id="reset-branding-settings">Reset default</button>
+      </div>
+      <p class="helper-text" id="branding-settings-message"></p>
+    </article>
+    ${sections.map(([title, rows]) => `
     <article class="settings-card">
       <h3>${escapeHtml(title)}</h3>
       <dl>
         ${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
       </dl>
     </article>
-  `).join("");
+    `).join("")}
+  `;
+  bindBrandingSettings();
+}
+
+function bindBrandingSettings() {
+  $("#save-branding-settings")?.addEventListener("click", saveBrandingSettings);
+  $("#reset-branding-settings")?.addEventListener("click", resetBrandingSettings);
+}
+
+async function saveBrandingSettings() {
+  const message = $("#branding-settings-message");
+  const nameInput = $("#branding-logo-name");
+  const fileInput = $("#branding-logo-input");
+  const file = fileInput?.files?.[0];
+  const nextSettings = {
+    ...getBrandingSettings(),
+    publicLogoName: normalizeName(nameInput?.value || "") || DEFAULT_BRANDING.publicLogoName,
+  };
+
+  try {
+    if (file) {
+      if (!file.type.startsWith("image/")) throw new Error("Upload an image file for the logo.");
+      if (file.size > 700 * 1024) throw new Error("Logo image must be 700 KB or smaller.");
+      nextSettings.publicLogoData = await readFile(file);
+    }
+    state.settings = nextSettings;
+    saveState();
+    await upsertDoc("app_settings", { id: "branding", ...nextSettings }).catch(() => {});
+    render();
+    if (message) message.textContent = "Logo updated.";
+    notify("Logo updated.");
+  } catch (error) {
+    if (message) message.textContent = error.message || "Could not update logo.";
+    notify(error.message || "Could not update logo.", "warning");
+  }
+}
+
+async function resetBrandingSettings() {
+  state.settings = { ...DEFAULT_BRANDING };
+  saveState();
+  await upsertDoc("app_settings", { id: "branding", ...state.settings }).catch(() => {});
+  render();
+  notify("Logo reset to default.");
 }
 
 function enhanceAdminIcons() {

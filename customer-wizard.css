@@ -58,6 +58,32 @@
   display: none !important;
 }
 
+.public-logo-strip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  min-height: 56px !important;
+  padding: 8px 12px !important;
+  border: 1px solid var(--wizard-border) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+}
+
+.public-logo-strip img {
+  display: block !important;
+  max-width: 180px !important;
+  max-height: 42px !important;
+  object-fit: contain !important;
+}
+
+.public-logo-strip span {
+  color: var(--wizard-muted) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+}
+
 .wizard-stepper {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
