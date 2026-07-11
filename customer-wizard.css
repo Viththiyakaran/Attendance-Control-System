@@ -42,8 +42,8 @@
   grid-template-columns: minmax(0, 1fr) !important;
   align-items: stretch !important;
   gap: 0 !important;
-  width: min(1280px, 100%) !important;
-  max-width: 1280px !important;
+  width: min(1080px, 100%) !important;
+  max-width: 1080px !important;
   min-height: 0 !important;
   height: calc(100dvh - 24px) !important;
   margin: 0 auto !important;
@@ -209,7 +209,7 @@
 
 .wizard-facilities {
   display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 8px !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -218,15 +218,26 @@
 }
 
 .wizard-facilities .facility-choice-card {
-  min-height: 0 !important;
+  min-height: 126px !important;
   padding: 8px !important;
   border-radius: 12px !important;
   box-shadow: none !important;
+  overflow: visible !important;
 }
 
 .wizard-facilities .facility-choice-card > span {
   display: grid !important;
   gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.wizard-facilities input[type="checkbox"] {
+  width: 16px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  margin-top: 2px !important;
+  padding: 0 !important;
 }
 
 .wizard-facilities .activity-icon {
@@ -246,19 +257,27 @@
 }
 
 .facility-month-control {
-  grid-template-columns: 26px minmax(50px, 1fr) 26px !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(54px, 1fr) 28px !important;
   gap: 4px !important;
   margin-top: 4px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  opacity: 1 !important;
 }
 
 .facility-month-control button {
-  min-height: 26px !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: 28px !important;
   border-radius: 8px !important;
+  padding: 0 !important;
 }
 
 .facility-month-control > span {
-  min-height: 26px !important;
+  min-height: 28px !important;
   font-size: 0.68rem !important;
+  min-width: 0 !important;
 }
 
 .facility-month-control strong {
@@ -319,7 +338,7 @@
 @media (max-width: 1280px) {
   #register-view.active {
     grid-template-columns: 1fr !important;
-    width: min(1120px, 100%) !important;
+    width: min(1040px, 100%) !important;
   }
 
   .public-showcase {
@@ -331,7 +350,7 @@
   }
 
   .wizard-facilities {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
