@@ -12,13 +12,7 @@
 }
 
 .customer-mode .public-header {
-  position: relative !important;
-  max-width: 1440px !important;
-  margin: 0 auto !important;
-  padding: 12px 20px 8px !important;
-  border: 0 !important;
-  background: rgba(255, 255, 255, 0.92) !important;
-  box-shadow: none !important;
+  display: none !important;
 }
 
 .customer-mode .public-header h1 {
@@ -35,27 +29,28 @@
 }
 
 .customer-mode main {
-  min-height: calc(100dvh - 108px) !important;
-  padding: 12px 20px 18px !important;
+  display: grid !important;
+  place-items: center !important;
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+  padding: 12px 18px !important;
   overflow: hidden !important;
 }
 
 #register-view.active {
   display: grid !important;
-  grid-template-columns: minmax(240px, 0.34fr) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   align-items: stretch !important;
-  gap: 14px !important;
-  width: min(1440px, 100%) !important;
-  min-height: calc(100dvh - 138px) !important;
+  gap: 0 !important;
+  width: min(1280px, 100%) !important;
+  max-width: 1280px !important;
+  min-height: 0 !important;
+  height: calc(100dvh - 24px) !important;
   margin: 0 auto !important;
 }
 
 .public-showcase {
-  display: grid !important;
-  grid-template-rows: auto auto minmax(0, 1fr) !important;
-  gap: 10px !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  display: none !important;
 }
 
 .public-brand-card,
@@ -139,8 +134,9 @@
   width: 100% !important;
   max-width: none !important;
   min-height: 0 !important;
-  height: calc(100dvh - 138px) !important;
-  padding: 16px 18px !important;
+  height: 100% !important;
+  max-height: calc(100dvh - 24px) !important;
+  padding: 14px 18px !important;
   border: 1px solid var(--wizard-border) !important;
   border-radius: 16px !important;
   background: rgba(255, 255, 255, 0.96) !important;
@@ -149,8 +145,8 @@
 }
 
 .registration-panel .section-heading {
-  padding-bottom: 10px !important;
-  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 8px !important;
   border-bottom: 1px solid var(--wizard-border) !important;
 }
 
@@ -159,21 +155,20 @@
 }
 
 .registration-panel .section-heading .helper-text {
-  font-size: 0.86rem !important;
-  line-height: 1.32 !important;
+  display: none !important;
 }
 
 .wizard-stepper {
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: 8px !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 8px !important;
 }
 
 .wizard-stepper li {
-  min-height: 38px !important;
-  padding: 7px 9px !important;
+  min-height: 36px !important;
+  padding: 6px 9px !important;
   border-radius: 11px !important;
-  font-size: 0.9rem !important;
+  font-size: 0.86rem !important;
 }
 
 .wizard-stepper span {
@@ -189,7 +184,7 @@
 .wizard-step.active {
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr) auto !important;
-  gap: 10px !important;
+  gap: 8px !important;
 }
 
 .wizard-copy {
@@ -201,12 +196,15 @@
 }
 
 .wizard-copy p:not(.eyebrow) {
-  font-size: 0.86rem !important;
-  line-height: 1.3 !important;
+  display: none !important;
 }
 
 .registration-access {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
   min-height: 0 !important;
+  overflow: hidden !important;
 }
 
 .wizard-facilities {
@@ -216,11 +214,12 @@
   min-height: 0 !important;
   max-height: none !important;
   overflow: hidden !important;
+  align-content: start !important;
 }
 
 .wizard-facilities .facility-choice-card {
   min-height: 0 !important;
-  padding: 9px !important;
+  padding: 8px !important;
   border-radius: 12px !important;
   box-shadow: none !important;
 }
@@ -231,8 +230,8 @@
 }
 
 .wizard-facilities .activity-icon {
-  width: 34px !important;
-  height: 34px !important;
+  width: 30px !important;
+  height: 30px !important;
   margin-bottom: 2px !important;
 }
 
@@ -247,18 +246,18 @@
 }
 
 .facility-month-control {
-  grid-template-columns: 28px minmax(54px, 1fr) 28px !important;
+  grid-template-columns: 26px minmax(50px, 1fr) 26px !important;
   gap: 4px !important;
-  margin-top: 5px !important;
+  margin-top: 4px !important;
 }
 
 .facility-month-control button {
-  min-height: 28px !important;
+  min-height: 26px !important;
   border-radius: 8px !important;
 }
 
 .facility-month-control > span {
-  min-height: 28px !important;
+  min-height: 26px !important;
   font-size: 0.68rem !important;
 }
 
@@ -269,7 +268,7 @@
 .payment-summary.live-summary {
   grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr) !important;
   gap: 8px !important;
-  margin-top: 8px !important;
+  margin-top: 0 !important;
 }
 
 .payment-total,
@@ -292,9 +291,9 @@
 
 .wizard-actions {
   align-items: center !important;
-  min-height: 52px !important;
-  padding-top: 10px !important;
-  margin-top: 10px !important;
+  min-height: 48px !important;
+  padding-top: 8px !important;
+  margin-top: 8px !important;
 }
 
 .wizard-actions button {
@@ -320,6 +319,7 @@
 @media (max-width: 1280px) {
   #register-view.active {
     grid-template-columns: 1fr !important;
+    width: min(1120px, 100%) !important;
   }
 
   .public-showcase {
@@ -327,7 +327,7 @@
   }
 
   .registration-panel {
-    height: calc(100dvh - 128px) !important;
+    height: 100% !important;
   }
 
   .wizard-facilities {
@@ -342,12 +342,14 @@
 
   .customer-mode main {
     min-height: auto !important;
+    height: auto !important;
+    display: block !important;
     padding: 10px !important;
     overflow: visible !important;
   }
 
   .customer-mode .public-header {
-    padding: 12px 10px 6px !important;
+    display: none !important;
   }
 
   .customer-mode .public-header h1 {
@@ -360,17 +362,23 @@
 
   #register-view.active {
     min-height: auto !important;
+    height: auto !important;
   }
 
   .registration-panel {
     display: grid !important;
     height: auto !important;
-    min-height: calc(100dvh - 110px) !important;
+    max-height: none !important;
+    min-height: calc(100dvh - 20px) !important;
     padding: 14px !important;
     overflow: visible !important;
   }
 
   .wizard-step.active {
+    overflow: visible !important;
+  }
+
+  .registration-access {
     overflow: visible !important;
   }
 
