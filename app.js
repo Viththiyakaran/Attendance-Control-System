@@ -706,10 +706,10 @@ function renderFacilitySummary(facilities) {
 }
 
 function renderApprovedResidents() {
-  const table = $("#resident-table-body");
+  const list = $("#resident-table-body");
   const cards = $("#resident-cards");
   const summary = $("#resident-summary");
-  if (!table && !cards && !summary) return;
+  if (!list && !cards && !summary) return;
 
   const approved = state.users.filter((user) => user.status === "Approved");
   const active = approved.filter(isMembershipActive).length;
@@ -726,48 +726,42 @@ function renderApprovedResidents() {
   }
 
   const rows = approved.sort((a, b) => new Date(b.approvedAt || b.createdAt) - new Date(a.approvedAt || a.createdAt));
-  table.innerHTML = rows.length ? rows.map((user) => `
-    <tr>
-      <td class="person-cell">
-        <strong>${escapeHtml(user.fullName || user.email)}</strong>
-        <small>${escapeHtml(maskEmail(user.email))}</small>
-        ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
-      </td>
-      <td>${escapeHtml(user.villaNumber || "-")}</td>
-      <td>${renderFacilitySummary(getUserAccess(user))}</td>
-      <td><span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span></td>
-      <td>${escapeHtml(user.accessEndAt || "-")}</td>
-      <td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td>
-      <td class="action-cell">
-        <button type="button" data-open-user="${user.id}">View</button>
-        <details class="row-menu">
-          <summary>More</summary>
-          <button type="button" data-open-user="${user.id}">Edit access</button>
-          <button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>
-          <button type="button" data-suspend-user="${user.id}">Suspend access</button>
-        </details>
-      </td>
-    </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">${emptyState("No approved residents yet", "Approved applications will appear here after verification.")}</td></tr>`;
+  if (list) {
+    list.innerHTML = rows.length ? rows.map((user) => {
+      const residentName = user.fullName || user.email || "Resident";
+      return `
+        <article class="application-review-card resident-review-card">
+          <div class="application-applicant">
+            <div class="application-avatar">${escapeHtml(getInitials(residentName))}</div>
+            <div class="application-person">
+              <strong>${escapeHtml(residentName)}</strong>
+              <small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? ` | QID ${escapeHtml(user.qidNumber)}` : ""}</small>
+              ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
+            </div>
+          </div>
+          <dl class="application-details resident-details">
+            <div><dt>Villa / Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
+            <div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div>
+            <div><dt>Membership</dt><dd><span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span></dd></div>
+            <div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div>
+            <div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div>
+          </dl>
+          <div class="application-actions">
+            <button class="application-action-primary" type="button" data-open-user="${user.id}">View</button>
+            <details class="row-menu">
+              <summary aria-label="More resident actions">...</summary>
+              <button type="button" data-open-user="${user.id}">Edit access</button>
+              <button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>
+              <button type="button" data-suspend-user="${user.id}">Suspend access</button>
+            </details>
+          </div>
+        </article>
+      `;
+    }).join("") : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
+  }
 
   if (cards) {
-    cards.innerHTML = rows.length ? rows.map((user) => `
-      <article class="mobile-record-card">
-        <div class="record-card-head">
-          <div>
-            <strong>${escapeHtml(user.fullName || user.email)}</strong>
-            <small>${escapeHtml(maskEmail(user.email))}</small>
-          </div>
-          <span class="status ${isMembershipActive(user) ? "Approved" : "Rejected"}">${isMembershipActive(user) ? "Active" : "Expired"}</span>
-        </div>
-        <dl>
-          <div><dt>Villa</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
-          <div><dt>Facilities</dt><dd>${getUserAccess(user).length} active</dd></div>
-          <div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div>
-        </dl>
-        <button class="primary" type="button" data-open-user="${user.id}">View details</button>
-      </article>
-    `).join("") : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
+    cards.innerHTML = "";
   }
 }
 
@@ -1384,54 +1378,46 @@ function confirmAction({ title, message, confirmText = "Confirm", danger = true 
 }
 
 function renderAttendance() {
-  const table = $("#attendance-log");
-  if (!table) return;
+  const list = $("#attendance-log");
+  if (!list) return;
   const logs = getFilteredAttendanceLogs();
   const totalPages = Math.max(1, Math.ceil(logs.length / REPORT_PAGE_SIZE));
   reportPage = Math.min(Math.max(reportPage, 1), totalPages);
   const startIndex = (reportPage - 1) * REPORT_PAGE_SIZE;
   const pageLogs = logs.slice(startIndex, startIndex + REPORT_PAGE_SIZE);
 
-  table.innerHTML = pageLogs.length
+  list.innerHTML = pageLogs.length
     ? pageLogs.map((log) => {
       const user = state.users.find((item) => item.id === log.userId);
       const facility = state.facilities.find((item) => item.id === log.facilityId);
+      const residentName = user?.fullName || "Deleted user";
+      const facilityName = displayFacilityName(facility?.name || log.facilityName || "Deleted facility");
       return `
-        <tr>
-          <td>${formatDateTime(log.checkInAt, "date")}</td>
-          <td>${escapeHtml(user?.fullName || "Deleted user")}</td>
-          <td>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Deleted facility"))}</td>
-          <td>${formatDateTime(log.checkInAt, "time")}</td>
-          <td>${formatDateTime(log.checkOutAt, "time")}</td>
-          <td><span class="status ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span></td>
-        </tr>
+        <article class="application-review-card attendance-review-card">
+          <div class="application-applicant">
+            <div class="application-avatar">${escapeHtml(getInitials(residentName))}</div>
+            <div class="application-person">
+              <strong>${escapeHtml(residentName)}</strong>
+              <small>${escapeHtml(facilityName)}</small>
+            </div>
+          </div>
+          <dl class="application-details attendance-details">
+            <div><dt>Date</dt><dd>${formatDateTime(log.checkInAt, "date")}</dd></div>
+            <div><dt>Arrival</dt><dd>${formatDateTime(log.checkInAt, "time")}</dd></div>
+            <div><dt>Departure</dt><dd>${formatDateTime(log.checkOutAt, "time")}</dd></div>
+            <div><dt>Scanner</dt><dd>Gate scanner</dd></div>
+          </dl>
+          <div class="application-status-action">
+            <span class="status ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
+          </div>
+        </article>
       `;
     }).join("")
-    : `<tr><td colspan="6" class="empty">No attendance records for this range.</td></tr>`;
+    : emptyState("No attendance records", "Check-ins matching your filters will appear here.");
 
   const cards = $("#attendance-cards");
   if (cards) {
-    cards.innerHTML = pageLogs.length ? pageLogs.map((log) => {
-      const user = state.users.find((item) => item.id === log.userId);
-      const facility = state.facilities.find((item) => item.id === log.facilityId);
-      return `
-        <article class="mobile-record-card">
-          <div class="record-card-head">
-            <div>
-              <strong>${escapeHtml(user?.fullName || "Deleted user")}</strong>
-              <small>${escapeHtml(displayFacilityName(facility?.name || log.facilityName || "Deleted facility"))}</small>
-            </div>
-            <span class="scan-chip ${scanResultClass(log)}">${escapeHtml(scanResultLabel(log))}</span>
-          </div>
-          <dl class="two-col">
-            <div><dt>Arrival</dt><dd>${formatDateTime(log.checkInAt, "time")}</dd></div>
-            <div><dt>Departure</dt><dd>${formatDateTime(log.checkOutAt, "time")}</dd></div>
-            <div><dt>Date</dt><dd>${formatDateTime(log.checkInAt, "date")}</dd></div>
-            <div><dt>Scanner</dt><dd>Gate scanner</dd></div>
-          </dl>
-        </article>
-      `;
-    }).join("") : emptyState("No attendance records", "Check-ins matching your filters will appear here.");
+    cards.innerHTML = "";
   }
 
   renderReportPagination(logs.length, startIndex, pageLogs.length, totalPages);
