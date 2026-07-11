@@ -640,11 +640,13 @@ function renderPendingUsers() {
   table.innerHTML = pageUsers.length
     ? pageUsers.map((user) => {
       const access = getUserAccess(user);
+      const applicantName = user.fullName || user.email || user.qidNumber || "Applicant";
+      const applicantDetail = [user.email, user.qidNumber ? `QID ${user.qidNumber}` : ""].filter(Boolean).join(" | ");
       return `
       <tr>
         <td class="person-cell">
-          <strong>${escapeHtml(user.fullName || "Pending QID extraction")}</strong>
-          <small>${escapeHtml(user.email)}</small>
+          <strong>${escapeHtml(applicantName)}</strong>
+          ${applicantDetail ? `<small>${escapeHtml(applicantDetail)}</small>` : ""}
           ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
         </td>
         <td>${escapeHtml(user.villaNumber || "-")}</td>
@@ -664,12 +666,15 @@ function renderPendingUsers() {
     : `<tr><td colspan="6" class="empty">${emptyState("No applications found", "Applications matching your filters will appear here.")}</td></tr>`;
 
   if (cards) {
-    cards.innerHTML = pageUsers.length ? pageUsers.map((user) => `
+    cards.innerHTML = pageUsers.length ? pageUsers.map((user) => {
+      const applicantName = user.fullName || user.email || user.qidNumber || "Applicant";
+      const applicantDetail = [user.email, user.qidNumber ? `QID ${user.qidNumber}` : ""].filter(Boolean).join(" | ");
+      return `
       <article class="mobile-record-card">
         <div class="record-card-head">
           <div>
-            <strong>${escapeHtml(user.fullName || "Pending QID extraction")}</strong>
-            <small>${escapeHtml(user.email)}</small>
+            <strong>${escapeHtml(applicantName)}</strong>
+            ${applicantDetail ? `<small>${escapeHtml(applicantDetail)}</small>` : ""}
           </div>
           <span class="status ${statusClass(user.status)}">${escapeHtml(user.status)}</span>
         </div>
@@ -686,7 +691,8 @@ function renderPendingUsers() {
           </details>
         </div>
       </article>
-    `).join("") : emptyState("No applications found", "Applications matching your filters will appear here.");
+    `;
+    }).join("") : emptyState("No applications found", "Applications matching your filters will appear here.");
   }
 
   renderUserPagination(users.length, startIndex, pageUsers.length, totalPages);

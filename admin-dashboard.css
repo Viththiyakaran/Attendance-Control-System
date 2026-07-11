@@ -704,3 +704,251 @@
     padding: 16px !important;
   }
 }
+
+/* Applications / User management table cleanup */
+.admin-page[data-admin-page="applications"] .user-management-panel {
+  display: grid !important;
+  gap: 16px !important;
+  padding: 20px !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+.admin-page[data-admin-page="applications"] .compact-heading {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) minmax(520px, auto) !important;
+  align-items: end !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .compact-heading h2 {
+  margin: 0 !important;
+  color: var(--dashboard-text) !important;
+  font-size: 1.2rem !important;
+}
+
+.admin-page[data-admin-page="applications"] .compact-heading .eyebrow {
+  color: var(--dashboard-green) !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-tools {
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1fr) 90px 150px 170px !important;
+  align-items: end !important;
+  gap: 10px !important;
+  width: min(680px, 100%) !important;
+  justify-self: end !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-search {
+  display: contents !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-tools label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--dashboard-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+}
+
+.admin-page[data-admin-page="applications"] #user-search,
+.admin-page[data-admin-page="applications"] #user-status-filter,
+.admin-page[data-admin-page="applications"] #user-date-filter {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
+.admin-page[data-admin-page="applications"] #clear-user-search {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+}
+
+.admin-page[data-admin-page="applications"] .table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table {
+  width: 100% !important;
+  min-width: 1060px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th,
+.admin-page[data-admin-page="applications"] .user-table td {
+  padding: 14px 14px !important;
+  border-bottom: 1px solid #EEF2F0 !important;
+  vertical-align: middle !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th {
+  background: #F8FAF9 !important;
+  color: var(--dashboard-muted) !important;
+  font-size: 0.76rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(1),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(1) {
+  width: 24% !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(2),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(2) {
+  width: 16% !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(3),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(3) {
+  width: 22% !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(4),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(4) {
+  width: 12% !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(5),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(5) {
+  width: 13% !important;
+}
+
+.admin-page[data-admin-page="applications"] .user-table th:nth-child(6),
+.admin-page[data-admin-page="applications"] .user-table td:nth-child(6) {
+  width: 13% !important;
+}
+
+.admin-page[data-admin-page="applications"] .person-cell {
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.admin-page[data-admin-page="applications"] .person-cell strong {
+  color: var(--dashboard-text) !important;
+  font-size: 0.94rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .person-cell small {
+  color: var(--dashboard-muted) !important;
+  font-size: 0.8rem !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .facility-summary {
+  display: flex !important;
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .facility-pill,
+.admin-page[data-admin-page="applications"] .status {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 28px !important;
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .action-cell {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  min-width: 0 !important;
+}
+
+.admin-page[data-admin-page="applications"] .action-cell button,
+.admin-page[data-admin-page="applications"] .action-cell summary {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.admin-page[data-admin-page="applications"] .row-menu {
+  position: relative !important;
+}
+
+.admin-page[data-admin-page="applications"] .row-menu summary {
+  border: 1px solid var(--dashboard-border) !important;
+  background: #fff !important;
+  cursor: pointer !important;
+  list-style: none !important;
+}
+
+.admin-page[data-admin-page="applications"] .row-menu summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.admin-page[data-admin-page="applications"] .table-pagination {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 1100px) {
+  .admin-page[data-admin-page="applications"] .compact-heading {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .user-tools {
+    justify-self: stretch !important;
+    width: 100% !important;
+    grid-template-columns: minmax(220px, 1fr) 90px minmax(140px, 0.6fr) minmax(150px, 0.7fr) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-page[data-admin-page="applications"] .user-management-panel {
+    padding: 14px !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .user-tools {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .table-wrap {
+    display: none !important;
+  }
+
+  .admin-page[data-admin-page="applications"] .mobile-record-list {
+    display: grid !important;
+    gap: 12px !important;
+  }
+}
