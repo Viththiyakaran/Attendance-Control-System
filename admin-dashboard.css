@@ -83,10 +83,15 @@
 
 .admin-mode .admin-header-tools {
   display: grid !important;
-  grid-template-columns: 300px 150px auto auto !important;
+  grid-template-columns: auto auto !important;
   align-items: center !important;
   justify-content: end !important;
   gap: 10px !important;
+}
+
+.admin-mode .admin-header-tools::before {
+  display: none !important;
+  content: none !important;
 }
 
 .admin-mode .admin-header-tools input,
@@ -580,8 +585,9 @@
 
   .admin-mode .admin-header-tools {
     grid-column: 1 / -1 !important;
-    grid-template-columns: minmax(0, 1fr) 150px auto auto !important;
+    grid-template-columns: auto auto !important;
     width: 100% !important;
+    justify-content: end !important;
   }
 
   .admin-page[data-admin-page="dashboard"] .dashboard-layout {
@@ -615,7 +621,8 @@
   }
 
   .admin-mode .admin-header-tools {
-    grid-template-columns: 1fr auto auto !important;
+    grid-template-columns: auto auto !important;
+    justify-content: end !important;
   }
 
   .admin-mode #admin-header-search {
@@ -681,7 +688,7 @@
 
 @media (max-width: 430px) {
   .admin-mode .admin-header-tools {
-    grid-template-columns: 1fr 42px 42px !important;
+    grid-template-columns: 42px auto !important;
   }
 
   .admin-mode #admin-date-range {
