@@ -2103,3 +2103,38 @@
   .admin-page[data-admin-page="settings"] .settings-grid { grid-template-columns: 1fr !important; grid-auto-rows: auto !important; }
   .admin-page[data-admin-page="settings"] .settings-card { padding: 16px !important; }
 }
+/* Dashboard section boxes */
+.admin-page[data-admin-page="dashboard"] .dashboard-layout {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+.admin-page[data-admin-page="dashboard"] .dashboard-left-column,
+.admin-page[data-admin-page="dashboard"] .dashboard-side {
+  display: contents !important;
+}
+
+.admin-page[data-admin-page="dashboard"] .facility-usage-card,
+.admin-page[data-admin-page="dashboard"] .recent-checkins-card,
+.admin-page[data-admin-page="dashboard"] .dashboard-side > .dashboard-card,
+.admin-page[data-admin-page="dashboard"] .recent-activity-card {
+  grid-column: auto !important;
+  min-height: 320px !important;
+  height: 100% !important;
+}
+
+.admin-page[data-admin-page="dashboard"] .facility-usage-card .usage-chart,
+.admin-page[data-admin-page="dashboard"] .recent-checkins-card .recent-checkins,
+.admin-page[data-admin-page="dashboard"] .recent-activity-card .recent-activity {
+  min-height: 220px !important;
+}
+
+@media (max-width: 1180px) {
+  .admin-page[data-admin-page="dashboard"] .dashboard-layout { grid-template-columns: 1fr !important; }
+  .admin-page[data-admin-page="dashboard"] .facility-usage-card,
+  .admin-page[data-admin-page="dashboard"] .recent-checkins-card,
+  .admin-page[data-admin-page="dashboard"] .dashboard-side > .dashboard-card,
+  .admin-page[data-admin-page="dashboard"] .recent-activity-card { min-height: 0 !important; }
+}
