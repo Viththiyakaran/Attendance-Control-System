@@ -29,14 +29,6 @@ const DEFAULT_CURRENCY = "QAR";
 const DEFAULT_BRANDING = {
   publicLogoData: "/assets/qua-logo.png",
   publicLogoName: "QUA Facilities Management",
-  primaryColor: "#087f65",
-  sidebarColor: "#063f36",
-  fontStyle: "modern",
-};
-const APP_FONT_STYLES = {
-  modern: 'Inter, "Segoe UI", Arial, sans-serif',
-  friendly: '"Trebuchet MS", "Segoe UI", Arial, sans-serif',
-  classic: 'Georgia, "Times New Roman", serif',
 };
 const firebaseConfig = {
   apiKey: "AIzaSyAXfE01pzRdwK6YUGo50AafKhZHdAgCAIw",
@@ -552,7 +544,6 @@ function adminPathForSection(section) {
 }
 
 function render() {
-  applyAppearanceSettings();
   renderPublicBranding();
   renderAdminKpis();
   renderPendingUsers();
@@ -602,24 +593,6 @@ function renderAdminAccess() {
 function getBrandingSettings() {
   state.settings ||= { ...DEFAULT_BRANDING };
   return { ...DEFAULT_BRANDING, ...state.settings };
-}
-
-function normalizeThemeColor(value, fallback) {
-  return /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
-}
-
-function applyAppearanceSettings() {
-  const settings = getBrandingSettings();
-  const primaryColor = normalizeThemeColor(settings.primaryColor, DEFAULT_BRANDING.primaryColor);
-  const sidebarColor = normalizeThemeColor(settings.sidebarColor, DEFAULT_BRANDING.sidebarColor);
-  const fontStyle = APP_FONT_STYLES[settings.fontStyle] ? settings.fontStyle : DEFAULT_BRANDING.fontStyle;
-  const root = document.documentElement;
-  root.style.setProperty("--accent", primaryColor);
-  root.style.setProperty("--accent-dark", sidebarColor);
-  root.style.setProperty("--admin-sidebar", sidebarColor);
-  root.style.setProperty("--app-font-family", APP_FONT_STYLES[fontStyle]);
-  document.body.style.setProperty("--dashboard-green", primaryColor);
-  document.body.style.setProperty("--dashboard-sidebar", sidebarColor);
 }
 
 function renderPublicBranding() {
@@ -1390,29 +1363,6 @@ function renderSettingsSections() {
       <button type="button" id="save-scanner-pin" class="primary">Update scanner PIN</button>
       <p class="helper-text" id="scanner-pin-settings-message" role="status"></p>
     </article>
-    <article class="settings-card appearance-settings-card">
-      <h3>Appearance</h3>
-      <p class="helper-text">Apply a consistent colour theme and font across the full application.</p>
-      <fieldset class="theme-presets">
-        <legend>Theme preset</legend>
-        <button type="button" data-theme-preset="green" aria-label="Use facility green theme"><span style="--preset-color:#087f65"></span>Facility green</button>
-        <button type="button" data-theme-preset="navy" aria-label="Use navy and teal theme"><span style="--preset-color:#0f766e"></span>Navy & teal</button>
-        <button type="button" data-theme-preset="blue" aria-label="Use royal blue theme"><span style="--preset-color:#2563eb"></span>Royal blue</button>
-      </fieldset>
-      <div class="appearance-color-grid">
-        <label>Primary colour<input id="settings-primary-color" type="color" value="${escapeHtml(normalizeThemeColor(branding.primaryColor, DEFAULT_BRANDING.primaryColor))}" /></label>
-        <label>Sidebar colour<input id="settings-sidebar-color" type="color" value="${escapeHtml(normalizeThemeColor(branding.sidebarColor, DEFAULT_BRANDING.sidebarColor))}" /></label>
-      </div>
-      <label>Font style
-        <select id="settings-font-style">
-          <option value="modern" ${branding.fontStyle === "modern" ? "selected" : ""}>Modern — Inter / Segoe UI</option>
-          <option value="friendly" ${branding.fontStyle === "friendly" ? "selected" : ""}>Friendly — Trebuchet</option>
-          <option value="classic" ${branding.fontStyle === "classic" ? "selected" : ""}>Classic — Georgia</option>
-        </select>
-      </label>
-      <button type="button" id="save-appearance-settings" class="primary">Apply appearance</button>
-      <p class="helper-text" id="appearance-settings-message" role="status"></p>
-    </article>
     ${sections.map(([title, rows]) => `
     <article class="settings-card">
       <h3>${escapeHtml(title)}</h3>
@@ -1423,51 +1373,7 @@ function renderSettingsSections() {
     `).join("")}
   `;
   bindBrandingSettings();
-  bindAppearanceSettings();
   $("#save-scanner-pin")?.addEventListener("click", saveScannerPinSetting);
-}
-
-function bindAppearanceSettings() {
-  const primaryInput = $("#settings-primary-color");
-  const sidebarInput = $("#settings-sidebar-color");
-  $$('[data-theme-preset]').forEach((button) => button.addEventListener("click", () => {
-    const presets = {
-      green: ["#087f65", "#063f36", "modern"],
-      navy: ["#0f766e", "#172554", "modern"],
-      blue: ["#2563eb", "#172554", "friendly"],
-    };
-    const [primary, sidebar, font] = presets[button.dataset.themePreset] || presets.green;
-    primaryInput.value = primary;
-    sidebarInput.value = sidebar;
-    $("#settings-font-style").value = font;
-  }));
-  $("#save-appearance-settings")?.addEventListener("click", saveAppearanceSettings);
-}
-
-async function saveAppearanceSettings() {
-  const button = $("#save-appearance-settings");
-  const message = $("#appearance-settings-message");
-  const nextSettings = {
-    ...getBrandingSettings(),
-    primaryColor: normalizeThemeColor($("#settings-primary-color")?.value, DEFAULT_BRANDING.primaryColor),
-    sidebarColor: normalizeThemeColor($("#settings-sidebar-color")?.value, DEFAULT_BRANDING.sidebarColor),
-    fontStyle: APP_FONT_STYLES[$("#settings-font-style")?.value] ? $("#settings-font-style").value : DEFAULT_BRANDING.fontStyle,
-  };
-  button.disabled = true;
-  message.textContent = "Applying appearance\u2026";
-  try {
-    state.settings = nextSettings;
-    saveState();
-    await upsertDoc("app_settings", { id: "branding", ...nextSettings });
-    applyAppearanceSettings();
-    render();
-    notify("App appearance updated.");
-  } catch {
-    message.textContent = "Could not update the appearance. Please try again.";
-    notify("Could not update the appearance.", "warning");
-  } finally {
-    button.disabled = false;
-  }
 }
 
 async function hashScannerPin(pin) {
@@ -1542,11 +1448,7 @@ async function saveBrandingSettings() {
 }
 
 async function resetBrandingSettings() {
-  state.settings = {
-    ...getBrandingSettings(),
-    publicLogoData: DEFAULT_BRANDING.publicLogoData,
-    publicLogoName: DEFAULT_BRANDING.publicLogoName,
-  };
+  state.settings = { ...DEFAULT_BRANDING, scannerPinHash: state.settings?.scannerPinHash || "" };
   saveState();
   await upsertDoc("app_settings", { id: "branding", ...state.settings }).catch(() => {});
   render();

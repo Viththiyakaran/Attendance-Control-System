@@ -8,7 +8,6 @@
   --dashboard-text: #17211F;
   --dashboard-muted: #66736F;
   background: var(--dashboard-bg) !important;
-  font-family: var(--app-font-family) !important;
 }
 
 .admin-mode,
@@ -31,7 +30,7 @@
   inset: 0 auto 0 0 !important;
   width: 240px !important;
   padding: 18px 14px !important;
-  background: linear-gradient(180deg, var(--dashboard-sidebar), color-mix(in srgb, var(--dashboard-sidebar) 78%, #000)) !important;
+  background: linear-gradient(180deg, var(--dashboard-sidebar), #042f29) !important;
   box-shadow: 16px 0 34px rgba(3, 40, 34, 0.14) !important;
   z-index: 90 !important;
 }
@@ -2078,30 +2077,8 @@
 }
 
 .admin-page[data-admin-page="settings"] .settings-card input,
-.admin-page[data-admin-page="settings"] .settings-card select,
 .admin-page[data-admin-page="settings"] .settings-card button {
   min-height: 44px !important;
-}
-
-.admin-page[data-admin-page="settings"] .theme-presets {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.admin-page[data-admin-page="settings"] .theme-presets legend { margin-bottom: 8px; color: var(--dashboard-muted); font-weight: 800; }
-.admin-page[data-admin-page="settings"] .theme-presets button { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 44px; padding: 8px 10px; font-size: .78rem; }
-.admin-page[data-admin-page="settings"] .theme-presets span { width: 18px; height: 18px; flex: 0 0 18px; border-radius: 50%; background: var(--preset-color); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
-.admin-page[data-admin-page="settings"] .appearance-color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.admin-page[data-admin-page="settings"] .appearance-color-grid input[type="color"] { width: 100%; min-height: 48px; padding: 5px; cursor: pointer; }
-.admin-page[data-admin-page="settings"] .appearance-settings-card > button { align-self: flex-start; }
-
-@media (max-width: 560px) {
-  .admin-page[data-admin-page="settings"] .theme-presets,
-  .admin-page[data-admin-page="settings"] .appearance-color-grid { grid-template-columns: 1fr; }
 }
 
 .admin-page[data-admin-page="settings"] .scanner-pin-settings-card > button,
