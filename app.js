@@ -597,12 +597,6 @@ function renderScannerAccess() {
   const pinForm = $("#scanner-pin-form");
   const workspace = $("#scanner-workspace");
   if (!pinForm || !workspace) return;
-  const heading = $("#scanner-view .section-heading h2");
-  const intro = $("#scanner-view .scanner-intro");
-  if (!passDisplayMode) {
-    if (heading) heading.textContent = "Scan access pass";
-    if (intro) intro.textContent = "Unlock this authorised station, then position the resident QR code inside the camera frame.";
-  }
   pinForm.hidden = scannerUnlocked || passDisplayMode;
   workspace.hidden = !scannerUnlocked && !passDisplayMode;
   workspace.classList.toggle("pass-display", passDisplayMode);
@@ -4172,10 +4166,6 @@ function setScanResult(message, success) {
 }
 
 function showVerifiedUser(user) {
-  if (passDisplayMode) {
-    renderCompactPublicPass(user);
-    return;
-  }
   const preview = !user.qatarId?.data
     ? `<p class="empty">No Qatar ID file uploaded for this record.</p>`
     : user.qatarId.type.includes("pdf")
@@ -4230,39 +4220,6 @@ function showVerifiedUser(user) {
   drawQrLikePass($("#verified-qr-canvas"), user.token);
 }
 
-function renderCompactPublicPass(user) {
-  const startDate = user.accessStartAt || user.approvedAt?.slice(0, 10) || "";
-  const endDate = user.accessEndAt || (startDate ? addYears(new Date(startDate), 1).toISOString().slice(0, 10) : "");
-  const accessFacilities = getUserAccess(user);
-  const container = $("#verified-user");
-  container.hidden = false;
-  container.innerHTML = `
-    <article class="compact-pass-card">
-      <header>
-        <div><p class="eyebrow">HTS facility access</p><h2>Resident QR pass</h2></div>
-        <span class="status Approved">Active</span>
-      </header>
-      <div class="compact-pass-body">
-        <div class="compact-pass-person">
-          <span class="compact-pass-avatar">${escapeHtml(getInitials(user.fullName || user.email))}</span>
-          <div><strong>${escapeHtml(user.fullName || "Approved resident")}</strong><small>QID ${escapeHtml(maskQidNumber(user.qidNumber))}</small></div>
-        </div>
-        <div class="compact-pass-qr"><canvas id="verified-qr-canvas" width="230" height="230" aria-label="QR pass for ${escapeHtml(user.fullName || user.email)}"></canvas></div>
-        <dl class="compact-pass-validity">
-          <div><dt>Valid from</dt><dd>${escapeHtml(formatAppDate(startDate))}</dd></div>
-          <div><dt>Valid until</dt><dd>${escapeHtml(formatAppDate(endDate))}</dd></div>
-        </dl>
-      </div>
-      <section class="compact-pass-access">
-        <span>Approved facilities</span>
-        <div>${accessFacilities.length ? accessFacilities.map((name) => `<strong>${escapeHtml(displayFacilityName(name))}</strong>`).join("") : `<small>No facility access assigned</small>`}</div>
-      </section>
-      <footer>Present this QR at the authorised facility scanner. Attendance is recorded only when security scans the pass.</footer>
-    </article>
-  `;
-  drawQrLikePass($("#verified-qr-canvas"), user.token);
-}
-
 function buildPassUrl(token) {
   const baseUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? PUBLIC_SITE_URL
@@ -4287,10 +4244,6 @@ function renderPassFromToken(token) {
   if (!token) return false;
   const user = state.users.find((item) => item.token === token && item.status === "Approved");
   switchView("scanner", { passDisplay: true });
-  const heading = $("#scanner-view .section-heading h2");
-  const intro = $("#scanner-view .scanner-intro");
-  if (heading) heading.textContent = "Facility access pass";
-  if (intro) intro.textContent = "Show this QR pass at an authorised facility scanner.";
   if (user) {
     showVerifiedUser(user);
     setScanResult("Valid HTS QR pass. Attendance is recorded only when security scans this QR.", true);
