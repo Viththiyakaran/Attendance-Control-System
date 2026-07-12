@@ -912,57 +912,39 @@ function renderFacilities() {
   const form = $("#facility-form");
   if (!list) return;
   if (form) form.classList.toggle("is-collapsed", !form.dataset.open);
-  list.innerHTML = state.facilities.map((facility) => {
-    const editing = editingFacilityId === String(facility.id);
+  const rows = state.facilities.map((facility) => {
     const availability = getFacilityAvailability(facility);
-    const pricing = normalizeFacilityPricing(facility);
     return `
-    <div class="facility-item facility-card">
-      <div class="facility-card-head">
-        <div class="facility-title-group">
-          <strong>${escapeHtml(displayFacilityName(facility.name))}</strong>
-          ${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}
-        </div>
-        <div class="facility-status-line">${renderFacilityBadges(facility)}</div>
-      </div>
-      <div class="facility-card-price">${escapeHtml(getFacilityPriceLabel(facility))}</div>
-      <dl class="facility-meta">
-        <div><dt>Location</dt><dd>${escapeHtml(facility.location || "Location to be confirmed")}</dd></div>
-        <div><dt>Time</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div>
-        <div><dt>Days</dt><dd>${escapeHtml(facility.days || "-")}</dd></div>
-        <div><dt>Today</dt><dd>${escapeHtml(availability.label)}</dd></div>
-      </dl>
-      ${editing ? `
-        <div class="facility-edit">
-          <label>Facility name<input value="${escapeHtml(facility.name)}" data-facility-field="name" data-facility-id="${facility.id}" aria-label="Activity" /></label>
-          <label>Location<input value="${escapeHtml(facility.location || "")}" data-facility-field="location" data-facility-id="${facility.id}" aria-label="Location" placeholder="Location" /></label>
-          <label>Timing<input value="${escapeHtml(facility.timing || "")}" data-facility-field="timing" data-facility-id="${facility.id}" aria-label="Timing" placeholder="Timing" /></label>
-          <label>Days<input value="${escapeHtml(facility.days || "")}" data-facility-field="days" data-facility-id="${facility.id}" aria-label="Days" placeholder="Days" /></label>
-          <fieldset class="facility-edit-pricing"><legend>Pricing</legend>
-            <label>Pricing type<select data-facility-field="pricingType" data-facility-id="${facility.id}"><option value="monthly" ${pricing.pricingType === "monthly" ? "selected" : ""}>Monthly</option><option value="per_booking" ${pricing.pricingType === "per_booking" ? "selected" : ""}>Per booking</option><option value="free" ${pricing.pricingType === "free" ? "selected" : ""}>Free</option></select></label>
-            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Monthly amount<input value="${escapeHtml(pricing.monthlyPrice)}" data-facility-field="monthlyPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label>
-            <label data-edit-pricing-field="per_booking" ${pricing.pricingType !== "per_booking" ? "hidden" : ""}>Booking amount<input value="${escapeHtml(pricing.bookingPrice)}" data-facility-field="bookingPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label>
-            <label>Currency<input value="${escapeHtml(pricing.currency)}" data-facility-field="currency" data-facility-id="${facility.id}" maxlength="3" /></label>
-            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Minimum months<input type="number" min="1" value="${pricing.minimumMonths}" data-facility-field="minimumMonths" data-facility-id="${facility.id}" /></label>
-            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Maximum months<input type="number" min="1" value="${pricing.maximumMonths}" data-facility-field="maximumMonths" data-facility-id="${facility.id}" /></label>
-          </fieldset>
-        </div>
-      ` : ""}
-      <div class="facility-actions">
-        ${editing
-          ? `<button class="primary" type="button" data-update-facility="${facility.id}">Save</button><button type="button" data-cancel-facility-edit>Cancel</button>`
-          : `<button type="button" data-edit-facility="${facility.id}">Edit</button>`}
-        <label class="switch-row">
-          <button class="switch" type="button" role="switch" aria-label="Toggle ${facility.name}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button>
-        </label>
-        <details class="row-menu">
-          <summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary>
-          <button type="button" data-delete-facility="${facility.id}">Delete facility</button>
-        </details>
-      </div>
-    </div>
-  `;
+      <tr>
+        <td><strong>${escapeHtml(displayFacilityName(facility.name))}</strong>${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}</td>
+        <td>${escapeHtml(facility.location || "-")}</td><td>${escapeHtml(facility.timing || "-")}</td><td>${escapeHtml(facility.days || "-")}</td>
+        <td><strong class="facility-table-price">${escapeHtml(getFacilityPriceLabel(facility))}</strong></td>
+        <td><span class="status ${availabilityStatusClass(facility, availability)}">${escapeHtml(availability.label)}</span></td>
+        <td><span class="status ${facility.open ? "open" : "neutral"}">${facility.open ? "Active" : "Disabled"}</span></td>
+        <td><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></td>
+      </tr>`;
   }).join("");
+  const cards = state.facilities.map((facility) => {
+    const availability = getFacilityAvailability(facility);
+    return `<article class="facility-mobile-card"><div><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><span class="status ${facility.open ? "open" : "neutral"}">${facility.open ? "Active" : "Disabled"}</span></div><p>${escapeHtml(getFacilityPriceLabel(facility))}</p><dl><div><dt>Location</dt><dd>${escapeHtml(facility.location || "-")}</dd></div><div><dt>Schedule</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div><div><dt>Days</dt><dd>${escapeHtml(facility.days || "-")}</dd></div><div><dt>Today</dt><dd><span class="status ${availabilityStatusClass(facility, availability)}">${escapeHtml(availability.label)}</span></dd></div></dl><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></article>`;
+  }).join("");
+  const editingFacility = state.facilities.find((facility) => String(facility.id) === String(editingFacilityId));
+  list.innerHTML = state.facilities.length ? `<div class="facility-table-wrap"><table class="facility-table"><thead><tr><th>Facility</th><th>Location</th><th>Schedule</th><th>Days</th><th>Price</th><th>Today</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div><div class="facility-mobile-list">${cards}</div>${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}` : emptyState("No facilities", "Add a facility to begin managing access.");
+}
+
+function availabilityStatusClass(facility, availability = getFacilityAvailability(facility)) {
+  if (!facility.open) return "availability-disabled";
+  if (/booking/i.test(availability.label)) return "availability-booking";
+  if (/closed/i.test(availability.label)) return "availability-closed";
+  return availability.available ? "availability-open" : "availability-warning";
+}
+
+function renderFacilityEditDrawer(facility) {
+  const pricing = normalizeFacilityPricing(facility);
+  return `<div class="facility-drawer-layer"><button class="facility-drawer-backdrop" type="button" data-cancel-facility-edit aria-label="Close facility editor"></button><aside class="facility-edit-drawer" aria-label="Edit ${escapeHtml(facility.name)}"><header><div><p class="eyebrow">Edit facility</p><h2>${escapeHtml(displayFacilityName(facility.name))}</h2></div><button type="button" data-cancel-facility-edit aria-label="Close editor">&times;</button></header><div class="facility-drawer-body">
+    <label>Facility name<input value="${escapeHtml(facility.name)}" data-facility-field="name" data-facility-id="${facility.id}" /></label><label>Location<input value="${escapeHtml(facility.location || "")}" data-facility-field="location" data-facility-id="${facility.id}" /></label><label>Schedule<input value="${escapeHtml(facility.timing || "")}" data-facility-field="timing" data-facility-id="${facility.id}" /></label><label>Days<input value="${escapeHtml(facility.days || "")}" data-facility-field="days" data-facility-id="${facility.id}" /></label>
+    <fieldset class="facility-edit-pricing"><legend>Pricing</legend><label>Pricing type<select data-facility-field="pricingType" data-facility-id="${facility.id}"><option value="monthly" ${pricing.pricingType === "monthly" ? "selected" : ""}>Monthly</option><option value="per_booking" ${pricing.pricingType === "per_booking" ? "selected" : ""}>Per booking</option><option value="free" ${pricing.pricingType === "free" ? "selected" : ""}>Free</option></select></label><label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Monthly amount<input value="${escapeHtml(pricing.monthlyPrice)}" data-facility-field="monthlyPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label><label data-edit-pricing-field="per_booking" ${pricing.pricingType !== "per_booking" ? "hidden" : ""}>Booking amount<input value="${escapeHtml(pricing.bookingPrice)}" data-facility-field="bookingPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label><label>Currency<input value="${escapeHtml(pricing.currency)}" data-facility-field="currency" data-facility-id="${facility.id}" maxlength="3" /></label><label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Minimum months<input type="number" min="1" value="${pricing.minimumMonths}" data-facility-field="minimumMonths" data-facility-id="${facility.id}" /></label><label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Maximum months<input type="number" min="1" value="${pricing.maximumMonths}" data-facility-field="maximumMonths" data-facility-id="${facility.id}" /></label></fieldset>
+  </div><footer><button type="button" data-cancel-facility-edit>Cancel</button><button class="primary" type="button" data-update-facility="${facility.id}">Save changes</button></footer></aside></div>`;
 }
 
 function renderScannerTools() {
