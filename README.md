@@ -1,126 +1,63 @@
 # Facility Access & Attendance System
 
-Small web app for managing facility access, Qatar ID verification, QR pass email delivery, and gate attendance scanning.
+A responsive facility-access platform for resident applications, payment verification, QR access passes, gate scanning, attendance tracking, and management reporting.
 
-## Main Features
+Live site: [clinquant-faun-77644a.netlify.app](https://clinquant-faun-77644a.netlify.app)
 
-- Public user registration with email, villa number, requested facilities, and Qatar ID upload.
-- Admin dashboard for approving, rejecting, and deleting users.
-- Admin can add, update, delete, open, and close facilities.
-- Approved users receive an email with an HTS QR pass.
-- Gate Scanner validates QR passes and records check-in / check-out.
-- Scanner uses a PIN before access.
-- Attendance report supports date filters, weekly/monthly views, and PDF export.
-- Dashboard shows facility usage and approved users by facility.
+## Capabilities
 
-## User Workflow
+- Public multi-step facility application and renewal wizard
+- Facility pricing loaded from Firestore with submission-time price snapshots
+- Qatar ID and payment-proof uploads
+- Dedicated administrator review routes with document verification
+- Approval, rejection, email delivery, and QR-pass generation
+- PIN-protected gate scanner with check-in/check-out logging
+- Facility, resident, payment, notification, and exception management
+- Attendance, payment, monthly revenue, CSV, and printable PDF reports
+- Responsive desktop, tablet, and mobile interfaces
 
-1. User opens the Registration page.
-2. User enters email and villa number.
-3. User selects requested activities.
-4. User uploads Qatar ID.
-5. Application is saved as Pending.
-6. Admin reviews the Qatar ID.
-7. Admin enters/validates full name, Qatar ID number, DOB, and facility access.
-8. Admin approves the user.
-9. System sends an email with QR pass.
-10. Gate staff scan the QR pass to check the user in or out.
+## Technology
 
-## Admin Access
+- Vanilla HTML, CSS, and JavaScript
+- Firebase Firestore and Firebase Storage
+- Netlify hosting and Netlify Functions
+- Nodemailer with Gmail SMTP
+- QRCode and PNGJS for emailed QR-pass images
 
-Default admin login:
-
-```text
-Email: admin@facility.local
-Password: admin123
-```
-
-## Gate Scanner Access
-
-Default scanner PIN:
-
-```text
-1234
-```
-
-After unlocking, the scanner can open the camera and scan QR passes. If the camera cannot read the QR, staff can enter the pass token manually.
-
-## Email Sending
-
-Email is sent using a Netlify Function with Gmail SMTP.
-
-Required Netlify environment variables:
-
-```text
-GMAIL_USER
-GMAIL_APP_PASSWORD
-```
-
-The Gmail password must be a Google App Password, not the normal Gmail account password.
-
-## Firebase
-
-Firebase is used for:
-
-- Firestore database
-- Qatar ID file storage
-- Users
-- Facilities
-- Attendance logs
-- Email logs
-
-Main Firestore collections:
-
-```text
-users
-facilities
-attendance_logs
-email_logs
-```
-
-## Hosting
-
-The app is hosted on Netlify.
-
-Important files for deployment:
-
-```text
-index.html
-styles.css
-app.js
-package.json
-netlify.toml
-netlify/functions/send-email.js
-firebase-seed.html
-firebase-seed.js
-```
-
-## Local Development
-
-Run locally:
+## Quick start
 
 ```bash
-node server.js
+npm install
+npm start
 ```
 
-Open:
+Open `http://localhost:5173`.
 
-```text
-http://localhost:5173
+Production build:
+
+```bash
+npm run build
 ```
 
-Note: Email sending does not work from the simple local server. Email works on Netlify because the Netlify Function runs there.
+The build is written to `dist/`.
 
-## Current Live Site
+## Documentation
 
-```text
-https://clinquant-faun-77644a.netlify.app
-```
+- [Documentation index](docs/README.md)
+- [User guide](docs/USER_GUIDE.md)
+- [Administrator guide](docs/ADMIN_GUIDE.md)
+- [Scanner and operations guide](docs/OPERATIONS_GUIDE.md)
+- [Technical architecture](docs/TECHNICAL_ARCHITECTURE.md)
+- [Data model](docs/DATA_MODEL.md)
+- [Deployment and configuration](docs/DEPLOYMENT.md)
+- [Security and privacy](docs/SECURITY.md)
+- [Testing and release checklist](docs/TESTING.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
 
-## Notes
+## Important production note
 
-- QR pass links are public for the approved user, but attendance is recorded only by the Gate Scanner.
-- Gate Scanner requires PIN access.
-- Check-in plays one beep.
-- Check-out plays two beeps.
-- For production use, stronger admin authentication and stricter Firebase security rules should be added.
+The current administrator login is implemented in client-side code and session storage. It is suitable for demonstration only. Before production use, replace it with Firebase Authentication and server-enforced role authorization. See [Security and privacy](docs/SECURITY.md).
+
+## Licence
+
+See [LICENSE](LICENSE).
