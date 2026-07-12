@@ -1,5 +1,7 @@
 # Administrator guide
 
+For an end-to-end resident example, including adding a facility while retaining the same QR pass, see [Workflow examples](WORKFLOW_EXAMPLES.md).
+
 ## Routes
 
 | Page | Route |

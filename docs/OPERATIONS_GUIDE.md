@@ -1,5 +1,7 @@
 # Scanner and operations guide
 
+See [Workflow examples](WORKFLOW_EXAMPLES.md) for the same resident QR being evaluated at Gym, Tennis, and an unauthorized facility.
+
 ## Scanner routes
 
 - Locked scanner: `/scanner`

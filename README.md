@@ -45,6 +45,7 @@ The build is written to `dist/`.
 
 - [Documentation index](docs/README.md)
 - [User guide](docs/USER_GUIDE.md)
+- [Workflow examples](docs/WORKFLOW_EXAMPLES.md)
 - [Administrator guide](docs/ADMIN_GUIDE.md)
 - [Scanner and operations guide](docs/OPERATIONS_GUIDE.md)
 - [Technical architecture](docs/TECHNICAL_ARCHITECTURE.md)
