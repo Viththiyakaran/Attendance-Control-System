@@ -2893,16 +2893,35 @@ async function registerUser(event) {
     event.target.reset();
     registrationStep = 1;
     registrationFacilityMonths = {};
-    message.textContent = existingApproved
-      ? "Renewal request submitted successfully. Admin will review your payment proof."
-      : "Application submitted successfully. Admin will review your QID and payment proof.";
+    message.textContent = "";
     render();
+    showRegistrationSuccess(user, Boolean(existingApproved));
   } catch (error) {
     console.error(error);
     message.textContent = firebaseFriendlyError(error);
   } finally {
     submitButton.disabled = false;
   }
+}
+
+function showRegistrationSuccess(user, isRenewal) {
+  const form = $("#registration-form");
+  const panel = $("#registration-success");
+  if (!form || !panel) return;
+  panel.hidden = false;
+  panel.innerHTML = `<div class="registration-success-icon" aria-hidden="true">&#10003;</div><p class="eyebrow">${isRenewal ? "Renewal submitted" : "Application submitted"}</p><h2>${isRenewal ? "Your renewal request is being reviewed" : "Your application is being reviewed"}</h2><p>${isRenewal ? "Your payment proof and requested facility renewal have been sent to the facility manager." : "Your Qatar ID, payment proof and facility selections have been sent to the facility manager."}</p><div class="registration-success-details"><div><span>Reference</span><strong>${escapeHtml(String(user.id).slice(-8).toUpperCase())}</strong></div><div><span>Status</span><strong>${escapeHtml(user.status)}</strong></div><div><span>Calculated total</span><strong>QAR ${escapeHtml(user.totalQar || "0.00")}</strong></div></div><div class="registration-next-steps"><strong>What happens next?</strong><ol><li>The manager verifies your documents and payment.</li><li>You receive an email after approval or if more information is required.</li>${isRenewal ? "<li>Your existing QR pass remains active while the renewal is reviewed.</li>" : "<li>After approval, your QR access pass will be issued by email.</li>"}</ol></div><button class="primary" type="button" data-start-new-application>Start another application</button>`;
+  form.classList.add("submission-complete");
+  panel.scrollIntoView({ block: "center" });
+}
+
+function resetRegistrationSuccess() {
+  const form = $("#registration-form");
+  const panel = $("#registration-success");
+  form?.classList.remove("submission-complete");
+  if (panel) { panel.hidden = true; panel.innerHTML = ""; }
+  registrationStep = 1;
+  renderRegistrationWizard();
+  form?.scrollIntoView({ block: "start" });
 }
 
 function firebaseFriendlyError(error) {
@@ -4304,6 +4323,7 @@ document.addEventListener("click", (event) => {
   const usagePeriodButton = event.target.closest("[data-usage-period]");
   const exportToday = event.target.closest("[data-export-today]");
   const exportPaymentReportButton = event.target.closest("[data-export-payment-report]");
+  const startNewApplication = event.target.closest("[data-start-new-application]");
   const toggleAddFacility = event.target.closest("[data-toggle-add-facility]");
   const editFacilityButton = event.target.closest("[data-edit-facility]");
   const cancelFacilityEdit = event.target.closest("[data-cancel-facility-edit]");
@@ -4354,6 +4374,7 @@ document.addEventListener("click", (event) => {
   }
   if (exportToday) exportTodayReport();
   if (exportPaymentReportButton) exportPaymentReport();
+  if (startNewApplication) resetRegistrationSuccess();
   if (toggleAddFacility) {
     const form = $("#facility-form");
     if (form) {
