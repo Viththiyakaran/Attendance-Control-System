@@ -654,11 +654,12 @@
             <div class="section-heading">
               <p class="eyebrow">Gate Scanner</p>
               <h2>Scan access pass</h2>
+              <p class="helper-text scanner-intro">Unlock this authorised station, then position the resident QR code inside the camera frame.</p>
             </div>
             <form id="scanner-pin-form" class="scanner-pin">
               <label>
                 Scanner PIN
-                <input id="scanner-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter PIN" aria-label="Scanner PIN" />
+                <input id="scanner-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter scanner PIN" aria-label="Scanner PIN" maxlength="8" />
               </label>
               <button class="primary" type="submit">Unlock Scanner</button>
               <p id="scanner-pin-message" class="form-message" role="status"></p>
@@ -672,7 +673,8 @@
               <button id="start-scan" class="primary" type="button">Open Camera Scanner</button>
               <div class="scan-box" id="scan-box">
                 <video id="camera-feed" playsinline muted></video>
-                <div class="scan-placeholder" id="scan-placeholder">Camera preview</div>
+                <div class="scan-placeholder" id="scan-placeholder"><strong>Camera preview</strong><small>The camera opens only after you select Open Camera Scanner.</small></div>
+                <div class="scanner-frame" aria-hidden="true"></div>
               </div>
               <form id="manual-scan-form" class="manual-scan">
                 <input id="manual-token" type="text" placeholder="Enter pass token if camera cannot read QR" aria-label="Pass token" />

@@ -7002,3 +7002,69 @@ dialog::backdrop {
   width: 100%;
   margin: 0;
 }
+/* Compact gate scanner */
+#scanner-view.active {
+  min-height: 100dvh;
+  padding: clamp(16px, 4vh, 36px) 16px;
+  align-content: start;
+  background: #f3f6f5;
+}
+
+#scanner-view .scanner-shell {
+  width: min(100%, 640px);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#scanner-view .scanner-panel {
+  max-width: 640px;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid #d8e3de;
+  box-shadow: 0 16px 38px rgba(12, 52, 43, .09);
+}
+
+#scanner-view .section-heading h2 { margin-bottom: 5px; }
+#scanner-view .scanner-intro { max-width: 520px; margin: 0; line-height: 1.45; }
+
+#scanner-view .scanner-pin {
+  max-width: 440px;
+  width: 100%;
+  margin: 4px auto 0;
+}
+
+#scanner-view .scanner-pin input,
+#scanner-view .scanner-pin button { min-height: 46px; }
+
+#scanner-view .scanner-context { padding: 14px; }
+
+#scanner-view .scan-box {
+  width: min(100%, 520px);
+  height: clamp(300px, 42vh, 380px);
+  min-height: 0;
+  max-height: 380px;
+  aspect-ratio: auto;
+  margin: 0 auto;
+  border-radius: 14px;
+}
+
+#scanner-view .scan-placeholder {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px;
+  color: #e8f2ee;
+  text-align: center;
+}
+
+#scanner-view .scan-placeholder small { max-width: 300px; color: #aebdb8; }
+#scanner-view .scanner-frame { display: none; position: absolute; z-index: 2; width: min(58%, 240px); aspect-ratio: 1; border: 3px solid rgba(255,255,255,.9); border-radius: 18px; box-shadow: 0 0 0 999px rgba(4, 20, 16, .2); pointer-events: none; }
+#scanner-view .scan-box.active .scanner-frame { display: block; }
+
+@media (max-width: 600px) {
+  #scanner-view.active { padding: 10px; }
+  #scanner-view .scanner-panel { padding: 16px; border-radius: 14px; }
+  #scanner-view .scan-box { height: min(62vw, 330px); min-height: 260px; }
+  #scanner-view .manual-scan { grid-template-columns: 1fr; }
+  #scanner-view input,
+  #scanner-view button { font-size: 16px; }
+}
