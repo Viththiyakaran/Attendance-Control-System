@@ -718,6 +718,38 @@ th {
   display: none;
 }
 
+#scanner-workspace.pass-display { gap: 10px; }
+#scanner-workspace.pass-display .scan-result { min-height: 0; padding: 10px 14px; font-size: .82rem; text-align: center; }
+
+.compact-pass-card { overflow: hidden; border: 1px solid #d6e2dd; border-radius: 18px; background: #fff; box-shadow: 0 14px 34px rgba(7, 63, 52, .1); }
+.compact-pass-card > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #e1e8e5; background: #f7fbf9; }
+.compact-pass-card > header h2 { margin: 2px 0 0; font-size: 1.2rem; }
+.compact-pass-body { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 16px; align-items: center; padding: 18px; }
+.compact-pass-person { display: flex; align-items: center; gap: 12px; }
+.compact-pass-person strong,
+.compact-pass-person small { display: block; }
+.compact-pass-person small { margin-top: 4px; color: var(--subtle); }
+.compact-pass-avatar { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border-radius: 14px; background: #e4f5ef; color: var(--accent-dark); font-weight: 900; }
+.compact-pass-qr { grid-column: 2; grid-row: 1 / span 2; display: grid; place-items: center; }
+.compact-pass-qr canvas { width: 190px; height: 190px; image-rendering: pixelated; }
+.compact-pass-validity { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
+.compact-pass-validity div { padding: 10px; border-radius: 10px; background: #f3f7f5; }
+.compact-pass-validity dt { color: var(--subtle); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+.compact-pass-validity dd { margin: 4px 0 0; font-weight: 800; }
+.compact-pass-access { padding: 14px 18px; border-top: 1px solid #e1e8e5; }
+.compact-pass-access > span { color: var(--subtle); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
+.compact-pass-access > div { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.compact-pass-access strong { padding: 7px 10px; border-radius: 999px; background: #e2f5ed; color: var(--success); font-size: .8rem; }
+.compact-pass-card > footer { padding: 12px 18px; background: #073f36; color: #eaf7f2; font-size: .76rem; line-height: 1.4; text-align: center; }
+
+@media (max-width: 560px) {
+  .compact-pass-body { grid-template-columns: 1fr; }
+  .compact-pass-person { justify-content: center; text-align: left; }
+  .compact-pass-qr { grid-column: 1; grid-row: auto; }
+  .compact-pass-qr canvas { width: min(190px, 62vw); height: min(190px, 62vw); }
+  .compact-pass-validity { grid-template-columns: 1fr 1fr; }
+}
+
 .scan-box {
   position: relative;
   display: grid;
