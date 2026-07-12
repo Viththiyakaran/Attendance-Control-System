@@ -6894,6 +6894,9 @@ dialog::backdrop {
 }
 
 #admin-login-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   display: grid;
   place-items: center;
   min-height: 100dvh;
