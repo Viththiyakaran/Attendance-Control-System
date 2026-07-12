@@ -2020,3 +2020,21 @@
 @media (max-width: 760px) {
   .admin-page[data-admin-page="applications"] .verification-checklist { grid-template-columns: 1fr !important; }
 }
+/* Notification read state and pagination */
+.admin-page[data-admin-page="notifications"] .notification-list-toolbar,
+.admin-page[data-admin-page="notifications"] .notification-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.admin-page[data-admin-page="notifications"] .notification-list-toolbar { padding: 8px 0; }
+.admin-page[data-admin-page="notifications"] .notification-list-toolbar span,
+.admin-page[data-admin-page="notifications"] .notification-pagination span { color: var(--dashboard-muted); font-size: .82rem; font-weight: 800; }
+.admin-page[data-admin-page="notifications"] .notification-list-toolbar button,
+.admin-page[data-admin-page="notifications"] .notification-pagination button { min-height: 38px; padding: 7px 12px; }
+.admin-page[data-admin-page="notifications"] .email-item { transition: background .15s ease, border-color .15s ease; }
+.admin-page[data-admin-page="notifications"] .email-item.is-unread { border-left: 4px solid var(--dashboard-green) !important; background: #fbfefd !important; }
+.admin-page[data-admin-page="notifications"] .email-item.is-read { opacity: .78; }
+.admin-page[data-admin-page="notifications"] .notification-item-status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.admin-page[data-admin-page="notifications"] .notification-item-status .unread-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dashboard-green); }
+.admin-page[data-admin-page="notifications"] .notification-item-status button { min-height: 34px; padding: 5px 9px; border-radius: 8px; color: var(--dashboard-green); font-size: .75rem; font-weight: 800; }
+@media (max-width: 700px) { .admin-page[data-admin-page="notifications"] .notification-list-toolbar,
+  .admin-page[data-admin-page="notifications"] .notification-pagination { justify-content: space-between; flex-wrap: wrap; }
+  .admin-page[data-admin-page="notifications"] .record-card-head { align-items: flex-start; }
+}

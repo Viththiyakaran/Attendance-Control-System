@@ -21,6 +21,7 @@ const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
 const PAYMENT_PAGE_SIZE = 6;
 const RESIDENT_PAGE_SIZE = 6;
+const NOTIFICATION_PAGE_SIZE = 8;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
@@ -94,6 +95,7 @@ let exceptionDateFilter = "";
 let notificationStatusFilter = "all";
 let notificationDateFilter = "";
 let notificationTypeFilter = "all";
+let notificationPage = 1;
 let registrationStep = 1;
 let registrationFacilityMonths = {};
 let usagePeriod = "today";
@@ -1933,18 +1935,22 @@ function renderEmailOutbox() {
       return statusMatch && dateMatch && typeMatch;
     })
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const totalPages = Math.max(1, Math.ceil(emails.length / NOTIFICATION_PAGE_SIZE));
+  notificationPage = Math.min(Math.max(notificationPage, 1), totalPages);
+  const startIndex = (notificationPage - 1) * NOTIFICATION_PAGE_SIZE;
+  const pageEmails = emails.slice(startIndex, startIndex + NOTIFICATION_PAGE_SIZE);
   container.innerHTML = emails.length
-    ? emails.map((email) => {
+    ? `<div class="notification-list-toolbar"><span>${emails.filter((email) => !email.readAt).length} unread</span><button type="button" data-mark-all-notifications-read>Mark all read</button></div>${pageEmails.map((email) => {
       const canOpen = email.to && email.to !== "admin";
       const mailto = `mailto:${encodeURIComponent(email.to)}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`;
       return `
-        <div class="email-item">
+        <div class="email-item ${email.readAt ? "is-read" : "is-unread"}">
           <div class="record-card-head">
             <div>
               <strong>${escapeHtml(email.subject)}</strong>
               <small>To: ${escapeHtml(maskEmail(email.to))} | ${formatDateTime(email.createdAt)}</small>
             </div>
-            <span class="status ${statusClass(normalizeNotificationStatus(email.status))}">${escapeHtml(normalizeNotificationStatus(email.status))}</span>
+            <div class="notification-item-status">${!email.readAt ? `<span class="unread-dot" aria-label="Unread"></span>` : ""}<span class="status ${statusClass(normalizeNotificationStatus(email.status))}">${escapeHtml(normalizeNotificationStatus(email.status))}</span>${!email.readAt ? `<button type="button" data-mark-notification-read="${escapeHtml(email.id)}">Mark read</button>` : ""}</div>
           </div>
           <details class="notification-details">
             <summary>View details</summary>
@@ -1960,8 +1966,36 @@ function renderEmailOutbox() {
           </details>
         </div>
       `;
-    }).join("")
+    }).join("")}<div class="notification-pagination"><button type="button" data-notification-page="prev" ${notificationPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageEmails.length, emails.length)} of ${emails.length}</span><button type="button" data-notification-page="next" ${notificationPage === totalPages ? "disabled" : ""}>Next</button></div>`
     : emptyState("No notifications found", "Registration, approval, and rejection emails matching your filters will appear here.");
+}
+
+async function markNotificationRead(emailId) {
+  const email = state.emails.find((item) => String(item.id) === String(emailId));
+  if (!email || email.readAt) return;
+  email.readAt = new Date().toISOString();
+  await upsertDoc("email_logs", email);
+  saveState();
+  renderEmailOutbox();
+  renderNotificationBadge();
+}
+
+async function markAllNotificationsRead() {
+  const unread = state.emails.filter((email) => !email.readAt);
+  if (!unread.length) return;
+  const readAt = new Date().toISOString();
+  unread.forEach((email) => { email.readAt = readAt; });
+  await Promise.all(unread.map((email) => upsertDoc("email_logs", email)));
+  saveState();
+  renderEmailOutbox();
+  renderNotificationBadge();
+  notify("All notifications marked as read.");
+}
+
+function changeNotificationPage(direction) {
+  const totalPages = Math.max(1, Math.ceil((state.emails || []).length / NOTIFICATION_PAGE_SIZE));
+  notificationPage = direction === "next" ? Math.min(notificationPage + 1, totalPages) : Math.max(notificationPage - 1, 1);
+  renderEmailOutbox();
 }
 
 function normalizeNotificationStatus(status) {
@@ -1973,10 +2007,10 @@ function normalizeNotificationStatus(status) {
 function renderNotificationBadge() {
   const button = $(".notification-button");
   if (!button) return;
-  const actionable = (state.emails || []).filter((email) => ["Pending", "Failed"].includes(normalizeNotificationStatus(email.status))).length;
-  button.dataset.count = actionable > 99 ? "99+" : String(actionable);
-  button.classList.toggle("has-notifications", actionable > 0);
-  button.setAttribute("aria-label", actionable > 0 ? `Open notifications, ${actionable} require attention` : "Open notifications, none require attention");
+  const unread = (state.emails || []).filter((email) => !email.readAt).length;
+  button.dataset.count = unread > 99 ? "99+" : String(unread);
+  button.classList.toggle("has-notifications", unread > 0);
+  button.setAttribute("aria-label", unread > 0 ? `Open notifications, ${unread} unread` : "Open notifications, none unread");
 }
 
 function renderRegistrationAccessOptions() {
@@ -4355,6 +4389,9 @@ document.addEventListener("click", (event) => {
   const reportPageButton = event.target.closest("[data-report-page]");
   const paymentPageButton = event.target.closest("[data-payment-page]");
   const residentPageButton = event.target.closest("[data-resident-page]");
+  const notificationPageButton = event.target.closest("[data-notification-page]");
+  const markNotificationReadButton = event.target.closest("[data-mark-notification-read]");
+  const markAllNotificationsReadButton = event.target.closest("[data-mark-all-notifications-read]");
   const reject = event.target.closest("[data-reject-user]");
   const toggle = event.target.closest("[data-toggle-facility]");
   const deleteButton = event.target.closest("[data-delete-user]");
@@ -4421,6 +4458,9 @@ document.addEventListener("click", (event) => {
   if (reportPageButton) changeReportPage(reportPageButton.dataset.reportPage);
   if (paymentPageButton) changePaymentPage(paymentPageButton.dataset.paymentPage);
   if (residentPageButton) changeResidentPage(residentPageButton.dataset.residentPage);
+  if (notificationPageButton) changeNotificationPage(notificationPageButton.dataset.notificationPage);
+  if (markNotificationReadButton) markNotificationRead(markNotificationReadButton.dataset.markNotificationRead);
+  if (markAllNotificationsReadButton) markAllNotificationsRead();
   if (reject) rejectUser(reject.dataset.rejectUser);
   if (toggle) toggleFacility(toggle.dataset.toggleFacility);
   if (deleteButton) deleteUser(deleteButton.dataset.deleteUser);
@@ -4488,14 +4528,17 @@ $("#exception-date-filter")?.addEventListener("change", (event) => {
 });
 $("#notification-status-filter")?.addEventListener("change", (event) => {
   notificationStatusFilter = event.target.value || "all";
+  notificationPage = 1;
   renderEmailOutbox();
 });
 $("#notification-date-filter")?.addEventListener("change", (event) => {
   notificationDateFilter = event.target.value || "";
+  notificationPage = 1;
   renderEmailOutbox();
 });
 $("#notification-type-filter")?.addEventListener("change", (event) => {
   notificationTypeFilter = event.target.value || "all";
+  notificationPage = 1;
   renderEmailOutbox();
 });
 $("#from-date").addEventListener("change", () => {
