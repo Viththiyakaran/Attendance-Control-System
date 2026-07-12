@@ -574,7 +574,7 @@ function render() {
   renderWeeklyUsageChart();
   renderFacilityStats();
   renderQuickActions();
-  renderScannerStatus();
+  renderExpiringSoon();
   renderScannerStations();
   renderRecentCheckIns();
   renderRecentActivity();
@@ -1126,6 +1126,25 @@ function renderScannerStatus() {
     scannerStatusRow("Main gate", logs[0]),
     ...facilityRows,
   ].join("");
+}
+
+function renderExpiringSoon() {
+  const container = $("#expiring-soon-list");
+  if (!container) return;
+  const residents = state.users
+    .filter((user) => user.status === "Approved" && user.accessEndAt)
+    .map((user) => ({ user, remaining: daysUntil(user.accessEndAt) }))
+    .filter((item) => item.remaining >= 0 && item.remaining <= 30)
+    .sort((a, b) => a.remaining - b.remaining)
+    .slice(0, 5);
+  container.innerHTML = residents.length ? residents.map(({ user, remaining }) => `
+    <article class="expiry-row">
+      <span class="expiry-avatar">${escapeHtml(getInitials(user.fullName || user.email))}</span>
+      <div><strong>${escapeHtml(user.fullName || user.email || "Resident")}</strong><small>Expires ${escapeHtml(formatAppDate(user.accessEndAt))}</small></div>
+      <span class="expiry-days ${remaining <= 7 ? "urgent" : ""}">${remaining === 0 ? "Today" : `${remaining} day${remaining === 1 ? "" : "s"}`}</span>
+      <button type="button" data-open-user="${user.id}" aria-label="View ${escapeHtml(user.fullName || "resident")}">View</button>
+    </article>
+  `).join("") : emptyState("No memberships expiring soon", "Approved memberships expiring within 30 days will appear here.");
 }
 
 function scannerStatusRow(label, latest) {

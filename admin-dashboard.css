@@ -431,9 +431,27 @@
 }
 
 .admin-page[data-admin-page="dashboard"] .scanner-status-list,
+.admin-page[data-admin-page="dashboard"] .expiring-soon-list,
 .admin-page[data-admin-page="dashboard"] .recent-activity {
   display: grid !important;
   gap: 10px !important;
+}
+
+.admin-page[data-admin-page="dashboard"] .expiry-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--dashboard-border); }
+.admin-page[data-admin-page="dashboard"] .expiry-row:last-child { border-bottom: 0; }
+.admin-page[data-admin-page="dashboard"] .expiry-avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #fff3d6; color: #8a5a00; font-size: .76rem; font-weight: 900; }
+.admin-page[data-admin-page="dashboard"] .expiry-row strong,
+.admin-page[data-admin-page="dashboard"] .expiry-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-page[data-admin-page="dashboard"] .expiry-row strong { color: var(--dashboard-text); font-size: .84rem; }
+.admin-page[data-admin-page="dashboard"] .expiry-row small { margin-top: 3px; color: var(--dashboard-muted); font-size: .72rem; }
+.admin-page[data-admin-page="dashboard"] .expiry-days { padding: 6px 8px; border-radius: 999px; background: #fff2ce; color: #855b00; font-size: .7rem; font-weight: 900; white-space: nowrap; }
+.admin-page[data-admin-page="dashboard"] .expiry-days.urgent { background: #ffe2df; color: #a32118; }
+.admin-page[data-admin-page="dashboard"] .expiry-row > button { min-height: 36px; padding: 6px 10px; border-radius: 9px; }
+
+@media (max-width: 520px) {
+  .admin-page[data-admin-page="dashboard"] .expiry-row { grid-template-columns: 38px minmax(0, 1fr) auto; }
+  .admin-page[data-admin-page="dashboard"] .expiry-days { grid-column: 2; justify-self: start; }
+  .admin-page[data-admin-page="dashboard"] .expiry-row > button { grid-column: 3; grid-row: 1 / span 2; }
 }
 
 .admin-page[data-admin-page="dashboard"] .scanner-status-row {
