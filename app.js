@@ -20,6 +20,7 @@ const PUBLIC_SITE_URL = "https://clinquant-faun-77644a.netlify.app";
 const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
 const PAYMENT_PAGE_SIZE = 6;
+const RESIDENT_PAGE_SIZE = 6;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
@@ -84,6 +85,7 @@ let applicationReviewBusy = false;
 const applicationReviewDrafts = {};
 let reportPage = 1;
 let paymentPage = 1;
+let residentPage = 1;
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
 let exceptionReasonFilter = "all";
@@ -806,45 +808,34 @@ function renderApprovedResidents() {
 
   const rows = residents.sort((a, b) => new Date(b.updatedAt || b.approvedAt || b.createdAt) - new Date(a.updatedAt || a.approvedAt || a.createdAt));
   if (list) {
-    list.innerHTML = rows.length ? rows.map((user) => {
+    const totalPages = Math.max(1, Math.ceil(rows.length / RESIDENT_PAGE_SIZE));
+    residentPage = Math.min(Math.max(residentPage, 1), totalPages);
+    const startIndex = (residentPage - 1) * RESIDENT_PAGE_SIZE;
+    const pageRows = rows.slice(startIndex, startIndex + RESIDENT_PAGE_SIZE);
+    const tableRows = pageRows.map((user) => {
       const residentName = user.fullName || user.email || "Resident";
       const membershipLabel = getResidentMembershipLabel(user);
       const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
-      return `
-        <article class="application-review-card resident-review-card">
-          <div class="application-applicant">
-            <div class="application-avatar">${escapeHtml(getInitials(residentName))}</div>
-            <div class="application-person">
-              <strong>${escapeHtml(residentName)}</strong>
-              <small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? ` | QID ${escapeHtml(user.qidNumber)}` : ""}</small>
-              ${isDemoRecord(user) ? `<span class="demo-badge">Demo</span>` : ""}
-            </div>
-          </div>
-          <dl class="application-details resident-details">
-            <div><dt>Villa / Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div>
-            <div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div>
-            <div><dt>Membership</dt><dd><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></dd></div>
-            <div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div>
-            <div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div>
-          </dl>
-          <div class="application-actions">
-            <button class="application-action-primary" type="button" data-open-user="${user.id}">View</button>
-            <details class="row-menu">
-              <summary aria-label="More resident actions">...</summary>
-              <button type="button" data-open-user="${user.id}">Edit access</button>
-              ${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button>` : ""}
-              ${user.status === "Approved" ? `<button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}
-              <button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button>
-            </details>
-          </div>
-        </article>
-      `;
-    }).join("") : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
+      return `<tr><td><div class="resident-person-cell"><span>${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? `<br>QID ${escapeHtml(user.qidNumber)}` : ""}</small></div></div></td><td>${escapeHtml(user.villaNumber || "-")}</td><td>${renderFacilitySummary(getUserAccess(user))}</td><td><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></td><td>${escapeHtml(user.accessEndAt || "-")}</td><td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td><td><div class="resident-table-actions"><button type="button" data-open-user="${user.id}">View</button><details class="row-menu"><summary aria-label="More resident actions">&hellip;</summary><button type="button" data-open-user="${user.id}">Edit access</button>${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button><button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}<button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button></details></div></td></tr>`;
+    }).join("");
+    const mobileRows = pageRows.map((user) => {
+      const residentName = user.fullName || user.email || "Resident";
+      const membershipLabel = getResidentMembershipLabel(user);
+      const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
+      return `<article><div><span class="resident-mobile-avatar">${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}</small></div><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></div><dl><div><dt>Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div><div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div><div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div><div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div></dl><button type="button" data-open-user="${user.id}">View resident</button></article>`;
+    }).join("");
+    list.innerHTML = rows.length ? `<div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Resident</th><th>Villa / Address</th><th>Facilities</th><th>Membership</th><th>Expiry</th><th>QR pass</th><th>Actions</th></tr></thead><tbody>${tableRows}</tbody></table></div><div class="resident-mobile-list">${mobileRows}</div><div class="resident-pagination"><button type="button" data-resident-page="prev" ${residentPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageRows.length, rows.length)} of ${rows.length} residents</span><button type="button" data-resident-page="next" ${residentPage === totalPages ? "disabled" : ""}>Next</button></div>` : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
   }
 
   if (cards) {
     cards.innerHTML = "";
   }
+}
+
+function changeResidentPage(direction) {
+  const totalPages = Math.max(1, Math.ceil(state.users.filter(isResidentRecord).length / RESIDENT_PAGE_SIZE));
+  residentPage = direction === "next" ? Math.min(residentPage + 1, totalPages) : Math.max(residentPage - 1, 1);
+  renderApprovedResidents();
 }
 
 function summaryCard(title, value, detail) {
@@ -4309,6 +4300,7 @@ document.addEventListener("click", (event) => {
   const userPageButton = event.target.closest("[data-user-page]");
   const reportPageButton = event.target.closest("[data-report-page]");
   const paymentPageButton = event.target.closest("[data-payment-page]");
+  const residentPageButton = event.target.closest("[data-resident-page]");
   const reject = event.target.closest("[data-reject-user]");
   const toggle = event.target.closest("[data-toggle-facility]");
   const deleteButton = event.target.closest("[data-delete-user]");
@@ -4372,6 +4364,7 @@ document.addEventListener("click", (event) => {
   if (userPageButton) changeUserPage(userPageButton.dataset.userPage);
   if (reportPageButton) changeReportPage(reportPageButton.dataset.reportPage);
   if (paymentPageButton) changePaymentPage(paymentPageButton.dataset.paymentPage);
+  if (residentPageButton) changeResidentPage(residentPageButton.dataset.residentPage);
   if (reject) rejectUser(reject.dataset.rejectUser);
   if (toggle) toggleFacility(toggle.dataset.toggleFacility);
   if (deleteButton) deleteUser(deleteButton.dataset.deleteUser);
