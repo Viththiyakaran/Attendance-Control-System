@@ -354,12 +354,22 @@ function passToken() {
   return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join("");
 }
 
+function formatAppDate(value) {
+  if (!value) return "-";
+  const dateOnly = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) return `${dateOnly[3]}-${dateOnly[2]}-${dateOnly[1]}`;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return [String(date.getDate()).padStart(2, "0"), String(date.getMonth() + 1).padStart(2, "0"), date.getFullYear()].join("-");
+}
+
 function formatDateTime(value, mode = "dateTime") {
   if (!value) return "-";
   const date = new Date(value);
-  if (mode === "date") return date.toLocaleDateString();
+  if (Number.isNaN(date.getTime())) return "-";
+  if (mode === "date") return formatAppDate(value);
   if (mode === "time") return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return date.toLocaleString();
+  return `${formatAppDate(date)} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function escapeHtml(value) {
@@ -826,13 +836,13 @@ function renderApprovedResidents() {
       const residentName = user.fullName || user.email || "Resident";
       const membershipLabel = getResidentMembershipLabel(user);
       const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
-      return `<tr><td><div class="resident-person-cell"><span>${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? `<br>QID ${escapeHtml(user.qidNumber)}` : ""}</small></div></div></td><td>${escapeHtml(user.villaNumber || "-")}</td><td>${renderFacilitySummary(getUserAccess(user))}</td><td><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></td><td>${escapeHtml(user.accessEndAt || "-")}</td><td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td><td><div class="resident-table-actions"><button type="button" data-open-user="${user.id}">View</button><details class="row-menu"><summary aria-label="More resident actions">&hellip;</summary><button type="button" data-open-user="${user.id}">Edit access</button>${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button><button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}<button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button></details></div></td></tr>`;
+      return `<tr><td><div class="resident-person-cell"><span>${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? `<br>QID ${escapeHtml(user.qidNumber)}` : ""}</small></div></div></td><td>${escapeHtml(user.villaNumber || "-")}</td><td>${renderFacilitySummary(getUserAccess(user))}</td><td><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></td><td>${escapeHtml(formatAppDate(user.accessEndAt))}</td><td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td><td><div class="resident-table-actions"><button type="button" data-open-user="${user.id}">View</button><details class="row-menu"><summary aria-label="More resident actions">&hellip;</summary><button type="button" data-open-user="${user.id}">Edit access</button>${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button><button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}<button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button></details></div></td></tr>`;
     }).join("");
     const mobileRows = pageRows.map((user) => {
       const residentName = user.fullName || user.email || "Resident";
       const membershipLabel = getResidentMembershipLabel(user);
       const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
-      return `<article><div><span class="resident-mobile-avatar">${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}</small></div><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></div><dl><div><dt>Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div><div><dt>Expiry</dt><dd>${escapeHtml(user.accessEndAt || "-")}</dd></div><div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div><div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div></dl><button type="button" data-open-user="${user.id}">View resident</button></article>`;
+      return `<article><div><span class="resident-mobile-avatar">${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}</small></div><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></div><dl><div><dt>Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div><div><dt>Expiry</dt><dd>${escapeHtml(formatAppDate(user.accessEndAt))}</dd></div><div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div><div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div></dl><button type="button" data-open-user="${user.id}">View resident</button></article>`;
     }).join("");
     list.innerHTML = rows.length ? `<div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Resident</th><th>Villa / Address</th><th>Facilities</th><th>Membership</th><th>Expiry</th><th>QR pass</th><th>Actions</th></tr></thead><tbody>${tableRows}</tbody></table></div><div class="resident-mobile-list">${mobileRows}</div><div class="resident-pagination"><button type="button" data-resident-page="prev" ${residentPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageRows.length, rows.length)} of ${rows.length} residents</span><button type="button" data-resident-page="next" ${residentPage === totalPages ? "disabled" : ""}>Next</button></div>` : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
   }
@@ -1420,7 +1430,7 @@ function renderSettingsSections() {
   if (!container) return;
   const branding = getBrandingSettings();
   const sections = [
-    ["General", [["Organisation name", "HTS Facility Access"], ["Admin display name", "Manager"], ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Date format", "Local browser format"]]],
+    ["General", [["Organisation name", "HTS Facility Access"], ["Admin display name", "Manager"], ["Timezone", Intl.DateTimeFormat().resolvedOptions().timeZone], ["Date format", "DD-MM-YYYY"]]],
     ["Notifications", [["Email connected", state.emails?.some((email) => email.status === "Sent") ? "Yes" : "Pending setup"], ["Approval email", "Enabled"], ["Rejection email", "Enabled"]]],
     ["System information", [["Firebase", "Connected"], ["Application version", "1.0.0"]]],
   ];
@@ -1937,7 +1947,7 @@ function exportReportPdf() {
       </head>
       <body>
         <h1>HTS Traffic Audit Report</h1>
-        <p>Generated ${escapeHtml(new Date().toLocaleString())}</p>
+        <p>Generated ${escapeHtml(formatDateTime(new Date()))}</p>
         <div class="meta">
           <strong>Period: ${escapeHtml(period)}</strong>
           <strong>From: ${escapeHtml(from)}</strong>
@@ -1986,7 +1996,7 @@ function exportPaymentReport() {
     notify("Allow pop-ups to export the payment report.", "warning");
     return;
   }
-  reportWindow.document.write(`<!doctype html><html><head><title>HTS Payment Report</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px}h1{margin:0 0 6px;font-size:24px}p{margin:0 0 16px;color:#444}.meta{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;font-size:13px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #999;padding:7px;text-align:left;vertical-align:top}th{background:#f0f0f0}@media print{body{margin:12mm}}</style></head><body><h1>HTS Payment Report</h1><p>Generated ${escapeHtml(new Date().toLocaleString())}</p><div class="meta"><strong>Total records: ${payments.length}</strong><strong>Verified total: QAR ${verifiedTotal}</strong></div><table><thead><tr><th>Submitted</th><th>Applicant</th><th>Email</th><th>Facilities</th><th>Amount</th><th>Status</th><th>Approved</th><th>Reference</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+  reportWindow.document.write(`<!doctype html><html><head><title>HTS Payment Report</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px}h1{margin:0 0 6px;font-size:24px}p{margin:0 0 16px;color:#444}.meta{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;font-size:13px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #999;padding:7px;text-align:left;vertical-align:top}th{background:#f0f0f0}@media print{body{margin:12mm}}</style></head><body><h1>HTS Payment Report</h1><p>Generated ${escapeHtml(formatDateTime(new Date()))}</p><div class="meta"><strong>Total records: ${payments.length}</strong><strong>Verified total: QAR ${verifiedTotal}</strong></div><table><thead><tr><th>Submitted</th><th>Applicant</th><th>Email</th><th>Facilities</th><th>Amount</th><th>Status</th><th>Approved</th><th>Reference</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`);
   reportWindow.document.close();
   notify("Payment report opened for export.");
 }

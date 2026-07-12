@@ -62,4 +62,4 @@ Notification records represent email delivery logs. Open details, mark individua
 - Set a 4–8 digit scanner PIN.
 - Review connection and system information.
 
-For Qatar operation, use `Asia/Qatar`, QAR, and `DD/MM/YYYY` as organizational conventions. The current settings display browser timezone information and should be made server-configurable for strict multi-region operation.
+For Qatar operation, use `Asia/Qatar`, QAR, and `DD-MM-YYYY` as organizational conventions. The application displays dates consistently as `DD-MM-YYYY`; stored timestamps and native date-filter values remain ISO-compatible.
