@@ -1969,3 +1969,54 @@
   .admin-page[data-admin-page="users"] .resident-pagination { justify-content: space-between; flex-wrap: wrap; }
   .admin-page[data-admin-page="users"] .resident-pagination span { order: -1; width: 100%; text-align: center; }
 }
+/* Application verification checklist alignment */
+.admin-page[data-admin-page="applications"] .verification-checklist {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.admin-page[data-admin-page="applications"] .verification-checklist label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  min-height: 58px !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+  color: var(--dashboard-text) !important;
+  font-size: .88rem !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+}
+
+.admin-page[data-admin-page="applications"] .verification-checklist input[type="checkbox"] {
+  appearance: none !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  margin: 0 !important;
+  border: 2px solid #9aaca6 !important;
+  border-radius: 5px !important;
+  background: #fff !important;
+  cursor: pointer !important;
+}
+
+.admin-page[data-admin-page="applications"] .verification-checklist input[type="checkbox"]:checked {
+  border-color: var(--dashboard-green) !important;
+  background: var(--dashboard-green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='m4 10 4 4 8-9'/%3E%3C/svg%3E") center / 16px no-repeat !important;
+}
+
+.admin-page[data-admin-page="applications"] .verification-checklist input[type="checkbox"]:focus-visible {
+  outline: 3px solid rgba(8,127,101,.28) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 760px) {
+  .admin-page[data-admin-page="applications"] .verification-checklist { grid-template-columns: 1fr !important; }
+}
