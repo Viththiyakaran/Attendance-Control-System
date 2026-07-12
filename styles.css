@@ -6989,3 +6989,16 @@ dialog::backdrop {
   .manager-login-field > input,
   .manager-password-input input { font-size: 16px; }
 }
+#confirm-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(420px, calc(100vw - 32px)) !important;
+  height: fit-content;
+  margin: auto !important;
+  overflow: visible !important;
+}
+
+#confirm-dialog .dialog-card {
+  width: 100%;
+  margin: 0;
+}
