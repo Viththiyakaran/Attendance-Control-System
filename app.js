@@ -915,13 +915,13 @@ function renderFacilities() {
   const rows = state.facilities.map((facility) => {
     const availability = getFacilityAvailability(facility);
     return `
-      <tr>
+      <tr class="${facility.open ? "" : "is-disabled"}">
         <td><strong>${escapeHtml(displayFacilityName(facility.name))}</strong>${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}</td>
         <td>${escapeHtml(facility.location || "-")}</td><td>${escapeHtml(facility.timing || "-")}</td><td>${escapeHtml(facility.days || "-")}</td>
         <td><strong class="facility-table-price">${escapeHtml(getFacilityPriceLabel(facility))}</strong></td>
         <td><span class="status ${availabilityStatusClass(facility, availability)}">${escapeHtml(availability.label)}</span></td>
         <td><span class="status ${facility.open ? "open" : "neutral"}">${facility.open ? "Active" : "Disabled"}</span></td>
-        <td><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></td>
+        <td><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" title="${facility.open ? "Disable" : "Enable"} facility" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></td>
       </tr>`;
   }).join("");
   const cards = state.facilities.map((facility) => {

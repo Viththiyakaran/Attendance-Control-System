@@ -1748,7 +1748,7 @@
 
 .admin-page[data-admin-page="facilities"] .facility-table {
   width: 100%;
-  min-width: 1100px;
+  min-width: 1140px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -1766,7 +1766,7 @@
 }
 
 .admin-page[data-admin-page="facilities"] .facility-table td {
-  padding: 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid #e7ece9;
   color: var(--dashboard-text);
   font-size: .84rem;
@@ -1777,21 +1777,23 @@
 
 .admin-page[data-admin-page="facilities"] .facility-table tbody tr:last-child td { border-bottom: 0; }
 .admin-page[data-admin-page="facilities"] .facility-table tbody tr:hover { background: #f9fbfa; }
+.admin-page[data-admin-page="facilities"] .facility-table tbody tr.is-disabled { background: #f5f7f6; }
+.admin-page[data-admin-page="facilities"] .facility-table tbody tr.is-disabled td:not(:last-child) { color: #71807b; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(1) { width: 15%; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(2) { width: 12%; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(3) { width: 14%; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(4) { width: 11%; }
-.admin-page[data-admin-page="facilities"] .facility-table th:nth-child(5) { width: 13%; }
+.admin-page[data-admin-page="facilities"] .facility-table th:nth-child(5) { width: 12%; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(6) { width: 11%; }
 .admin-page[data-admin-page="facilities"] .facility-table th:nth-child(7) { width: 9%; }
-.admin-page[data-admin-page="facilities"] .facility-table th:nth-child(8) { width: 15%; }
+.admin-page[data-admin-page="facilities"] .facility-table th:nth-child(8) { width: 16%; }
 .admin-page[data-admin-page="facilities"] .facility-table td:first-child > strong { display: inline-block; margin-right: 6px; font-size: .9rem; }
-.admin-page[data-admin-page="facilities"] .facility-table-price { color: var(--dashboard-green); white-space: nowrap; }
+.admin-page[data-admin-page="facilities"] .facility-table-price { color: var(--dashboard-green); white-space: nowrap; font-size: .82rem; }
 
 .admin-page[data-admin-page="facilities"] .facility-table-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 9px;
   white-space: nowrap;
 }
 
@@ -1802,6 +1804,36 @@
 }
 
 .admin-page[data-admin-page="facilities"] .facility-table-actions .switch { flex: 0 0 auto; }
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch {
+  position: relative !important;
+  display: inline-block !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #c9d3cf !important;
+  overflow: hidden !important;
+}
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,.22) !important;
+  transform: translateX(0) !important;
+  transition: transform .18s ease !important;
+}
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch::after { display: none !important; content: none !important; }
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch[aria-checked="true"] { background: var(--dashboard-green) !important; }
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch[aria-checked="true"]::before { transform: translateX(16px) !important; }
+.admin-page[data-admin-page="facilities"] .facility-table-actions .switch:focus-visible { outline: 3px solid rgba(8,127,101,.28) !important; outline-offset: 2px !important; }
 .admin-page[data-admin-page="facilities"] .facility-table-actions .row-menu { position: relative; width: 38px; }
 .admin-page[data-admin-page="facilities"] .facility-table-actions .row-menu summary { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; font-size: 20px; list-style: none; }
 .admin-page[data-admin-page="facilities"] .facility-table-actions .row-menu summary::-webkit-details-marker { display: none; }
