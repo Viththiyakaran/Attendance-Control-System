@@ -4626,7 +4626,7 @@ dialog::backdrop {
 }
 
 .notification-button::after {
-  content: "3";
+  content: attr(data-count);
   position: absolute;
   top: -5px;
   right: -4px;
@@ -4640,6 +4640,8 @@ dialog::backdrop {
   font-size: 0.68rem;
   font-weight: 900;
 }
+
+.notification-button:not(.has-notifications)::after { display: none; }
 
 .admin-profile {
   min-width: 160px;

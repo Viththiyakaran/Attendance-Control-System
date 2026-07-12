@@ -562,6 +562,7 @@ function render() {
   renderAccessExceptions();
   renderAttendance();
   renderEmailOutbox();
+  renderNotificationBadge();
   renderRegistrationAccessOptions();
   renderRegistrationWizard();
   renderPaymentSummary();
@@ -1967,6 +1968,15 @@ function normalizeNotificationStatus(status) {
   if (/sent/i.test(status || "")) return "Sent";
   if (/fail|error/i.test(status || "")) return "Failed";
   return "Pending";
+}
+
+function renderNotificationBadge() {
+  const button = $(".notification-button");
+  if (!button) return;
+  const actionable = (state.emails || []).filter((email) => ["Pending", "Failed"].includes(normalizeNotificationStatus(email.status))).length;
+  button.dataset.count = actionable > 99 ? "99+" : String(actionable);
+  button.classList.toggle("has-notifications", actionable > 0);
+  button.setAttribute("aria-label", actionable > 0 ? `Open notifications, ${actionable} require attention` : "Open notifications, none require attention");
 }
 
 function renderRegistrationAccessOptions() {
