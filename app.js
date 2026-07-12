@@ -1776,6 +1776,8 @@ function switchAdminSection(section = "dashboard") {
 
   $$(".admin-page").forEach((page) => page.classList.toggle("active", page.dataset.adminPage === section));
   $$(".admin-menu-item[data-admin-section]").forEach((item) => item.classList.toggle("active", item.dataset.adminSection === section));
+  const activeMenuItem = $(`.admin-menu-item[data-admin-section="${section}"]`);
+  window.requestAnimationFrame(() => activeMenuItem?.scrollIntoView({ block: "center", inline: "nearest" }));
   if ($("#admin-page-title")) $("#admin-page-title").textContent = labels[section] || "Dashboard";
   if ($("#admin-page-subtitle")) $("#admin-page-subtitle").textContent = subtitles[section] || "";
   updateAdminHeaderTools(section);

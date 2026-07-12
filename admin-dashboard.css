@@ -33,7 +33,42 @@
   background: linear-gradient(180deg, var(--dashboard-sidebar), #042f29) !important;
   box-shadow: 16px 0 34px rgba(3, 40, 34, 0.14) !important;
   z-index: 90 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
+
+.admin-mode .admin-sidebar .admin-brand,
+.admin-mode .admin-sidebar .sidebar-collapse,
+.admin-mode .admin-sidebar .admin-sidebar-footer { flex: 0 0 auto !important; }
+
+.admin-mode .admin-sidebar .admin-menu {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 8px 3px 14px 0 !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.28) transparent;
+}
+
+.admin-mode .admin-sidebar .admin-menu::-webkit-scrollbar { width: 5px; }
+.admin-mode .admin-sidebar .admin-menu::-webkit-scrollbar-track { background: transparent; }
+.admin-mode .admin-sidebar .admin-menu::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(255,255,255,.28); }
+
+.admin-mode .admin-sidebar-footer {
+  padding-top: 10px !important;
+  border-top: 1px solid rgba(255,255,255,.12) !important;
+  background: transparent !important;
+}
+
+.admin-mode .admin-sidebar-footer .danger-link {
+  width: 100% !important;
+  margin: 0 !important;
+  color: #ffd8d4 !important;
+}
+
+.admin-mode .admin-sidebar-footer .danger-link span { color: currentColor !important; }
 
 .admin-mode .admin-shell,
 .admin-mode.admin-sidebar-collapsed .admin-shell {
