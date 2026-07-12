@@ -2180,12 +2180,29 @@
 }
 
 /* Reports: accounts and payment reporting */
-.admin-page[data-admin-page="reports"] .account-report { display: grid; gap: 18px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--dashboard-border); }
+.admin-page[data-admin-page="reports"] .account-report { display: grid; gap: 20px; }
 .admin-page[data-admin-page="reports"] .account-report-heading,
 .admin-page[data-admin-page="reports"] .account-card-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .admin-page[data-admin-page="reports"] .account-report-actions { display: flex; gap: 10px; }
 .admin-page[data-admin-page="reports"] .account-summary-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card { min-height: 132px; padding: 18px; border: 1px solid var(--dashboard-border); border-radius: 14px; background: #fff; }
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto minmax(34px, 1fr) !important;
+  align-items: start !important;
+  gap: 9px !important;
+  min-height: 150px !important;
+  padding: 18px !important;
+  border: 1px solid var(--dashboard-border) !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+}
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > span,
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > strong,
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > small { position: static !important; display: block !important; width: 100% !important; margin: 0 !important; }
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > span { color: var(--dashboard-muted) !important; font-size: .78rem !important; font-weight: 800 !important; }
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > strong { color: var(--dashboard-green) !important; font-size: clamp(1.55rem, 2vw, 2rem) !important; line-height: 1.05 !important; overflow-wrap: anywhere !important; }
+.admin-page[data-admin-page="reports"] .account-summary-cards .summary-card > small { align-self: end !important; color: var(--dashboard-muted) !important; font-size: .78rem !important; line-height: 1.35 !important; }
 .admin-page[data-admin-page="reports"] .account-report-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, .8fr); gap: 16px; }
 .admin-page[data-admin-page="reports"] .account-chart-card,
 .admin-page[data-admin-page="reports"] .account-daily-card,

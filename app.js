@@ -557,7 +557,6 @@ function render() {
   renderFacilities();
   renderApprovedResidents();
   renderPaymentSummaryCards();
-  renderReportCards();
   renderAccountReport();
   renderSettingsSections();
   renderFilterOptions();
@@ -1769,7 +1768,7 @@ function switchAdminSection(section = "dashboard") {
     "scanner-stations": "Links and setup for guard scanner devices",
     "check-in-logs": "Filter attendance records and export audit reports",
     "access-exceptions": "Denied, invalid, expired, and outside-time scanner attempts",
-    reports: "Reporting shortcuts and export guidance",
+    reports: "Monthly revenue, payment accounts, and financial exports",
     notifications: "Email delivery logs with sensitive pass data hidden",
     settings: "Admin settings and environment configuration notes",
   };
