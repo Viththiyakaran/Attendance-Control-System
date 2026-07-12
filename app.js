@@ -45,7 +45,7 @@ const ADMIN_CREDENTIALS = {
   email: "admin@facility.local",
   password: "admin123",
 };
-const SCANNER_PIN = "1234";
+const DEFAULT_SCANNER_PIN = "1234";
 
 const DEFAULT_FACILITIES = [
   { name: "Swimming at Club-1", location: "Clubhouse-1", timing: "04.00PM to 07.30PM", days: "SUN/TUE/THU" },
@@ -1376,6 +1376,14 @@ function renderSettingsSections() {
       </div>
       <p class="helper-text" id="branding-settings-message"></p>
     </article>
+    <article class="settings-card scanner-pin-settings-card">
+      <h3>Scanner security</h3>
+      <p class="helper-text">Set the PIN used to unlock authorised gate scanner devices.</p>
+      <label>New scanner PIN<input id="settings-scanner-pin" type="password" inputmode="numeric" autocomplete="new-password" minlength="4" maxlength="8" placeholder="4 to 8 digits" /></label>
+      <label>Confirm scanner PIN<input id="settings-scanner-pin-confirm" type="password" inputmode="numeric" autocomplete="new-password" minlength="4" maxlength="8" placeholder="Repeat the PIN" /></label>
+      <button type="button" id="save-scanner-pin" class="primary">Update scanner PIN</button>
+      <p class="helper-text" id="scanner-pin-settings-message" role="status"></p>
+    </article>
     ${sections.map(([title, rows]) => `
     <article class="settings-card">
       <h3>${escapeHtml(title)}</h3>
@@ -1386,6 +1394,45 @@ function renderSettingsSections() {
     `).join("")}
   `;
   bindBrandingSettings();
+  $("#save-scanner-pin")?.addEventListener("click", saveScannerPinSetting);
+}
+
+async function hashScannerPin(pin) {
+  const bytes = new TextEncoder().encode(`hts-scanner:${pin}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+async function saveScannerPinSetting() {
+  const pin = $("#settings-scanner-pin")?.value.trim() || "";
+  const confirmation = $("#settings-scanner-pin-confirm")?.value.trim() || "";
+  const message = $("#scanner-pin-settings-message");
+  const button = $("#save-scanner-pin");
+  if (!/^\d{4,8}$/.test(pin)) {
+    message.textContent = "Enter a PIN containing 4 to 8 digits.";
+    return;
+  }
+  if (pin !== confirmation) {
+    message.textContent = "The PIN confirmation does not match.";
+    return;
+  }
+  button.disabled = true;
+  message.textContent = "Updating scanner PIN\u2026";
+  try {
+    const scannerPinHash = await hashScannerPin(pin);
+    state.settings = { ...getBrandingSettings(), scannerPinHash };
+    saveState();
+    await upsertDoc("app_settings", { id: "branding", ...state.settings });
+    $("#settings-scanner-pin").value = "";
+    $("#settings-scanner-pin-confirm").value = "";
+    message.textContent = "Scanner PIN updated. Previously unlocked scanner sessions remain active until locked.";
+    notify("Scanner PIN updated.");
+  } catch {
+    message.textContent = "Could not update the scanner PIN. Please try again.";
+    notify("Could not update the scanner PIN.", "warning");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function bindBrandingSettings() {
@@ -1422,7 +1469,7 @@ async function saveBrandingSettings() {
 }
 
 async function resetBrandingSettings() {
-  state.settings = { ...DEFAULT_BRANDING };
+  state.settings = { ...DEFAULT_BRANDING, scannerPinHash: state.settings?.scannerPinHash || "" };
   saveState();
   await upsertDoc("app_settings", { id: "branding", ...state.settings }).catch(() => {});
   render();
@@ -4222,7 +4269,9 @@ async function beep(type = "checkin") {
 async function unlockScanner(event) {
   event.preventDefault();
   const pin = $("#scanner-pin").value.trim();
-  if (pin !== SCANNER_PIN) {
+  const configuredHash = state.settings?.scannerPinHash || "";
+  const pinMatches = configuredHash ? await hashScannerPin(pin) === configuredHash : pin === DEFAULT_SCANNER_PIN;
+  if (!pinMatches) {
     $("#scanner-pin-message").textContent = "Invalid scanner PIN.";
     return;
   }
