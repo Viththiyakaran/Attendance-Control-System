@@ -1303,9 +1303,10 @@ function renderReportCards() {
   const container = $("#report-card-list");
   if (!container) return;
   const reports = [
-    ["Attendance / Check-in report", "Use Check-in Logs to filter by date, facility and status, then export the PDF.", "history", "Available", "check-in-logs"],
+    ["Attendance / Check-in report", "Use Check-in Logs to filter by date, facility and status, then export the PDF.", "history", "Available", "section", "check-in-logs"],
+    ["Payment report", "Export applicant payments, verification status, facilities, amounts and submission dates.", "card", "Available", "payment-export", ""],
   ];
-  container.innerHTML = reports.map(([title, detail, icon, badge, section]) => `
+  container.innerHTML = reports.map(([title, detail, icon, badge, action, section]) => `
     <article class="report-card">
       <span class="card-icon">${adminIcon(icon)}</span>
       <div>
@@ -1313,7 +1314,7 @@ function renderReportCards() {
         <p>${escapeHtml(detail)}</p>
         <span class="status ${badge === "Available" ? "open" : "neutral"}">${escapeHtml(badge)}</span>
       </div>
-      <button type="button" data-admin-section="${section}">${section === "check-in-logs" ? "Open Check-in Logs" : "Open page"}</button>
+      ${action === "payment-export" ? `<button type="button" data-export-payment-report>Export payment report</button>` : `<button type="button" data-admin-section="${section}">Open Check-in Logs</button>`}
     </article>
   `).join("");
 }
@@ -1868,6 +1869,28 @@ function exportReportPdf() {
   `);
   reportWindow.document.close();
   notify("Report export opened.");
+}
+
+function exportPaymentReport() {
+  const payments = getPaymentReviewRecords();
+  if (!payments.length) {
+    notify("No payment records are available to export.", "warning");
+    return;
+  }
+  const verifiedTotal = payments.filter((user) => ["Approved", "Renewal Approved"].includes(user.status)).reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
+  const rows = payments.map((user) => {
+    const payment = getPaymentStatus(user);
+    const facilities = getRequestedAccess(user).map(displayFacilityName).join(", ") || "-";
+    return `<tr><td>${escapeHtml(formatDateTime(user.createdAt, "date"))}</td><td>${escapeHtml(user.fullName || user.email || "Applicant")}</td><td>${escapeHtml(maskEmail(user.email))}</td><td>${escapeHtml(facilities)}</td><td>${escapeHtml(payment.amountLabel)}</td><td>${escapeHtml(payment.label)}</td><td>${escapeHtml(user.approvedAt ? formatDateTime(user.approvedAt, "date") : "-")}</td><td>${escapeHtml(String(user.id).slice(-8))}</td></tr>`;
+  }).join("");
+  const reportWindow = window.open("", "_blank", "width=1100,height=800");
+  if (!reportWindow) {
+    notify("Allow pop-ups to export the payment report.", "warning");
+    return;
+  }
+  reportWindow.document.write(`<!doctype html><html><head><title>HTS Payment Report</title><style>body{font-family:Arial,sans-serif;color:#111;margin:28px}h1{margin:0 0 6px;font-size:24px}p{margin:0 0 16px;color:#444}.meta{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;font-size:13px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #999;padding:7px;text-align:left;vertical-align:top}th{background:#f0f0f0}@media print{body{margin:12mm}}</style></head><body><h1>HTS Payment Report</h1><p>Generated ${escapeHtml(new Date().toLocaleString())}</p><div class="meta"><strong>Total records: ${payments.length}</strong><strong>Verified total: QAR ${verifiedTotal}</strong></div><table><thead><tr><th>Submitted</th><th>Applicant</th><th>Email</th><th>Facilities</th><th>Amount</th><th>Status</th><th>Approved</th><th>Reference</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+  reportWindow.document.close();
+  notify("Payment report opened for export.");
 }
 
 function validateReportExport() {
@@ -4280,6 +4303,7 @@ document.addEventListener("click", (event) => {
   const sidebarCollapse = event.target.closest("[data-sidebar-collapse]");
   const usagePeriodButton = event.target.closest("[data-usage-period]");
   const exportToday = event.target.closest("[data-export-today]");
+  const exportPaymentReportButton = event.target.closest("[data-export-payment-report]");
   const toggleAddFacility = event.target.closest("[data-toggle-add-facility]");
   const editFacilityButton = event.target.closest("[data-edit-facility]");
   const cancelFacilityEdit = event.target.closest("[data-cancel-facility-edit]");
@@ -4329,6 +4353,7 @@ document.addEventListener("click", (event) => {
     renderWeeklyUsageChart();
   }
   if (exportToday) exportTodayReport();
+  if (exportPaymentReportButton) exportPaymentReport();
   if (toggleAddFacility) {
     const form = $("#facility-form");
     if (form) {
