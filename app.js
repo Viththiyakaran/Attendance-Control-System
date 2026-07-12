@@ -19,6 +19,7 @@ const STORAGE_KEY = "facility-access-system-v1";
 const PUBLIC_SITE_URL = "https://clinquant-faun-77644a.netlify.app";
 const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
+const PAYMENT_PAGE_SIZE = 6;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
@@ -82,6 +83,7 @@ let selectedUserReviewId = "";
 let applicationReviewBusy = false;
 const applicationReviewDrafts = {};
 let reportPage = 1;
+let paymentPage = 1;
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
 let exceptionReasonFilter = "all";
@@ -2388,23 +2390,24 @@ function renderPaymentReviewList() {
   const container = $("#payment-review-list");
   if (!container) return;
   const paymentUsers = getPaymentReviewRecords();
+  const totalPages = Math.max(1, Math.ceil(paymentUsers.length / PAYMENT_PAGE_SIZE));
+  paymentPage = Math.min(Math.max(paymentPage, 1), totalPages);
+  const startIndex = (paymentPage - 1) * PAYMENT_PAGE_SIZE;
+  const pageUsers = paymentUsers.slice(startIndex, startIndex + PAYMENT_PAGE_SIZE);
   container.innerHTML = paymentUsers.length
-    ? paymentUsers.map((user) => {
+    ? `<div class="payment-table-wrap"><table class="payment-table"><thead><tr><th>Applicant</th><th>Reference</th><th>Status</th><th>Amount</th><th>Submitted</th><th>Action</th></tr></thead><tbody>${pageUsers.map((user) => {
       const payment = getPaymentStatus(user);
       return `
-      <div class="payment-review-item">
-        <div>
-          <strong>${escapeHtml(user.fullName || user.email)}</strong>
-          <small>${escapeHtml(maskEmail(user.email))} | Villa ${escapeHtml(user.villaNumber || "-")} | Ref ${escapeHtml(String(user.id).slice(-8))}</small>
-        </div>
-        <span class="status ${payment.className}">${escapeHtml(payment.label)}</span>
-        <strong>${payment.amountLabel}</strong>
-        <small>${formatDateTime(user.createdAt)}</small>
-        <button type="button" data-open-user="${user.id}">${escapeHtml(payment.action)}</button>
-      </div>
+      <tr><td><strong>${escapeHtml(user.fullName || user.email)}</strong><small>${escapeHtml(maskEmail(user.email))}<br>Villa ${escapeHtml(user.villaNumber || "-")}</small></td><td><code>${escapeHtml(String(user.id).slice(-8))}</code></td><td><span class="status ${payment.className}">${escapeHtml(payment.label)}</span></td><td><strong>${payment.amountLabel}</strong></td><td>${formatDateTime(user.createdAt)}</td><td><button type="button" data-open-user="${user.id}">${escapeHtml(payment.action)}</button></td></tr>
     `;
-    }).join("")
+    }).join("")}</tbody></table></div><div class="payment-mobile-list">${pageUsers.map((user) => { const payment = getPaymentStatus(user); return `<article><div><strong>${escapeHtml(user.fullName || user.email)}</strong><span class="status ${payment.className}">${escapeHtml(payment.label)}</span></div><small>${escapeHtml(maskEmail(user.email))} · Ref ${escapeHtml(String(user.id).slice(-8))}</small><p>${payment.amountLabel}</p><small>${formatDateTime(user.createdAt)}</small><button type="button" data-open-user="${user.id}">${escapeHtml(payment.action)}</button></article>`; }).join("")}</div><div class="payment-pagination"><button type="button" data-payment-page="prev" ${paymentPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageUsers.length, paymentUsers.length)} of ${paymentUsers.length} payments</span><button type="button" data-payment-page="next" ${paymentPage === totalPages ? "disabled" : ""}>Next</button></div>`
     : emptyState("No payment submissions", "Payment screenshots will appear here after applications are submitted.");
+}
+
+function changePaymentPage(direction) {
+  const totalPages = Math.max(1, Math.ceil(getPaymentReviewRecords().length / PAYMENT_PAGE_SIZE));
+  paymentPage = direction === "next" ? Math.min(paymentPage + 1, totalPages) : Math.max(paymentPage - 1, 1);
+  renderPaymentReviewList();
 }
 
 function renderPaymentSummaryCards() {
@@ -4305,6 +4308,7 @@ document.addEventListener("click", (event) => {
   const suspend = event.target.closest("[data-suspend-user]");
   const userPageButton = event.target.closest("[data-user-page]");
   const reportPageButton = event.target.closest("[data-report-page]");
+  const paymentPageButton = event.target.closest("[data-payment-page]");
   const reject = event.target.closest("[data-reject-user]");
   const toggle = event.target.closest("[data-toggle-facility]");
   const deleteButton = event.target.closest("[data-delete-user]");
@@ -4367,6 +4371,7 @@ document.addEventListener("click", (event) => {
   if (suspend) suspendUser(suspend.dataset.suspendUser);
   if (userPageButton) changeUserPage(userPageButton.dataset.userPage);
   if (reportPageButton) changeReportPage(reportPageButton.dataset.reportPage);
+  if (paymentPageButton) changePaymentPage(paymentPageButton.dataset.paymentPage);
   if (reject) rejectUser(reject.dataset.rejectUser);
   if (toggle) toggleFacility(toggle.dataset.toggleFacility);
   if (deleteButton) deleteUser(deleteButton.dataset.deleteUser);
