@@ -1838,6 +1838,9 @@
 .admin-page[data-admin-page="facilities"] .facility-table-actions .row-menu summary { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; font-size: 20px; list-style: none; }
 .admin-page[data-admin-page="facilities"] .facility-table-actions .row-menu summary::-webkit-details-marker { display: none; }
 .admin-page[data-admin-page="facilities"] .facility-mobile-list { display: none; }
+.admin-page[data-admin-page="facilities"] .facility-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 14px; }
+.admin-page[data-admin-page="facilities"] .facility-pagination span { color: var(--dashboard-muted); font-size: .82rem; font-weight: 700; }
+.admin-page[data-admin-page="facilities"] .facility-pagination button { min-height: 40px; padding: 7px 13px; }
 
 .admin-page[data-admin-page="facilities"] .facility-drawer-layer { position: fixed; inset: 0; z-index: 1200; }
 .admin-page[data-admin-page="facilities"] .facility-drawer-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; background: rgba(8, 25, 20, .42); }
@@ -1863,6 +1866,8 @@
   .admin-page[data-admin-page="facilities"] .facility-mobile-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; }
   .admin-page[data-admin-page="facilities"] .facility-mobile-card dt { color: var(--dashboard-muted); font-size: .68rem; font-weight: 900; text-transform: uppercase; }
   .admin-page[data-admin-page="facilities"] .facility-mobile-card dd { margin: 4px 0 0; }
+  .admin-page[data-admin-page="facilities"] .facility-pagination { justify-content: space-between; flex-wrap: wrap; }
+  .admin-page[data-admin-page="facilities"] .facility-pagination span { order: -1; width: 100%; text-align: center; }
   .admin-page[data-admin-page="facilities"] .facility-drawer-body .facility-edit-pricing { grid-template-columns: 1fr; }
 }
 /* Payments page table and pagination */

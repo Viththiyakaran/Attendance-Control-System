@@ -21,6 +21,7 @@ const USERS_PAGE_SIZE = 8;
 const REPORT_PAGE_SIZE = 8;
 const PAYMENT_PAGE_SIZE = 6;
 const RESIDENT_PAGE_SIZE = 6;
+const FACILITY_PAGE_SIZE = 6;
 const NOTIFICATION_PAGE_SIZE = 8;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
@@ -87,6 +88,7 @@ const applicationReviewDrafts = {};
 let reportPage = 1;
 let paymentPage = 1;
 let residentPage = 1;
+let facilityPage = 1;
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
 let exceptionReasonFilter = "all";
@@ -908,7 +910,11 @@ function renderFacilities() {
   const form = $("#facility-form");
   if (!list) return;
   if (form) form.classList.toggle("is-collapsed", !form.dataset.open);
-  const rows = state.facilities.map((facility) => {
+  const totalPages = Math.max(1, Math.ceil(state.facilities.length / FACILITY_PAGE_SIZE));
+  facilityPage = Math.min(Math.max(facilityPage, 1), totalPages);
+  const startIndex = (facilityPage - 1) * FACILITY_PAGE_SIZE;
+  const pageFacilities = state.facilities.slice(startIndex, startIndex + FACILITY_PAGE_SIZE);
+  const rows = pageFacilities.map((facility) => {
     const availability = getFacilityAvailability(facility);
     return `
       <tr class="${facility.open ? "" : "is-disabled"}">
@@ -920,12 +926,23 @@ function renderFacilities() {
         <td><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" title="${facility.open ? "Disable" : "Enable"} facility" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></td>
       </tr>`;
   }).join("");
-  const cards = state.facilities.map((facility) => {
+  const cards = pageFacilities.map((facility) => {
     const availability = getFacilityAvailability(facility);
     return `<article class="facility-mobile-card"><div><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><span class="status ${facility.open ? "open" : "neutral"}">${facility.open ? "Active" : "Disabled"}</span></div><p>${escapeHtml(getFacilityPriceLabel(facility))}</p><dl><div><dt>Location</dt><dd>${escapeHtml(facility.location || "-")}</dd></div><div><dt>Schedule</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div><div><dt>Days</dt><dd>${escapeHtml(facility.days || "-")}</dd></div><div><dt>Today</dt><dd><span class="status ${availabilityStatusClass(facility, availability)}">${escapeHtml(availability.label)}</span></dd></div></dl><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></article>`;
   }).join("");
   const editingFacility = state.facilities.find((facility) => String(facility.id) === String(editingFacilityId));
-  list.innerHTML = state.facilities.length ? `<div class="facility-table-wrap"><table class="facility-table"><thead><tr><th>Facility</th><th>Location</th><th>Schedule</th><th>Days</th><th>Price</th><th>Today</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div><div class="facility-mobile-list">${cards}</div>${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}` : emptyState("No facilities", "Add a facility to begin managing access.");
+  const pagination = `<div class="facility-pagination"><button type="button" data-facility-page="prev" ${facilityPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageFacilities.length, state.facilities.length)} of ${state.facilities.length} facilities</span><button type="button" data-facility-page="next" ${facilityPage === totalPages ? "disabled" : ""}>Next</button></div>`;
+  list.innerHTML = state.facilities.length ? `<div class="facility-table-wrap"><table class="facility-table"><thead><tr><th>Facility</th><th>Location</th><th>Schedule</th><th>Days</th><th>Price</th><th>Today</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div><div class="facility-mobile-list">${cards}</div>${pagination}${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}` : emptyState("No facilities", "Add a facility to begin managing access.");
+}
+
+function changeFacilityPage(direction) {
+  const totalPages = Math.max(1, Math.ceil(state.facilities.length / FACILITY_PAGE_SIZE));
+  facilityPage = direction === "next"
+    ? Math.min(facilityPage + 1, totalPages)
+    : Math.max(facilityPage - 1, 1);
+  editingFacilityId = "";
+  renderFacilities();
+  $("#facility-list")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function availabilityStatusClass(facility, availability = getFacilityAvailability(facility)) {
@@ -4390,6 +4407,7 @@ document.addEventListener("click", (event) => {
   const paymentPageButton = event.target.closest("[data-payment-page]");
   const residentPageButton = event.target.closest("[data-resident-page]");
   const notificationPageButton = event.target.closest("[data-notification-page]");
+  const facilityPageButton = event.target.closest("[data-facility-page]");
   const markNotificationReadButton = event.target.closest("[data-mark-notification-read]");
   const markAllNotificationsReadButton = event.target.closest("[data-mark-all-notifications-read]");
   const reject = event.target.closest("[data-reject-user]");
@@ -4459,6 +4477,7 @@ document.addEventListener("click", (event) => {
   if (paymentPageButton) changePaymentPage(paymentPageButton.dataset.paymentPage);
   if (residentPageButton) changeResidentPage(residentPageButton.dataset.residentPage);
   if (notificationPageButton) changeNotificationPage(notificationPageButton.dataset.notificationPage);
+  if (facilityPageButton) changeFacilityPage(facilityPageButton.dataset.facilityPage);
   if (markNotificationReadButton) markNotificationRead(markNotificationReadButton.dataset.markNotificationRead);
   if (markAllNotificationsReadButton) markAllNotificationsRead();
   if (reject) rejectUser(reject.dataset.rejectUser);
