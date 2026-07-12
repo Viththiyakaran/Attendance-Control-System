@@ -1663,3 +1663,72 @@
   .facility-pricing-fields,
   .facility-edit-pricing { grid-template-columns: 1fr; }
 }
+/* Users / Residents page cleanup */
+.admin-page[data-admin-page="users"] #resident-summary {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  margin: 4px 0 20px !important;
+}
+
+.admin-page[data-admin-page="users"] #resident-summary .summary-card {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto 1fr auto !important;
+  align-items: start !important;
+  gap: 8px !important;
+  min-height: 132px !important;
+  padding: 18px 20px !important;
+}
+
+.admin-page[data-admin-page="users"] #resident-summary .summary-card > span {
+  color: var(--dashboard-muted) !important;
+  font-size: .78rem !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+}
+
+.admin-page[data-admin-page="users"] #resident-summary .summary-card > strong {
+  align-self: center !important;
+  color: var(--dashboard-green) !important;
+  font-size: 2rem !important;
+  line-height: 1 !important;
+}
+
+.admin-page[data-admin-page="users"] #resident-summary .summary-card > small {
+  color: var(--dashboard-muted) !important;
+  font-size: .78rem !important;
+  line-height: 1.3 !important;
+}
+
+.admin-page[data-admin-page="users"] .resident-review-card {
+  grid-template-columns: minmax(260px, 1.05fr) minmax(620px, 2.7fr) minmax(142px, auto) !important;
+  gap: 20px !important;
+  padding: 18px 20px !important;
+}
+
+.admin-page[data-admin-page="users"] .resident-details {
+  grid-template-columns: minmax(150px, 1.25fr) minmax(170px, 1.35fr) minmax(100px, .7fr) minmax(105px, .7fr) minmax(115px, .8fr) !important;
+  gap: 16px !important;
+}
+
+.admin-page[data-admin-page="users"] .resident-details dd {
+  overflow-wrap: anywhere !important;
+}
+
+.admin-page[data-admin-page="users"] .facility-summary {
+  align-items: flex-start !important;
+}
+
+@media (max-width: 1380px) {
+  .admin-page[data-admin-page="users"] #resident-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .admin-page[data-admin-page="users"] .resident-review-card { grid-template-columns: 1fr !important; }
+  .admin-page[data-admin-page="users"] .resident-details { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .admin-page[data-admin-page="users"] .application-actions { justify-self: start !important; }
+}
+
+@media (max-width: 760px) {
+  .admin-page[data-admin-page="users"] #resident-summary { grid-template-columns: 1fr !important; }
+  .admin-page[data-admin-page="users"] #resident-summary .summary-card { min-height: 112px !important; }
+  .admin-page[data-admin-page="users"] .resident-details { grid-template-columns: 1fr !important; }
+}

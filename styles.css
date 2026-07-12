@@ -7068,3 +7068,14 @@ dialog::backdrop {
   #scanner-view input,
   #scanner-view button { font-size: 16px; }
 }
+.admin-profile-static {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 10px;
+}
+
+.admin-profile-static > div { display: grid; gap: 2px; }
+.admin-profile-static strong::after { display: none !important; content: none !important; }
+.admin-profile-static small { color: #667570; font-size: 12px; font-weight: 650; }
