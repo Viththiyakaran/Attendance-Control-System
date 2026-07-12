@@ -2038,3 +2038,68 @@
   .admin-page[data-admin-page="notifications"] .notification-pagination { justify-content: space-between; flex-wrap: wrap; }
   .admin-page[data-admin-page="notifications"] .record-card-head { align-items: flex-start; }
 }
+/* Settings page dashboard-style alignment */
+.admin-page[data-admin-page="settings"] .settings-grid {
+  display: grid !important;
+  grid-template-columns: minmax(300px, 1.08fr) repeat(2, minmax(260px, 1fr)) !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: minmax(220px, auto) !important;
+  align-items: stretch !important;
+  gap: 16px !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  padding: 20px 22px !important;
+}
+
+.admin-page[data-admin-page="settings"] .branding-settings-card {
+  grid-row: span 2 !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card > h3 {
+  margin: 0 0 12px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px solid var(--dashboard-border) !important;
+}
+
+.admin-page[data-admin-page="settings"] .branding-settings-card .branding-preview {
+  margin-bottom: 16px !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card label {
+  display: grid !important;
+  gap: 6px !important;
+  margin-bottom: 12px !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card input,
+.admin-page[data-admin-page="settings"] .settings-card button {
+  min-height: 44px !important;
+}
+
+.admin-page[data-admin-page="settings"] .scanner-pin-settings-card > button,
+.admin-page[data-admin-page="settings"] .branding-settings-card .record-actions {
+  margin-top: auto !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card dl {
+  margin: 0 !important;
+}
+
+.admin-page[data-admin-page="settings"] .settings-card dl > div {
+  min-height: 50px !important;
+}
+
+@media (max-width: 1200px) {
+  .admin-page[data-admin-page="settings"] .settings-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)) !important; }
+  .admin-page[data-admin-page="settings"] .branding-settings-card { grid-row: span 1 !important; }
+}
+
+@media (max-width: 700px) {
+  .admin-page[data-admin-page="settings"] .settings-grid { grid-template-columns: 1fr !important; grid-auto-rows: auto !important; }
+  .admin-page[data-admin-page="settings"] .settings-card { padding: 16px !important; }
+}
