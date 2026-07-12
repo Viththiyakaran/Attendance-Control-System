@@ -212,22 +212,30 @@
       </section>
 
       <section class="view" id="admin-view">
-        <section class="panel admin-login" id="admin-login-panel">
-          <form id="admin-login-form">
-            <div class="section-heading">
-              <p class="eyebrow">Admin Login</p>
-              <h2>Manager access required</h2>
+        <section class="admin-login" id="admin-login-panel">
+          <form id="admin-login-form" class="manager-login-card" novalidate>
+            <div class="manager-login-brand">
+              <img src="/assets/qua-logo.png" alt="HTS logo" />
+              <div><strong>Facility Access</strong><span>HTS</span></div>
             </div>
-            <label>
+            <div class="manager-login-heading">
+              <h1>Manager Login</h1>
+              <p>Sign in to review applications, verify payments and manage facility access.</p>
+            </div>
+            <label class="manager-login-field">
               Email
-              <input id="admin-email" type="email" autocomplete="username" required />
+              <input id="admin-email" type="email" autocomplete="username" inputmode="email" placeholder="manager@example.com" required />
             </label>
-            <label>
+            <label class="manager-login-field">
               Password
-              <input id="admin-password" type="password" autocomplete="current-password" required />
+              <span class="manager-password-input">
+                <input id="admin-password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+                <button type="button" id="toggle-admin-password" aria-label="Show password" aria-pressed="false">Show</button>
+              </span>
             </label>
-            <button class="primary" type="submit">Login</button>
-            <p class="notice" id="admin-login-message" role="status"></p>
+            <p class="notice manager-login-message" id="admin-login-message" role="alert" aria-live="polite"></p>
+            <button class="primary manager-sign-in" type="submit">Sign in</button>
+            <a class="manager-back-link" href="/apply">&larr; Back to facility application</a>
           </form>
         </section>
 
@@ -433,10 +441,20 @@
                   <button class="primary" type="button" data-toggle-add-facility>Add facility</button>
                 </div>
                 <form id="facility-form" class="facility-form">
-                  <input id="facility-name" placeholder="Activity" required />
-                  <input id="facility-location" placeholder="Location" />
-                  <input id="facility-timing" placeholder="Timing" />
-                  <input id="facility-days" placeholder="Days" />
+                  <input id="facility-name" placeholder="Activity" aria-label="Facility name" required />
+                  <input id="facility-location" placeholder="Location" aria-label="Location" />
+                  <input id="facility-timing" placeholder="Timing" aria-label="Operating time" />
+                  <input id="facility-days" placeholder="Days" aria-label="Operating days" />
+                  <fieldset class="facility-pricing-fields">
+                    <legend>Pricing</legend>
+                    <label>Pricing type<select id="facility-pricing-type"><option value="monthly">Monthly</option><option value="per_booking">Per booking</option><option value="free">Free</option></select></label>
+                    <label data-pricing-field="monthly">Monthly amount<input id="facility-monthly-price" type="text" inputmode="decimal" value="100.00" /></label>
+                    <label data-pricing-field="per_booking" hidden>Booking amount<input id="facility-booking-price" type="text" inputmode="decimal" value="100.00" /></label>
+                    <label>Currency<input id="facility-currency" value="QAR" maxlength="3" /></label>
+                    <label data-pricing-field="monthly">Minimum months<input id="facility-minimum-months" type="number" min="1" value="1" /></label>
+                    <label data-pricing-field="monthly">Maximum months<input id="facility-maximum-months" type="number" min="1" value="12" /></label>
+                  </fieldset>
+                  <p id="facility-pricing-error" class="field-error" role="alert"></p>
                   <button class="primary" type="submit">Add</button>
                 </form>
                 <div id="facility-list" class="facility-list"></div>

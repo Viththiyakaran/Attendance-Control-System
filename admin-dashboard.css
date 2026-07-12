@@ -1592,3 +1592,74 @@
   .application-detail-view .application-review-actions { display: grid; }
   .application-detail-view .application-review-actions button { width: 100%; }
 }
+.admin-page[data-admin-page="facilities"] .facility-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-page[data-admin-page="facilities"] .facility-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 380px;
+  padding: 20px;
+}
+
+.admin-page[data-admin-page="facilities"] .facility-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.facility-title-group { display: flex; min-width: 0; align-items: flex-start; gap: 8px; }
+.facility-title-group > strong { min-width: 0; overflow-wrap: anywhere; font-size: 20px; line-height: 1.25; }
+.facility-status-line { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.facility-card-price { margin: 16px 0; color: #08735f; font-size: 22px; font-weight: 850; }
+.admin-page[data-admin-page="facilities"] .facility-meta { grid-template-columns: 1fr 1fr; gap: 14px; }
+.admin-page[data-admin-page="facilities"] .facility-actions { margin-top: auto; padding-top: 18px; }
+.admin-page[data-admin-page="facilities"] .switch-row { margin-left: auto; }
+.admin-page[data-admin-page="facilities"] .switch { width: 42px; height: 24px; }
+.admin-page[data-admin-page="facilities"] .switch::after { width: 18px; height: 18px; }
+.admin-page[data-admin-page="facilities"] .switch[aria-checked="true"]::after { transform: translateX(18px); }
+.admin-page[data-admin-page="facilities"] .row-menu summary { width: 42px; font-size: 22px; letter-spacing: 2px; }
+
+.status.availability-open { background: #dff4ea; color: #08735f; }
+.status.availability-warning { background: #fff0cb; color: #8a6100; }
+.status.availability-disabled { background: #e7ecea; color: #5f6c68; }
+.status.availability-closed { background: #fde4e1; color: #ad2d24; }
+.status.availability-booking { background: #e0edff; color: #245d9b; }
+
+.facility-pricing-fields,
+.facility-edit-pricing {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 12px;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #dce6e1;
+  border-radius: 12px;
+}
+.facility-pricing-fields legend,
+.facility-edit-pricing legend { padding: 0 6px; color: #174a3f; font-weight: 800; }
+.facility-pricing-fields label,
+.facility-edit-pricing label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
+.facility-pricing-fields [hidden] { display: none !important; }
+.facility-edit-pricing [hidden] { display: none !important; }
+.facility-edit-pricing { grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 1150px) {
+  .admin-page[data-admin-page="facilities"] .facility-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facility-pricing-fields { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .admin-page[data-admin-page="facilities"] .facility-list { grid-template-columns: 1fr; }
+  .admin-page[data-admin-page="facilities"] .facility-card { min-height: 0; padding: 16px; }
+  .admin-page[data-admin-page="facilities"] .facility-card-head { grid-template-columns: 1fr; }
+  .facility-status-line { justify-content: flex-start; }
+  .facility-pricing-fields,
+  .facility-edit-pricing { grid-template-columns: 1fr; }
+}

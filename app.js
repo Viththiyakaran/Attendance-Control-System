@@ -22,6 +22,7 @@ const REPORT_PAGE_SIZE = 8;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
 const DEFAULT_MONTHLY_FACILITY_PRICE_QAR = 100;
+const DEFAULT_CURRENCY = "QAR";
 const DEFAULT_BRANDING = {
   publicLogoData: "/assets/qua-logo.png",
   publicLogoName: "QUA Facilities Management",
@@ -66,7 +67,7 @@ const ALLOWED_QID_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 const initialState = {
   users: [],
-  facilities: DEFAULT_FACILITIES.map((facility) => ({ id: uid("facility"), open: true, ...facility })),
+  facilities: DEFAULT_FACILITIES.map((facility) => ({ id: uid("facility"), open: true, pricingType: /booking/i.test(`${facility.days} ${facility.timing}`) ? "per_booking" : "monthly", monthlyPrice: "100.00", bookingPrice: "100.00", currency: DEFAULT_CURRENCY, minimumMonths: 1, maximumMonths: 12, ...facility })),
   logs: [],
   emails: [],
   settings: { ...DEFAULT_BRANDING },
@@ -179,10 +180,11 @@ function normalizeAppDoc(collectionName, item) {
       qidNumber: item.qidNumber || item.qid_number || "",
       accessMonths: Number(item.accessMonths || item.access_months || 12),
       facilityMonths: item.facilityMonths || item.facility_months || {},
+      facilityPriceSnapshot: item.facilityPriceSnapshot || item.facility_price_snapshot || [],
       applicationType: item.applicationType || item.application_type || "New Application",
       renewalOf: item.renewalOf || item.renewal_of || "",
-      monthlyTotalQar: Number(item.monthlyTotalQar || item.monthly_total_qar || 0),
-      totalQar: Number(item.totalQar || item.total_qar || 0),
+      monthlyTotalQar: String(item.monthlyTotalQar ?? item.monthly_total_qar ?? "0.00"),
+      totalQar: String(item.totalQar ?? item.total_qar ?? "0.00"),
       accessStartAt: item.accessStartAt || item.access_start_date || "",
       accessEndAt: item.accessEndAt || item.access_end_date || "",
       token: item.token || item.access_token || "",
@@ -197,9 +199,18 @@ function normalizeAppDoc(collectionName, item) {
   }
 
   if (collectionName === "facilities") {
+    const pricingType = ["monthly", "per_booking", "free"].includes(item.pricingType)
+      ? item.pricingType
+      : /booking/i.test(`${item.days || ""} ${item.timing || ""}`) ? "per_booking" : "monthly";
     return {
       ...item,
       open: typeof item.open === "boolean" ? item.open : item.is_open !== false,
+      pricingType,
+      monthlyPrice: String(item.monthlyPrice ?? item.monthlyPriceQar ?? item.priceQar ?? DEFAULT_MONTHLY_FACILITY_PRICE_QAR),
+      bookingPrice: String(item.bookingPrice ?? item.priceQar ?? DEFAULT_MONTHLY_FACILITY_PRICE_QAR),
+      currency: item.currency || DEFAULT_CURRENCY,
+      minimumMonths: Math.max(1, Number(item.minimumMonths || 1)),
+      maximumMonths: Math.max(1, Number(item.maximumMonths || 12)),
       createdAt: item.createdAt || item.created_at || "",
     };
   }
@@ -234,12 +245,14 @@ function mergeDefaultFacilities(existingFacilities) {
       match.timing ||= defaultFacility.timing;
       match.days ||= defaultFacility.days;
       match.open = typeof match.open === "boolean" ? match.open : true;
+      Object.assign(match, normalizeFacilityPricing(match));
       return;
     }
 
     facilities.push({
       id: uid("facility"),
       open: true,
+      ...normalizeFacilityPricing(defaultFacility),
       ...defaultFacility,
     });
   });
@@ -902,15 +915,17 @@ function renderFacilities() {
   list.innerHTML = state.facilities.map((facility) => {
     const editing = editingFacilityId === String(facility.id);
     const availability = getFacilityAvailability(facility);
+    const pricing = normalizeFacilityPricing(facility);
     return `
     <div class="facility-item facility-card">
       <div class="facility-card-head">
-        <div>
+        <div class="facility-title-group">
           <strong>${escapeHtml(displayFacilityName(facility.name))}</strong>
           ${isDemoRecord(facility) ? `<span class="demo-badge">Demo</span>` : ""}
         </div>
         <div class="facility-status-line">${renderFacilityBadges(facility)}</div>
       </div>
+      <div class="facility-card-price">${escapeHtml(getFacilityPriceLabel(facility))}</div>
       <dl class="facility-meta">
         <div><dt>Location</dt><dd>${escapeHtml(facility.location || "Location to be confirmed")}</dd></div>
         <div><dt>Time</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div>
@@ -923,6 +938,14 @@ function renderFacilities() {
           <label>Location<input value="${escapeHtml(facility.location || "")}" data-facility-field="location" data-facility-id="${facility.id}" aria-label="Location" placeholder="Location" /></label>
           <label>Timing<input value="${escapeHtml(facility.timing || "")}" data-facility-field="timing" data-facility-id="${facility.id}" aria-label="Timing" placeholder="Timing" /></label>
           <label>Days<input value="${escapeHtml(facility.days || "")}" data-facility-field="days" data-facility-id="${facility.id}" aria-label="Days" placeholder="Days" /></label>
+          <fieldset class="facility-edit-pricing"><legend>Pricing</legend>
+            <label>Pricing type<select data-facility-field="pricingType" data-facility-id="${facility.id}"><option value="monthly" ${pricing.pricingType === "monthly" ? "selected" : ""}>Monthly</option><option value="per_booking" ${pricing.pricingType === "per_booking" ? "selected" : ""}>Per booking</option><option value="free" ${pricing.pricingType === "free" ? "selected" : ""}>Free</option></select></label>
+            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Monthly amount<input value="${escapeHtml(pricing.monthlyPrice)}" data-facility-field="monthlyPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label>
+            <label data-edit-pricing-field="per_booking" ${pricing.pricingType !== "per_booking" ? "hidden" : ""}>Booking amount<input value="${escapeHtml(pricing.bookingPrice)}" data-facility-field="bookingPrice" data-facility-id="${facility.id}" inputmode="decimal" /></label>
+            <label>Currency<input value="${escapeHtml(pricing.currency)}" data-facility-field="currency" data-facility-id="${facility.id}" maxlength="3" /></label>
+            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Minimum months<input type="number" min="1" value="${pricing.minimumMonths}" data-facility-field="minimumMonths" data-facility-id="${facility.id}" /></label>
+            <label data-edit-pricing-field="monthly" ${pricing.pricingType !== "monthly" ? "hidden" : ""}>Maximum months<input type="number" min="1" value="${pricing.maximumMonths}" data-facility-field="maximumMonths" data-facility-id="${facility.id}" /></label>
+          </fieldset>
         </div>
       ` : ""}
       <div class="facility-actions">
@@ -930,11 +953,10 @@ function renderFacilities() {
           ? `<button class="primary" type="button" data-update-facility="${facility.id}">Save</button><button type="button" data-cancel-facility-edit>Cancel</button>`
           : `<button type="button" data-edit-facility="${facility.id}">Edit</button>`}
         <label class="switch-row">
-          <span>Active</span>
           <button class="switch" type="button" role="switch" aria-label="Toggle ${facility.name}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button>
         </label>
         <details class="row-menu">
-          <summary>More</summary>
+          <summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary>
           <button type="button" data-delete-facility="${facility.id}">Delete facility</button>
         </details>
       </div>
@@ -973,9 +995,10 @@ function renderFacilityStats() {
 
 function renderFacilityBadges(facility) {
   const availability = getFacilityAvailability(facility);
+  const availabilityClass = !facility.open ? "availability-disabled" : /booking/i.test(availability.label) ? "availability-booking" : /closed/i.test(availability.label) ? "availability-closed" : availability.available ? "availability-open" : "availability-warning";
   return `
     <span class="${facility.open ? "open" : "neutral"} status">${facility.open ? "Active" : "Disabled"}</span>
-    <span class="${availability.available ? "open" : "warning"} status">${escapeHtml(availability.label)}</span>
+    <span class="${availabilityClass} status">${escapeHtml(availability.label)}</span>
   `;
 }
 
@@ -1904,7 +1927,10 @@ function normalizeNotificationStatus(status) {
 function renderRegistrationAccessOptions() {
   const container = $("#registration-access-options");
   if (!container) return;
-  container.innerHTML = getFacilityOptions().map((option) => `
+  const activeFacilities = getFacilityOptions().filter((option) => option.open);
+  container.innerHTML = activeFacilities.length ? activeFacilities.map((option) => {
+    const pricing = normalizeFacilityPricing(option);
+    return `
     <label class="facility-choice-card">
       <input type="checkbox" value="${escapeHtml(option.name)}" />
       <span>
@@ -1915,15 +1941,15 @@ function renderRegistrationAccessOptions() {
         <small>${escapeHtml(option.location || "Location to be confirmed")}</small>
         <small>${escapeHtml(option.timing || "Time to be confirmed")}</small>
         <small>${escapeHtml(option.days || "Days to be confirmed")}</small>
-        <span class="facility-price">QAR ${getFacilityPrice(option.name)} / month</span>
-        <span class="facility-month-control" data-facility-month-control="${escapeHtml(option.name)}">
+        <span class="facility-price">${escapeHtml(getFacilityPriceLabel(option))}</span>
+        ${pricing.pricingType === "monthly" ? `<span class="facility-month-control" data-facility-month-control="${escapeHtml(option.name)}">
           <button type="button" data-facility-month="${escapeHtml(option.name)}" data-month-delta="-1" aria-label="Decrease ${escapeHtml(option.name)} months">-</button>
           <span><strong data-facility-month-value="${escapeHtml(option.name)}">${getFacilityMonths(option.name)}</strong> month(s)</span>
           <button type="button" data-facility-month="${escapeHtml(option.name)}" data-month-delta="1" aria-label="Increase ${escapeHtml(option.name)} months">+</button>
-        </span>
+        </span>` : ""}
       </span>
     </label>
-  `).join("");
+  `;}).join("") : emptyState("No facilities available", "Active facilities will appear here when registration opens.");
   updateFacilityMonthControls();
 }
 
@@ -2001,8 +2027,12 @@ function validateRegistrationStep(step) {
       message.textContent = "Choose at least one facility before continuing.";
       return false;
     }
-    if (getSelectedRegistrationFacilities().some((name) => getFacilityMonths(name) < 1 || getFacilityMonths(name) > 12)) {
-      message.textContent = "Each selected facility month count must be between 1 and 12.";
+    if (getSelectedRegistrationFacilities().some((name) => {
+      const facility = state.facilities.find((item) => item.name === name);
+      const pricing = normalizeFacilityPricing(facility);
+      return pricing.pricingType === "monthly" && (getFacilityMonths(name) < pricing.minimumMonths || getFacilityMonths(name) > pricing.maximumMonths);
+    })) {
+      message.textContent = "A selected facility is outside its allowed month range.";
       return false;
     }
     return true;
@@ -2054,7 +2084,11 @@ function isRegistrationReady() {
 function validateRegistrationStepSilently(step) {
   if (step === 1) {
     const selected = getSelectedRegistrationFacilities();
-    return selected.length > 0 && selected.every((name) => getFacilityMonths(name) >= 1 && getFacilityMonths(name) <= 12);
+    return selected.length > 0 && selected.every((name) => {
+      const facility = state.facilities.find((item) => item.name === name);
+      const pricing = normalizeFacilityPricing(facility);
+      return pricing.pricingType !== "monthly" || (getFacilityMonths(name) >= pricing.minimumMonths && getFacilityMonths(name) <= pricing.maximumMonths);
+    });
   }
   if (step === 2) {
     return hasLetters(normalizeName($("#full-name")?.value || ""))
@@ -2067,11 +2101,15 @@ function validateRegistrationStepSilently(step) {
 }
 
 function getFacilityMonths(facilityName) {
-  return Number(registrationFacilityMonths[facilityName] || 1);
+  const facility = state.facilities.find((item) => item.name === facilityName);
+  const pricing = normalizeFacilityPricing(facility);
+  return Number(registrationFacilityMonths[facilityName] || pricing.minimumMonths);
 }
 
 function setFacilityMonths(facilityName, months) {
-  registrationFacilityMonths[facilityName] = Math.min(12, Math.max(1, Number(months || 1)));
+  const facility = state.facilities.find((item) => item.name === facilityName);
+  const pricing = normalizeFacilityPricing(facility);
+  registrationFacilityMonths[facilityName] = Math.min(pricing.maximumMonths, Math.max(pricing.minimumMonths, Number(months || pricing.minimumMonths)));
 }
 
 function changeFacilityMonths(facilityName, delta) {
@@ -2086,7 +2124,7 @@ function changeFacilityMonths(facilityName, delta) {
 
 function syncSelectedFacilityMonths() {
   getSelectedRegistrationFacilities().forEach((name) => {
-    if (!registrationFacilityMonths[name]) registrationFacilityMonths[name] = 1;
+    if (!registrationFacilityMonths[name]) registrationFacilityMonths[name] = normalizeFacilityPricing(state.facilities.find((item) => item.name === name)).minimumMonths;
   });
   Object.keys(registrationFacilityMonths).forEach((name) => {
     if (!getSelectedRegistrationFacilities().includes(name)) delete registrationFacilityMonths[name];
@@ -2184,9 +2222,48 @@ function updatePersonalFieldErrors(showErrors = true) {
     input.toggleAttribute("aria-invalid", showErrors && invalid);
   });
 }
+function moneyToMinor(value) {
+  const normalized = String(value ?? "0").trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return NaN;
+  const [whole, fraction = ""] = normalized.split(".");
+  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+}
+
+function minorToMoney(minor) {
+  const safe = Math.max(0, Math.trunc(Number(minor) || 0));
+  return `${Math.floor(safe / 100)}.${String(safe % 100).padStart(2, "0")}`;
+}
+
+function formatMoney(minor, currency = DEFAULT_CURRENCY) {
+  const value = minorToMoney(minor).replace(/\.00$/, "");
+  return `${currency} ${value}`;
+}
+
+function normalizeFacilityPricing(facility = {}) {
+  const pricingType = ["monthly", "per_booking", "free"].includes(facility.pricingType)
+    ? facility.pricingType
+    : /booking/i.test(`${facility.days || ""} ${facility.timing || ""}`) ? "per_booking" : "monthly";
+  return {
+    pricingType,
+    monthlyPrice: String(facility.monthlyPrice ?? facility.monthlyPriceQar ?? facility.priceQar ?? DEFAULT_MONTHLY_FACILITY_PRICE_QAR),
+    bookingPrice: String(facility.bookingPrice ?? facility.priceQar ?? DEFAULT_MONTHLY_FACILITY_PRICE_QAR),
+    currency: facility.currency || DEFAULT_CURRENCY,
+    minimumMonths: Math.max(1, Number(facility.minimumMonths || 1)),
+    maximumMonths: Math.max(Math.max(1, Number(facility.minimumMonths || 1)), Number(facility.maximumMonths || 12)),
+  };
+}
+
+function getFacilityPriceLabel(facility) {
+  const pricing = normalizeFacilityPricing(facility);
+  if (pricing.pricingType === "free") return "Free";
+  const amount = pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice;
+  return `${formatMoney(moneyToMinor(amount), pricing.currency)} / ${pricing.pricingType === "per_booking" ? "booking" : "month"}`;
+}
+
 function getFacilityPrice(facilityName) {
   const facility = state.facilities.find((item) => item.name === facilityName);
-  return Number(facility?.priceQar || facility?.monthlyPriceQar || DEFAULT_MONTHLY_FACILITY_PRICE_QAR);
+  const pricing = normalizeFacilityPricing(facility);
+  return moneyToMinor(pricing.monthlyPrice) / 100;
 }
 
 function getSelectedRegistrationFacilities() {
@@ -2195,21 +2272,31 @@ function getSelectedRegistrationFacilities() {
 
 function calculateApplicationTotal(selectedFacilities = getSelectedRegistrationFacilities()) {
   const lineItems = selectedFacilities.map((name) => {
-    const months = getFacilityMonths(name);
-    const price = getFacilityPrice(name);
+    const facility = state.facilities.find((item) => item.name === name);
+    const pricing = normalizeFacilityPricing(facility);
+    const months = pricing.pricingType === "monthly" ? getFacilityMonths(name) : 1;
+    const priceMinor = pricing.pricingType === "free" ? 0 : moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice);
+    const totalMinor = priceMinor * months;
     return {
+      facilityId: facility?.id || "",
       name,
+      pricingType: pricing.pricingType,
+      currency: pricing.currency,
       months,
-      price,
-      total: price * months,
+      priceMinor,
+      totalMinor,
+      price: minorToMoney(priceMinor),
+      total: minorToMoney(totalMinor),
     };
   });
-  const monthlyTotal = lineItems.reduce((sum, item) => sum + item.price, 0);
-  const total = lineItems.reduce((sum, item) => sum + item.total, 0);
+  const monthlyTotalMinor = lineItems.filter((item) => item.pricingType === "monthly").reduce((sum, item) => sum + item.priceMinor, 0);
+  const totalMinor = lineItems.reduce((sum, item) => sum + item.totalMinor, 0);
   return {
     months: lineItems.reduce((max, item) => Math.max(max, item.months), 1),
-    monthlyTotal,
-    total,
+    monthlyTotalMinor,
+    totalMinor,
+    monthlyTotal: minorToMoney(monthlyTotalMinor),
+    total: minorToMoney(totalMinor),
     lineItems,
   };
 }
@@ -2230,12 +2317,12 @@ function renderPaymentSummary() {
     ? `${selectedFacilities.length} facilit${selectedFacilities.length === 1 ? "y" : "ies"} selected. Line totals add up to QAR ${total}.`
     : "Select activities to calculate the total.";
   if (reviewNote) reviewNote.textContent = selectedFacilities.length
-    ? lineItems.map((item) => `${item.name}: ${item.months} month${item.months === 1 ? "" : "s"} = QAR ${item.total}`).join(" | ")
+    ? lineItems.map((item) => item.pricingType === "monthly" ? `${item.name}: ${item.months} month${item.months === 1 ? "" : "s"} = ${item.currency} ${item.total}` : item.pricingType === "per_booking" ? `${item.name}: 1 booking = ${item.currency} ${item.total}` : `${item.name}: Free`).join(" | ")
     : "Your selected facilities and months will appear here.";
   if (summary) summary.innerHTML = selectedFacilities.length
     ? `
       <strong>Selected facilities</strong>
-      ${lineItems.map((item) => `<span>${escapeHtml(item.name)} - QAR ${item.price} x ${item.months} month${item.months === 1 ? "" : "s"} = QAR ${item.total}</span>`).join("")}
+      ${lineItems.map((item) => `<span>${escapeHtml(item.name)} - ${item.pricingType === "monthly" ? `${item.currency} ${item.price} x ${item.months} month${item.months === 1 ? "" : "s"} = ${item.currency} ${item.total}` : item.pricingType === "per_booking" ? `${item.currency} ${item.price} x 1 booking = ${item.currency} ${item.total}` : "Free"}</span>`).join("")}
       <small>Monthly base total: QAR ${monthlyTotal}</small>
     `
     : `<p class="empty">No facilities selected yet.</p>`;
@@ -2355,11 +2442,14 @@ function statusClass(status) {
 }
 
 function renderUserPaymentLines(user) {
+  if (Array.isArray(user.facilityPriceSnapshot) && user.facilityPriceSnapshot.length) {
+    return user.facilityPriceSnapshot.map((item) => `<span>${escapeHtml(item.facilityName)}: ${escapeHtml(item.currency || "QAR")} ${escapeHtml(item.unitPriceAtSubmission || "0.00")} x ${item.selectedMonths || item.bookingQuantity || 1} = ${escapeHtml(item.currency || "QAR")} ${escapeHtml(item.lineTotal || "0.00")}</span>`).join("");
+  }
   const facilities = getRequestedAccess(user);
   if (!facilities.length) return `<span>No selected facilities recorded.</span>`;
   return facilities.map((name) => {
     const months = Number(user.facilityMonths?.[name] || user.accessMonths || 1);
-    const price = getFacilityPrice(name);
+    const price = DEFAULT_MONTHLY_FACILITY_PRICE_QAR;
     return `<span>${escapeHtml(name)}: QAR ${price} x ${months} month${months === 1 ? "" : "s"} = QAR ${price * months}</span>`;
   }).join("");
 }
@@ -2656,7 +2746,7 @@ async function registerUser(event) {
     if (!contactNumber || contactNumber.length < 6) throw new Error("Enter your contact number.");
     if (!villaNumber || villaNumber.length < 2) throw new Error("Enter your villa number.");
     if (!requestedFacilities.length) throw new Error("Choose at least one activity.");
-    if (payment.total <= 0) throw new Error("Choose activities and months to calculate the payment total.");
+    if (!Number.isInteger(payment.totalMinor) || payment.totalMinor < 0) throw new Error("The facility pricing could not be calculated. Please try again.");
     if (!file) throw new Error("Upload a Qatar ID image or PDF.");
     if (!paymentFile) throw new Error("Upload the payment screenshot.");
     if (!isAllowedQidFile(file)) throw new Error("Qatar ID must be a JPG, PNG, or PDF file.");
@@ -2703,8 +2793,19 @@ async function registerUser(event) {
       dob: "",
       accessMonths: payment.months,
       facilityMonths: Object.fromEntries(requestedFacilities.map((name) => [name, getFacilityMonths(name)])),
+      facilityPriceSnapshot: payment.lineItems.map((item) => ({
+        facilityId: item.facilityId,
+        facilityName: item.name,
+        pricingType: item.pricingType,
+        unitPriceAtSubmission: item.price,
+        selectedMonths: item.pricingType === "monthly" ? item.months : undefined,
+        bookingQuantity: item.pricingType === "per_booking" ? 1 : undefined,
+        lineTotal: item.total,
+        currency: item.currency,
+      })),
       monthlyTotalQar: payment.monthlyTotal,
       totalQar: payment.total,
+      totalMinor: payment.totalMinor,
       applicationType: existingApproved ? "Renewal" : "New Application",
       renewalOf: existingApproved?.id || "",
       qatarId: {
@@ -2903,11 +3004,17 @@ function reviewDocumentCard(label, document, key, user) {
 }
 
 function renderFacilityPaymentRows(user) {
+  if (Array.isArray(user.facilityPriceSnapshot) && user.facilityPriceSnapshot.length) {
+    return user.facilityPriceSnapshot.map((item) => {
+      const quantity = item.pricingType === "monthly" ? `${item.selectedMonths || 1} month${Number(item.selectedMonths || 1) === 1 ? "" : "s"}` : item.pricingType === "per_booking" ? `${item.bookingQuantity || 1} booking` : "Free";
+      return `<div class="facility-payment-row"><strong>${escapeHtml(item.facilityName || "Facility")}</strong><span>${escapeHtml(quantity)}</span><span>${item.pricingType === "free" ? "Free" : `${escapeHtml(item.currency || "QAR")} ${escapeHtml(item.unitPriceAtSubmission || "0.00")}`}</span><b>${escapeHtml(item.currency || "QAR")} ${escapeHtml(item.lineTotal || "0.00")}</b></div>`;
+    }).join("");
+  }
   const requested = getRequestedAccess(user);
   if (!requested.length) return emptyState("No facilities requested", "This application does not contain facility selections.");
   return requested.map((name) => {
     const months = Number(user.facilityMonths?.[name] || user.accessMonths || 1);
-    const price = getFacilityPrice(name);
+    const price = DEFAULT_MONTHLY_FACILITY_PRICE_QAR;
     return `<div class="facility-payment-row"><strong>${escapeHtml(name)}</strong><span>${months} month${months === 1 ? "" : "s"}</span><span>QAR ${price}/month</span><b>QAR ${price * months}</b></div>`;
   }).join("");
 }
@@ -3184,6 +3291,7 @@ async function approveUser(userId) {
   approvalRecord.requestedFacilities = uniqueList([...(approvalRecord.requestedFacilities || []), ...getRequestedAccess(user)]);
   approvalRecord.accessFacilities = accessFacilities;
   approvalRecord.facilityMonths = { ...(approvalRecord.facilityMonths || {}), ...(user.facilityMonths || {}) };
+  approvalRecord.facilityPriceSnapshot = user.facilityPriceSnapshot || approvalRecord.facilityPriceSnapshot || [];
   approvalRecord.totalQar = user.totalQar || approvalRecord.totalQar || 0;
   approvalRecord.monthlyTotalQar = user.monthlyTotalQar || approvalRecord.monthlyTotalQar || 0;
   approvalRecord.accessMonths = user.accessMonths || approvalRecord.accessMonths || 12;
@@ -3389,32 +3497,65 @@ function calculateRenewalEndDate(target, request) {
   return toDateInputValue(addMonths(base, Number(request.accessMonths || 1)));
 }
 
-function loginAdmin(event) {
+async function loginAdmin(event) {
   event.preventDefault();
   const email = $("#admin-email").value.trim().toLowerCase();
   const password = $("#admin-password").value;
+  const submitButton = event.submitter || event.currentTarget.querySelector("button[type='submit']");
+  const message = $("#admin-login-message");
+  message.textContent = "";
 
+  if (!email) {
+    message.textContent = "Enter your email address.";
+    $("#admin-email").focus();
+    return;
+  }
   if (!isValidEmail(email)) {
-    $("#admin-login-message").textContent = "Enter a valid admin email address.";
+    message.textContent = "Enter a valid email address.";
+    $("#admin-email").focus();
     return;
   }
 
   if (!password) {
-    $("#admin-login-message").textContent = "Enter the admin password.";
+    message.textContent = "Enter your password.";
+    $("#admin-password").focus();
     return;
   }
 
-  if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
-    $("#admin-login-message").textContent = "Invalid admin email or password.";
-    return;
-  }
+  submitButton.disabled = true;
+  submitButton.textContent = "Signing in\u2026";
+  event.currentTarget.setAttribute("aria-busy", "true");
+  await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-  adminLoggedIn = true;
-  sessionStorage.setItem("facility-admin-auth", "true");
-  $("#admin-login-form").reset();
-  $("#admin-login-message").textContent = "";
-  render();
-  routeTo("/admin/dashboard", { replace: true });
+  try {
+    if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
+      message.textContent = "Unable to sign in with those details.";
+      return;
+    }
+
+    adminLoggedIn = true;
+    sessionStorage.setItem("facility-admin-auth", "true");
+    $("#admin-login-form").reset();
+    message.textContent = "";
+    render();
+    routeTo("/admin/dashboard", { replace: true });
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Sign in";
+    event.currentTarget.removeAttribute("aria-busy");
+  }
+}
+
+function toggleAdminPasswordVisibility() {
+  const input = $("#admin-password");
+  const button = $("#toggle-admin-password");
+  if (!input || !button) return;
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  button.textContent = show ? "Hide" : "Show";
+  button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+  button.setAttribute("aria-pressed", String(show));
+  input.focus();
 }
 
 function logoutAdmin() {
@@ -3431,21 +3572,37 @@ async function addFacility(event) {
   const location = normalizeName($("#facility-location").value);
   const timing = normalizeName($("#facility-timing").value);
   const days = normalizeName($("#facility-days").value);
-  const error = validateFacilityInput({ name, location, timing, days });
+  const pricing = {
+    pricingType: $("#facility-pricing-type").value,
+    monthlyPrice: $("#facility-monthly-price").value.trim(),
+    bookingPrice: $("#facility-booking-price").value.trim(),
+    currency: $("#facility-currency").value.trim().toUpperCase() || DEFAULT_CURRENCY,
+    minimumMonths: Number($("#facility-minimum-months").value || 1),
+    maximumMonths: Number($("#facility-maximum-months").value || 12),
+  };
+  const error = validateFacilityInput({ name, location, timing, days, ...pricing });
   if (error) {
+    if ($("#facility-pricing-error")) $("#facility-pricing-error").textContent = error;
     notify(error, "warning");
     return;
   }
+  if ($("#facility-pricing-error")) $("#facility-pricing-error").textContent = "";
 
   if (state.facilities.some((facility) => facility.name.toLowerCase() === name.toLowerCase())) {
     notify("This facility already exists.", "warning");
     return;
   }
 
-  const facility = { id: uid("facility"), name, location, timing, days, open: true };
+  const facility = { id: uid("facility"), name, location, timing, days, open: true, ...pricing };
   state.facilities.push(facility);
   await upsertDoc("facilities", facility);
   $("#facility-form").reset();
+  $("#facility-monthly-price").value = "100.00";
+  $("#facility-booking-price").value = "100.00";
+  $("#facility-currency").value = DEFAULT_CURRENCY;
+  $("#facility-minimum-months").value = "1";
+  $("#facility-maximum-months").value = "12";
+  updateFacilityPricingFields();
   $("#facility-form").dataset.open = "";
   saveState();
   render();
@@ -3461,7 +3618,15 @@ async function updateFacility(facilityId) {
   const nextLocation = normalizeName(fields.find((field) => field.dataset.facilityField === "location")?.value || "");
   const nextTiming = normalizeName(fields.find((field) => field.dataset.facilityField === "timing")?.value || "");
   const nextDays = normalizeName(fields.find((field) => field.dataset.facilityField === "days")?.value || "");
-  const error = validateFacilityInput({ name: nextName, location: nextLocation, timing: nextTiming, days: nextDays });
+  const pricing = {
+    pricingType: fields.find((field) => field.dataset.facilityField === "pricingType")?.value || "monthly",
+    monthlyPrice: fields.find((field) => field.dataset.facilityField === "monthlyPrice")?.value.trim() || "",
+    bookingPrice: fields.find((field) => field.dataset.facilityField === "bookingPrice")?.value.trim() || "",
+    currency: fields.find((field) => field.dataset.facilityField === "currency")?.value.trim().toUpperCase() || DEFAULT_CURRENCY,
+    minimumMonths: Number(fields.find((field) => field.dataset.facilityField === "minimumMonths")?.value || 1),
+    maximumMonths: Number(fields.find((field) => field.dataset.facilityField === "maximumMonths")?.value || 12),
+  };
+  const error = validateFacilityInput({ name: nextName, location: nextLocation, timing: nextTiming, days: nextDays, ...pricing });
   if (error) {
     notify(error, "warning");
     return;
@@ -3477,6 +3642,7 @@ async function updateFacility(facilityId) {
   facility.location = nextLocation;
   facility.timing = nextTiming;
   facility.days = nextDays;
+  Object.assign(facility, pricing);
   state.users.forEach((user) => {
     if (Array.isArray(user.accessFacilities)) {
       user.accessFacilities = user.accessFacilities.map((name) => name === previousName ? nextName : name);
@@ -3504,7 +3670,21 @@ function validateFacilityInput(facility) {
   if (!/(sun|mon|tue|wed|thu|fri|sat|booking)/i.test(facility.days)) {
     return "Days must include weekday names like SUN/MON/WED or 'As per booking'.";
   }
+  if (!["monthly", "per_booking", "free"].includes(facility.pricingType)) return "Choose a valid pricing type.";
+  if (!/^[A-Z]{3}$/.test(facility.currency || "")) return "Currency must use a three-letter code such as QAR.";
+  if (facility.pricingType === "monthly" && Number.isNaN(moneyToMinor(facility.monthlyPrice))) return "Enter a valid non-negative monthly price with no more than two decimal places.";
+  if (facility.pricingType === "per_booking" && Number.isNaN(moneyToMinor(facility.bookingPrice))) return "Enter a valid non-negative booking price with no more than two decimal places.";
+  if (!Number.isInteger(facility.minimumMonths) || facility.minimumMonths < 1) return "Minimum months must be at least 1.";
+  if (!Number.isInteger(facility.maximumMonths) || facility.maximumMonths < facility.minimumMonths) return "Maximum months cannot be less than minimum months.";
   return "";
+}
+
+function updateFacilityPricingFields() {
+  const type = $("#facility-pricing-type")?.value || "monthly";
+  $$('[data-pricing-field]').forEach((field) => {
+    field.hidden = field.dataset.pricingField !== type;
+  });
+  if ($("#facility-pricing-error")) $("#facility-pricing-error").textContent = "";
 }
 
 async function deleteFacility(facilityId) {
@@ -4189,11 +4369,13 @@ $("#admin-header-search")?.addEventListener("input", updateAdminHeaderSearch);
 $("#admin-header-date")?.addEventListener("change", applyAdminHeaderDate);
 $("#admin-date-range")?.addEventListener("change", (event) => applyAdminDateRange(event.target.value));
 $("#admin-login-form").addEventListener("submit", loginAdmin);
+$("#toggle-admin-password")?.addEventListener("click", toggleAdminPasswordVisibility);
 $("#admin-logout").addEventListener("click", logoutAdmin);
 $("#admin-logout-menu")?.addEventListener("click", logoutAdmin);
 $("#scanner-pin-form").addEventListener("submit", unlockScanner);
 $("#scanner-lock").addEventListener("click", lockScanner);
 $("#facility-form").addEventListener("submit", addFacility);
+$("#facility-pricing-type")?.addEventListener("change", updateFacilityPricingFields);
 $("#copy-auto-scanner").addEventListener("click", copyScannerLink);
 $("#report-period").addEventListener("change", (event) => setReportPeriod(event.target.value));
 $("#export-report-pdf").addEventListener("click", exportReportPdf);
@@ -4276,6 +4458,12 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-verification-check]")) {
     captureReviewDraft();
     reviewVerificationProgress();
+  }
+  if (event.target.matches('[data-facility-field="pricingType"]')) {
+    const fieldset = event.target.closest(".facility-edit-pricing");
+    fieldset?.querySelectorAll("[data-edit-pricing-field]").forEach((field) => {
+      field.hidden = field.dataset.editPricingField !== event.target.value;
+    });
   }
 });
 document.addEventListener("input", (event) => {
