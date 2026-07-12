@@ -552,6 +552,21 @@
                   <h2>Export reports</h2>
                 </div>
                 <div id="report-card-list" class="report-card-list"></div>
+                <section class="account-report" aria-labelledby="account-report-title">
+                  <div class="account-report-heading">
+                    <div><p class="eyebrow">Accounts</p><h2 id="account-report-title">Payment accounts</h2><p class="helper-text">Monthly revenue and resident payment records in QAR.</p></div>
+                    <div class="account-report-actions"><button type="button" id="export-account-csv">Export CSV</button><button type="button" id="export-account-pdf" class="primary">Export PDF</button></div>
+                  </div>
+                  <div id="account-summary-cards" class="account-summary-cards"></div>
+                  <div class="account-report-grid">
+                    <article class="account-chart-card"><div class="account-card-heading"><h3>Monthly revenue</h3><label>Year<select id="account-year-filter" aria-label="Revenue year"></select></label></div><div id="monthly-revenue-chart" class="monthly-revenue-chart"></div></article>
+                    <article class="account-daily-card"><h3>Current activity</h3><div id="account-daily-summary"></div></article>
+                  </div>
+                  <div class="account-payment-section">
+                    <div class="account-card-heading"><div><h3>User payment details</h3><p class="helper-text">Qatar ID numbers are masked for privacy.</p></div><div class="account-payment-filters"><label>Status<select id="account-status-filter"><option value="all">All statuses</option><option value="Verified">Verified</option><option value="Pending verification">Pending</option><option value="Rejected">Rejected</option></select></label><label>Search<input id="account-search" type="search" placeholder="Name, contact or reference" /></label></div></div>
+                    <div id="account-payment-table"></div>
+                  </div>
+                </section>
               </section>
             </section>
 

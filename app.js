@@ -22,6 +22,7 @@ const REPORT_PAGE_SIZE = 8;
 const PAYMENT_PAGE_SIZE = 6;
 const RESIDENT_PAGE_SIZE = 6;
 const FACILITY_PAGE_SIZE = 6;
+const ACCOUNT_PAGE_SIZE = 8;
 const NOTIFICATION_PAGE_SIZE = 8;
 const APPLICATION_REVIEW_STATUSES = ["Pending", "Renewal Pending"];
 const RESIDENT_STATUSES = ["Approved", "Suspended"];
@@ -89,6 +90,10 @@ let reportPage = 1;
 let paymentPage = 1;
 let residentPage = 1;
 let facilityPage = 1;
+let accountPage = 1;
+let accountStatusFilter = "all";
+let accountSearchQuery = "";
+let accountReportYear = new Date().getFullYear();
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
 let exceptionReasonFilter = "all";
@@ -553,6 +558,7 @@ function render() {
   renderApprovedResidents();
   renderPaymentSummaryCards();
   renderReportCards();
+  renderAccountReport();
   renderSettingsSections();
   renderFilterOptions();
   enhanceAdminIcons();
@@ -1337,6 +1343,77 @@ function renderReportCards() {
       ${action === "payment-export" ? `<button type="button" data-export-payment-report>Export payment report</button>` : `<button type="button" data-admin-section="${section}">Open Check-in Logs</button>`}
     </article>
   `).join("");
+}
+
+function maskAccountQid(value) {
+  const qid = String(value || "");
+  return qid ? `${"•".repeat(Math.max(0, qid.length - 4))}${qid.slice(-4)}` : "-";
+}
+
+function getAccountPayments() {
+  return getPaymentReviewRecords().filter((user) => {
+    const payment = getPaymentStatus(user);
+    const query = accountSearchQuery.toLowerCase();
+    const matchesStatus = accountStatusFilter === "all" || payment.label === accountStatusFilter;
+    const matchesSearch = !query || [user.fullName, user.contactNumber, user.email, user.id].some((value) => String(value || "").toLowerCase().includes(query));
+    return matchesStatus && matchesSearch;
+  });
+}
+
+function getPaymentDuration(user) {
+  const monthlyItems = (user.facilityPriceSnapshot || []).filter((item) => item.pricingType === "monthly");
+  const months = monthlyItems.length ? Math.max(...monthlyItems.map((item) => Number(item.selectedMonths || 1))) : Number(user.accessMonths || 0);
+  if (months) return `${months} month${months === 1 ? "" : "s"}`;
+  return (user.facilityPriceSnapshot || []).some((item) => item.pricingType === "per_booking") ? "Per booking" : "-";
+}
+
+function renderAccountReport() {
+  const summary = $("#account-summary-cards");
+  const chart = $("#monthly-revenue-chart");
+  const daily = $("#account-daily-summary");
+  const table = $("#account-payment-table");
+  const yearFilter = $("#account-year-filter");
+  if (!summary || !chart || !daily || !table || !yearFilter) return;
+  const allPayments = getPaymentReviewRecords();
+  const years = [...new Set([new Date().getFullYear(), ...allPayments.map((user) => new Date(user.approvedAt || user.createdAt).getFullYear()).filter(Number.isFinite)])].sort((a, b) => b - a);
+  yearFilter.innerHTML = years.map((year) => `<option value="${year}" ${year === accountReportYear ? "selected" : ""}>${year}</option>`).join("");
+  if (!years.includes(accountReportYear)) accountReportYear = years[0];
+  const verified = allPayments.filter((user) => ["Approved", "Renewal Approved"].includes(user.status));
+  const totalRevenue = verified.reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
+  const now = new Date();
+  const monthRevenue = verified.filter((user) => { const date = new Date(user.approvedAt || user.createdAt); return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth(); }).reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
+  const pending = allPayments.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
+  summary.innerHTML = [summaryCard("Total revenue", `QAR ${totalRevenue.toFixed(2)}`, "Verified payments"), summaryCard("This month", `QAR ${monthRevenue.toFixed(2)}`, "Approved this month"), summaryCard("Paid users", verified.length, "Verified accounts"), summaryCard("Pending payments", pending, "Need manager review")].join("");
+  const monthly = Array(12).fill(0);
+  verified.forEach((user) => { const date = new Date(user.approvedAt || user.createdAt); if (date.getFullYear() === accountReportYear) monthly[date.getMonth()] += Number(user.totalQar || 0); });
+  const maxRevenue = Math.max(...monthly, 1);
+  chart.innerHTML = monthly.map((amount, month) => `<div class="monthly-revenue-row"><span>${new Intl.DateTimeFormat("en-QA", { month: "short" }).format(new Date(2024, month, 1))}</span><div><i style="width:${Math.max(amount ? 4 : 0, amount / maxRevenue * 100)}%"></i></div><strong>QAR ${amount.toFixed(2)}</strong></div>`).join("");
+  const todayKey = now.toDateString();
+  const todayPayments = allPayments.filter((user) => new Date(user.createdAt).toDateString() === todayKey);
+  daily.innerHTML = `<dl><div><dt>Applications today</dt><dd>${todayPayments.length}</dd></div><div><dt>Paid users today</dt><dd>${todayPayments.filter((user) => getPaymentStatus(user).label === "Verified").length}</dd></div><div><dt>Pending today</dt><dd>${todayPayments.filter((user) => getPaymentStatus(user).label === "Pending verification").length}</dd></div><div><dt>Active residents</dt><dd>${state.users.filter((user) => user.status === "Approved").length}</dd></div></dl>`;
+  const payments = getAccountPayments();
+  const totalPages = Math.max(1, Math.ceil(payments.length / ACCOUNT_PAGE_SIZE));
+  accountPage = Math.min(accountPage, totalPages);
+  const start = (accountPage - 1) * ACCOUNT_PAGE_SIZE;
+  const pageRows = payments.slice(start, start + ACCOUNT_PAGE_SIZE);
+  table.innerHTML = pageRows.length ? `<div class="account-table-wrap"><table class="account-table"><thead><tr><th>Name</th><th>QID</th><th>Contact</th><th>Paid amount</th><th>Duration</th><th>Status</th><th>Submitted</th></tr></thead><tbody>${pageRows.map((user) => { const payment = getPaymentStatus(user); return `<tr><td><strong>${escapeHtml(user.fullName || "Applicant")}</strong><small>Ref ${escapeHtml(String(user.id).slice(-8))}</small></td><td>${escapeHtml(maskAccountQid(user.qidNumber))}</td><td>${escapeHtml(user.contactNumber || "-")}</td><td><strong>${escapeHtml(payment.amountLabel)}</strong></td><td>${escapeHtml(getPaymentDuration(user))}</td><td><span class="status ${payment.className}">${escapeHtml(payment.label)}</span></td><td>${escapeHtml(formatDateTime(user.createdAt, "date"))}</td></tr>`; }).join("")}</tbody></table></div><div class="account-pagination"><button type="button" data-account-page="prev" ${accountPage === 1 ? "disabled" : ""}>Previous</button><span>${start + 1}-${Math.min(start + pageRows.length, payments.length)} of ${payments.length} payments</span><button type="button" data-account-page="next" ${accountPage === totalPages ? "disabled" : ""}>Next</button></div>` : emptyState("No matching payments", "Change the filters or wait for submitted payment records.");
+}
+
+function changeAccountPage(direction) {
+  const pages = Math.max(1, Math.ceil(getAccountPayments().length / ACCOUNT_PAGE_SIZE));
+  accountPage = direction === "next" ? Math.min(accountPage + 1, pages) : Math.max(accountPage - 1, 1);
+  renderAccountReport();
+}
+
+function exportAccountCsv() {
+  const headers = ["Name", "QID (masked)", "Contact", "Paid amount QAR", "Duration", "Status", "Submitted", "Reference"];
+  const rows = getAccountPayments().map((user) => [user.fullName || "Applicant", maskAccountQid(user.qidNumber), user.contactNumber || "-", Number(user.totalQar || 0).toFixed(2), getPaymentDuration(user), getPaymentStatus(user).label, formatDateTime(user.createdAt, "date"), String(user.id).slice(-8)]);
+  const csv = [headers, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  link.download = `payment-accounts-${accountReportYear}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }
 
 function renderSettingsSections() {
@@ -4407,6 +4484,7 @@ document.addEventListener("click", (event) => {
   const paymentPageButton = event.target.closest("[data-payment-page]");
   const residentPageButton = event.target.closest("[data-resident-page]");
   const notificationPageButton = event.target.closest("[data-notification-page]");
+  const accountPageButton = event.target.closest("[data-account-page]");
   const facilityPageButton = event.target.closest("[data-facility-page]");
   const markNotificationReadButton = event.target.closest("[data-mark-notification-read]");
   const markAllNotificationsReadButton = event.target.closest("[data-mark-all-notifications-read]");
@@ -4477,6 +4555,7 @@ document.addEventListener("click", (event) => {
   if (paymentPageButton) changePaymentPage(paymentPageButton.dataset.paymentPage);
   if (residentPageButton) changeResidentPage(residentPageButton.dataset.residentPage);
   if (notificationPageButton) changeNotificationPage(notificationPageButton.dataset.notificationPage);
+  if (accountPageButton) changeAccountPage(accountPageButton.dataset.accountPage);
   if (facilityPageButton) changeFacilityPage(facilityPageButton.dataset.facilityPage);
   if (markNotificationReadButton) markNotificationRead(markNotificationReadButton.dataset.markNotificationRead);
   if (markAllNotificationsReadButton) markAllNotificationsRead();
@@ -4560,6 +4639,24 @@ $("#notification-type-filter")?.addEventListener("change", (event) => {
   notificationPage = 1;
   renderEmailOutbox();
 });
+$("#account-year-filter")?.addEventListener("change", (event) => {
+  accountReportYear = Number(event.target.value) || new Date().getFullYear();
+  accountPage = 1;
+  renderAccountReport();
+});
+$("#account-status-filter")?.addEventListener("change", (event) => {
+  accountStatusFilter = event.target.value || "all";
+  accountPage = 1;
+  renderAccountReport();
+});
+$("#account-search")?.addEventListener("input", (event) => {
+  accountSearchQuery = event.target.value.trim();
+  accountPage = 1;
+  renderAccountReport();
+  $("#account-search")?.focus();
+});
+$("#export-account-csv")?.addEventListener("click", exportAccountCsv);
+$("#export-account-pdf")?.addEventListener("click", exportPaymentReport);
 $("#from-date").addEventListener("change", () => {
   $("#report-period").value = "custom";
   reportPage = 1;
