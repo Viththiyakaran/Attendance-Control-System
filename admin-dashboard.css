@@ -2043,12 +2043,18 @@
 .admin-page[data-admin-page="users"] .manual-resident-facilities input[type="checkbox"] { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--dashboard-green); }
 .admin-page[data-admin-page="users"] .manual-resident-facilities label span { display: grid; gap: 3px; color: var(--dashboard-text); }
 .admin-page[data-admin-page="users"] .manual-resident-facilities small { color: var(--dashboard-muted); font-weight: 700; }
-.admin-page[data-admin-page="users"] .manual-booking-quantity { grid-template-columns: auto 76px !important; align-items: center; justify-content: end; color: var(--dashboard-muted) !important; font-size: .72rem !important; }
-.admin-page[data-admin-page="users"] .manual-booking-quantity input { min-height: 36px !important; padding: 6px 8px; }
+.admin-page[data-admin-page="users"] .manual-quantity-control { display: grid; grid-template-columns: minmax(0, 1fr) 36px minmax(92px, auto) 36px; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid var(--dashboard-border); }
+.admin-page[data-admin-page="users"] .manual-quantity-control[hidden] { display: none; }
+.admin-page[data-admin-page="users"] .manual-quantity-control > span { color: var(--dashboard-muted); font-size: .72rem; font-weight: 800; }
+.admin-page[data-admin-page="users"] .manual-quantity-control button { min-height: 36px; padding: 0; border-color: rgba(8, 130, 104, .28); color: var(--dashboard-green); font-size: 1rem; font-weight: 900; }
+.admin-page[data-admin-page="users"] .manual-quantity-control output { display: grid; place-items: center; min-height: 36px; padding: 0 8px; border: 1px solid var(--dashboard-border); border-radius: 8px; background: #fff; color: var(--dashboard-text); font-size: .76rem; font-weight: 900; white-space: nowrap; }
+.admin-page[data-admin-page="users"] .manual-quantity-control button:disabled { cursor: not-allowed; opacity: .35; }
 .admin-page[data-admin-page="users"] .manual-payment-calculation { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--dashboard-border); border-radius: 12px; background: #f7faf8; }
 .admin-page[data-admin-page="users"] .manual-payment-calculation > .helper-text { margin: 0; }
 .admin-page[data-admin-page="users"] .manual-calculation-lines { display: grid; gap: 8px; }
 .admin-page[data-admin-page="users"] .manual-calculation-lines > span { display: grid; grid-template-columns: minmax(0, 1fr) minmax(145px, auto) 82px; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--dashboard-border); }
+.admin-page[data-admin-page="users"] .manual-calculation-lines strong { display: grid; gap: 2px; }
+.admin-page[data-admin-page="users"] .manual-calculation-lines strong small { text-align: left; font-size: .7rem; font-weight: 700; }
 .admin-page[data-admin-page="users"] .manual-calculation-lines small { color: var(--dashboard-muted); text-align: right; }
 .admin-page[data-admin-page="users"] .manual-calculation-lines b { color: var(--dashboard-green); text-align: right; }
 .admin-page[data-admin-page="users"] .manual-calculation-total { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -2069,6 +2075,7 @@
 .admin-page[data-admin-page="users"] .manual-send-email { display: flex !important; grid-template-columns: none; flex-direction: row; align-items: center; gap: 10px !important; color: var(--dashboard-text) !important; }
 .admin-page[data-admin-page="users"] .manual-send-email input { flex: 0 0 18px; width: 18px; height: 18px; accent-color: var(--dashboard-green); }
 .admin-page[data-admin-page="users"] #manual-resident-message { min-height: 20px; margin: 0; color: #b42318; font-weight: 750; }
+.admin-page[data-admin-page="users"] #manual-resident-submit:disabled { cursor: not-allowed; opacity: .48; }
 body.manual-resident-open { overflow: hidden; }
 
 @media (max-width: 700px) {

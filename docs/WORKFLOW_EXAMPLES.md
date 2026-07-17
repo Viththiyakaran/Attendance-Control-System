@@ -162,11 +162,11 @@ The current application implements/logs submission, renewal receipt, approval/QR
 
 ## Scenario 8: Manager creates assisted access
 
-If Ahmed cannot use the public form, the manager opens **Users / Residents**, selects **Add resident**, verifies Ahmed's identity directly, and enters his details. The manager selects the approved facilities and access dates, records a verified payment or complimentary-access reason, and provides an internal explanation for creating the record manually.
+If Ahmed cannot use the public form, the manager opens **Users / Residents**, selects **Add resident**, verifies Ahmed's identity directly, and enters his details. The manager selects a common access start date, chooses each approved facility, and uses its minus/plus control to set the duration or booking quantity. For example, Gym can be 1 month while Swimming Pool is 3 months.
 
-The system calculates monthly facility prices from the access period and multiplies per-booking prices by the entered booking quantity. The manager enters the paid amount, which must match the calculated total, and completes the required Qatar ID and payment verification checks. Complimentary access bypasses the payment match but still requires an internal reason. Optional evidence files can be saved with the record.
+The system calculates each monthly line from its own duration and multiplies per-booking prices by the entered booking quantity. At QAR 100 per month, Gym for 1 month plus Swimming Pool for 3 months produces QAR 400. The manager enters the paid amount, which must match the calculated total, and completes the required Qatar ID and payment verification checks. Complimentary access bypasses the payment match but still requires an internal reason. Optional evidence files can be saved with the record.
 
-The system blocks duplicate Qatar IDs and email addresses. After confirmation it creates an approved resident record, generates a QR token, records that the manager created the access, and optionally emails the QR pass to Ahmed. The QR follows the same facility, status, schedule, and expiry checks as a QR created from a public application.
+The system blocks duplicate Qatar IDs and email addresses. After confirmation it creates an approved resident record, generates one QR token, records that the manager created the access, and optionally emails the QR pass to Ahmed. The scanner checks the selected facility's individual expiry: after Gym expires, the same QR is denied at Gym but remains valid at Swimming Pool until its later expiry.
 
 ## When a new QR is required
 

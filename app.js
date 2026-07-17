@@ -201,6 +201,7 @@ function normalizeAppDoc(collectionName, item) {
       totalQar: String(item.totalQar ?? item.total_qar ?? "0.00"),
       accessStartAt: item.accessStartAt || item.access_start_date || "",
       accessEndAt: item.accessEndAt || item.access_end_date || "",
+      facilityAccessPeriods: item.facilityAccessPeriods || item.facility_access_periods || [],
       token: item.token || item.access_token || "",
       createdAt: item.createdAt || item.created_at || "",
       qatarId: item.qatarId || (item.qid_file_url ? {
@@ -815,7 +816,7 @@ function renderApprovedResidents() {
   const approved = residents.filter((user) => user.status === "Approved");
   const active = approved.filter(isMembershipActive).length;
   const expired = approved.filter((user) => !isMembershipActive(user)).length;
-  const expiringSoon = approved.filter((user) => daysUntil(user.accessEndAt) <= 30 && daysUntil(user.accessEndAt) >= 0).length;
+  const expiringSoon = approved.filter((user) => getUserAccessPeriods(user).some((period) => daysUntil(period.accessEndAt) <= 30 && daysUntil(period.accessEndAt) >= 0)).length;
   const suspended = residents.filter((user) => /suspend/i.test(user.status || "")).length;
 
   if (summary) {
@@ -872,7 +873,17 @@ function renderManualResidentFacilities() {
   container.innerHTML = facilities.length
     ? facilities.map((facility) => {
       const pricing = normalizeFacilityPricing(facility);
-      return `<div class="manual-facility-option"><label><input type="checkbox" name="manualFacility" value="${escapeHtml(facility.name)}" /><span><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><small>${escapeHtml(getFacilityPriceLabel(facility))}</small></span></label>${pricing.pricingType === "per_booking" ? `<label class="manual-booking-quantity">Bookings<input type="number" min="1" max="99" value="1" data-manual-booking-quantity="${escapeHtml(facility.name)}" disabled /></label>` : ""}</div>`;
+      const quantityType = pricing.pricingType === "monthly" ? "month" : pricing.pricingType === "per_booking" ? "booking" : "";
+      const minimum = pricing.pricingType === "monthly" ? pricing.minimumMonths : 1;
+      const maximum = pricing.pricingType === "monthly" ? pricing.maximumMonths : 99;
+      const quantityControl = quantityType ? `<div class="manual-quantity-control" data-manual-quantity-control="${escapeHtml(facility.name)}" hidden>
+        <span>${quantityType === "month" ? "Duration" : "Bookings"}</span>
+        <button type="button" data-manual-quantity-delta="-1" data-manual-quantity-name="${escapeHtml(facility.name)}" aria-label="Decrease ${escapeHtml(displayFacilityName(facility.name))} ${quantityType}s">-</button>
+        <output data-manual-quantity-output="${escapeHtml(facility.name)}">${minimum} ${quantityType}${minimum === 1 ? "" : "s"}</output>
+        <button type="button" data-manual-quantity-delta="1" data-manual-quantity-name="${escapeHtml(facility.name)}" aria-label="Increase ${escapeHtml(displayFacilityName(facility.name))} ${quantityType}s">+</button>
+        <input type="hidden" value="${minimum}" min="${minimum}" max="${maximum}" data-manual-quantity="${escapeHtml(facility.name)}" data-manual-quantity-type="${quantityType}" />
+      </div>` : "";
+      return `<div class="manual-facility-option"><label><input type="checkbox" name="manualFacility" value="${escapeHtml(facility.name)}" /><span><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><small>${escapeHtml(getFacilityPriceLabel(facility))}</small></span></label>${quantityControl}</div>`;
     }).join("")
     : emptyState("No active facilities", "Enable a facility before creating resident access.");
 }
@@ -884,7 +895,7 @@ function openManualResidentDrawer() {
   form.reset();
   const today = new Date();
   $("#manual-resident-start").value = toDateInputValue(today);
-  $("#manual-resident-end").value = toDateInputValue(addYears(today, 1));
+  $("#manual-resident-end").value = "";
   $("#manual-resident-send-email").checked = true;
   $("#manual-resident-message").textContent = "";
   renderManualResidentFacilities();
@@ -925,36 +936,54 @@ function syncManualResidentPaymentFields() {
   if (complimentary && $("#manual-payment-evidence")) $("#manual-payment-evidence").value = "";
 }
 
-function manualAccessMonths(startValue, endValue) {
-  const start = new Date(`${startValue}T00:00:00`);
-  const end = new Date(`${endValue}T00:00:00`);
-  const monthDifference = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
-  return Math.max(1, monthDifference + (end.getDate() >= start.getDate() ? 0 : -1));
-}
-
 function getManualSelectedFacilities() {
   return [...document.querySelectorAll('#manual-resident-facilities input[name="manualFacility"]:checked')].map((input) => input.value);
 }
 
-function getManualBookingQuantity(name) {
-  const input = [...document.querySelectorAll("[data-manual-booking-quantity]")].find((item) => item.dataset.manualBookingQuantity === name);
-  return Math.max(1, Math.min(99, Number(input?.value || 1)));
+function getManualFacilityQuantity(name, pricing = normalizeFacilityPricing()) {
+  const input = [...document.querySelectorAll("[data-manual-quantity]")].find((item) => item.dataset.manualQuantity === name);
+  const minimum = pricing.pricingType === "monthly" ? pricing.minimumMonths : 1;
+  const maximum = pricing.pricingType === "monthly" ? pricing.maximumMonths : 99;
+  return Math.min(maximum, Math.max(minimum, Number(input?.value || minimum)));
+}
+
+function calculateFacilityAccessEnd(startValue, months) {
+  if (!startValue) return "";
+  const start = new Date(`${startValue}T00:00:00`);
+  const day = start.getDate();
+  const end = new Date(start);
+  end.setDate(1);
+  end.setMonth(end.getMonth() + Math.max(1, Number(months || 1)));
+  const lastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+  end.setDate(Math.min(day, lastDay));
+  return toDateInputValue(end);
+}
+
+function changeManualFacilityQuantity(name, delta) {
+  const input = [...document.querySelectorAll("[data-manual-quantity]")].find((item) => item.dataset.manualQuantity === name);
+  if (!input || input.disabled) return;
+  const minimum = Number(input.min || 1);
+  const maximum = Number(input.max || 99);
+  input.value = String(Math.min(maximum, Math.max(minimum, Number(input.value || minimum) + Number(delta))));
+  updateManualResidentCalculation();
 }
 
 function calculateManualResidentTotal() {
   const accessStartAt = $("#manual-resident-start")?.value || "";
-  const accessEndAt = $("#manual-resident-end")?.value || "";
-  const months = accessStartAt && accessEndAt ? manualAccessMonths(accessStartAt, accessEndAt) : 1;
   const lineItems = getManualSelectedFacilities().map((name) => {
     const facility = state.facilities.find((item) => String(item.name).trim().toLowerCase() === name.trim().toLowerCase());
     const pricing = normalizeFacilityPricing(facility);
     const unitMinor = pricing.pricingType === "free" ? 0 : moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice);
-    const quantity = pricing.pricingType === "monthly" ? months : pricing.pricingType === "per_booking" ? getManualBookingQuantity(name) : 1;
-    return { facility, name, pricing, unitMinor, quantity, totalMinor: unitMinor * quantity };
+    const quantity = pricing.pricingType === "free" ? 1 : getManualFacilityQuantity(name, pricing);
+    const validityMonths = pricing.pricingType === "monthly" ? quantity : 1;
+    return { facility, name, pricing, unitMinor, quantity, totalMinor: unitMinor * quantity, accessStartAt, accessEndAt: calculateFacilityAccessEnd(accessStartAt, validityMonths) };
   });
+  const monthlyQuantities = lineItems.filter((item) => item.pricing.pricingType === "monthly").map((item) => item.quantity);
+  const overallAccessEndAt = lineItems.map((item) => item.accessEndAt).filter(Boolean).sort().at(-1) || "";
   return {
-    months,
+    months: monthlyQuantities.length ? Math.max(...monthlyQuantities) : 1,
     lineItems,
+    overallAccessEndAt,
     totalMinor: lineItems.reduce((sum, item) => sum + item.totalMinor, 0),
     monthlyTotalMinor: lineItems.filter((item) => item.pricing.pricingType === "monthly").reduce((sum, item) => sum + item.unitMinor, 0),
   };
@@ -968,14 +997,29 @@ function updateManualResidentCalculation() {
   const paidMinor = paymentType === "complimentary" ? 0 : moneyToMinor(paidInput?.value || "");
   const paymentMatches = paymentType === "complimentary" || (!Number.isNaN(paidMinor) && paidMinor === calculation.totalMinor);
 
-  $$('[data-manual-booking-quantity]').forEach((input) => {
-    const selected = calculation.lineItems.some((item) => item.name === input.dataset.manualBookingQuantity);
-    input.disabled = !selected;
+  $$('[data-manual-quantity]').forEach((input) => {
+    const name = input.dataset.manualQuantity;
+    const lineItem = calculation.lineItems.find((item) => item.name === name);
+    const selectedForQuantity = Boolean(lineItem);
+    input.disabled = !selectedForQuantity;
+    const control = input.closest("[data-manual-quantity-control]");
+    if (control) control.hidden = !selectedForQuantity;
+    const output = [...document.querySelectorAll("[data-manual-quantity-output]")].find((item) => item.dataset.manualQuantityOutput === name);
+    if (output) {
+      const quantity = Number(input.value || input.min || 1);
+      const unit = input.dataset.manualQuantityType || "item";
+      output.textContent = `${quantity} ${unit}${quantity === 1 ? "" : "s"}`;
+    }
+    control?.querySelector('[data-manual-quantity-delta="-1"]')?.toggleAttribute("disabled", Number(input.value) <= Number(input.min));
+    control?.querySelector('[data-manual-quantity-delta="1"]')?.toggleAttribute("disabled", Number(input.value) >= Number(input.max));
   });
+
+  const overallEnd = $("#manual-resident-end");
+  if (overallEnd) overallEnd.value = calculation.overallAccessEndAt;
 
   if (container) {
     container.innerHTML = calculation.lineItems.length
-      ? `<div class="manual-calculation-lines">${calculation.lineItems.map((item) => `<span><strong>${escapeHtml(displayFacilityName(item.name))}</strong><small>${item.pricing.pricingType === "monthly" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} month${item.quantity === 1 ? "" : "s"}` : item.pricing.pricingType === "per_booking" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} booking${item.quantity === 1 ? "" : "s"}` : "Free"}</small><b>${formatMoney(item.totalMinor, item.pricing.currency)}</b></span>`).join("")}</div><div class="manual-calculation-total"><span>Calculated total</span><strong>${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}</strong></div><p class="manual-payment-match ${paymentMatches ? "is-match" : "is-mismatch"}">${paymentType === "complimentary" ? "Complimentary access - payment is not required." : paidInput?.value ? paymentMatches ? "Paid amount matches the calculated total." : `Paid amount does not match ${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}.` : "Enter the paid amount to verify it against the total."}</p>`
+      ? `<div class="manual-calculation-lines">${calculation.lineItems.map((item) => `<span><strong>${escapeHtml(displayFacilityName(item.name))}<small>Expires ${escapeHtml(formatAppDate(item.accessEndAt))}</small></strong><small>${item.pricing.pricingType === "monthly" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} month${item.quantity === 1 ? "" : "s"}` : item.pricing.pricingType === "per_booking" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} booking${item.quantity === 1 ? "" : "s"}` : "Free"}</small><b>${formatMoney(item.totalMinor, item.pricing.currency)}</b></span>`).join("")}</div><div class="manual-calculation-total"><span>Calculated total</span><strong>${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}</strong></div><p class="manual-payment-match ${paymentMatches ? "is-match" : "is-mismatch"}">${paymentType === "complimentary" ? "Complimentary access - payment is not required." : paidInput?.value ? paymentMatches ? "Paid amount matches the calculated total." : `Paid amount does not match ${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}.` : "Enter the paid amount to verify it against the total."}</p>`
       : `<p class="helper-text">Select facilities to calculate the expected payment.</p>`;
   }
   updateManualResidentReadiness(calculation, paymentMatches);
@@ -987,8 +1031,9 @@ function updateManualResidentReadiness(calculation = calculateManualResidentTota
   const matches = typeof paymentMatches === "boolean" ? paymentMatches : paymentType === "complimentary" || (!Number.isNaN(paidMinor) && paidMinor === calculation.totalMinor);
   const qidChecks = $("#manual-qid-inspected")?.checked && $("#manual-qid-matches")?.checked;
   const paymentChecks = paymentType === "complimentary" || ($("#manual-payment-inspected")?.checked && $("#manual-payment-matches")?.checked);
+  const accessDatesReady = Boolean($("#manual-resident-start")?.value) && calculation.lineItems.every((item) => item.accessStartAt && item.accessEndAt);
   const submit = $("#manual-resident-submit");
-  if (submit) submit.disabled = manualResidentBusy || !calculation.lineItems.length || !matches || !qidChecks || !paymentChecks;
+  if (submit) submit.disabled = manualResidentBusy || !calculation.lineItems.length || !accessDatesReady || !matches || !qidChecks || !paymentChecks;
 }
 
 function validateOptionalEvidence(file, label) {
@@ -1014,7 +1059,6 @@ async function createManualResident(event) {
   const contactNumber = normalizeName($("#manual-resident-contact").value);
   const villaNumber = normalizeName($("#manual-resident-address").value);
   const accessStartAt = $("#manual-resident-start").value;
-  const accessEndAt = $("#manual-resident-end").value;
   const accessFacilities = getManualSelectedFacilities();
   const paymentType = $("#manual-resident-payment-type").value;
   const reason = normalizeName($("#manual-resident-reason").value);
@@ -1023,6 +1067,7 @@ async function createManualResident(event) {
   const qidEvidenceFile = $("#manual-qid-evidence").files[0];
   const paymentEvidenceFile = $("#manual-payment-evidence").files[0];
   const calculation = calculateManualResidentTotal();
+  const accessEndAt = calculation.overallAccessEndAt;
 
   try {
     if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter the resident's full name.");
@@ -1031,7 +1076,7 @@ async function createManualResident(event) {
     if (!isPastDate(dob)) throw new Error("Date of birth must be a valid past date.");
     if (contactNumber.length < 6) throw new Error("Enter a valid contact number.");
     if (villaNumber.length < 2) throw new Error("Enter the resident's villa or address.");
-    if (!accessStartAt || !accessEndAt || new Date(`${accessEndAt}T23:59:59`) < new Date(`${accessStartAt}T00:00:00`)) throw new Error("Access expiry must be on or after the start date.");
+    if (!accessStartAt || !accessEndAt) throw new Error("Select an access start date and at least one facility duration.");
     if (!accessFacilities.length) throw new Error("Select at least one facility.");
     if (!Number.isInteger(calculation.totalMinor) || calculation.totalMinor < 0) throw new Error("One or more facility prices are invalid. Review facility pricing before creating access.");
     if (paymentType !== "complimentary" && (Number.isNaN(amountMinor) || amountMinor < 0)) throw new Error("Enter a valid non-negative paid amount with no more than two decimal places.");
@@ -1067,12 +1112,19 @@ async function createManualResident(event) {
       selectedMonths: item.pricing.pricingType === "monthly" ? item.quantity : undefined,
       bookingQuantity: item.pricing.pricingType === "per_booking" ? item.quantity : undefined,
       lineTotal: minorToMoney(item.totalMinor), currency: item.pricing.currency,
+      accessStartAt: item.accessStartAt, accessEndAt: item.accessEndAt,
+    }));
+    const facilityAccessPeriods = calculation.lineItems.map((item) => ({
+      facilityId: item.facility?.id || "", facilityName: item.name,
+      accessStartAt: item.accessStartAt, accessEndAt: item.accessEndAt,
+      selectedMonths: item.pricing.pricingType === "monthly" ? item.quantity : undefined,
+      bookingQuantity: item.pricing.pricingType === "per_booking" ? item.quantity : undefined,
     }));
     const resident = {
       id: residentId, fullName, email, qidNumber, dob, contactNumber, villaNumber,
       requestedFacilities: [...accessFacilities], accessFacilities: [...accessFacilities],
-      accessMonths: months, facilityMonths: Object.fromEntries(accessFacilities.map((name) => [name, months])),
-      facilityPriceSnapshot, monthlyTotalQar: minorToMoney(calculation.monthlyTotalMinor), expectedTotalQar: minorToMoney(calculation.totalMinor),
+      accessMonths: months, facilityMonths: Object.fromEntries(calculation.lineItems.filter((item) => item.pricing.pricingType === "monthly").map((item) => [item.name, item.quantity])),
+      facilityPriceSnapshot, facilityAccessPeriods, monthlyTotalQar: minorToMoney(calculation.monthlyTotalMinor), expectedTotalQar: minorToMoney(calculation.totalMinor),
       totalQar: minorToMoney(amountMinor), totalMinor: amountMinor,
       paymentHandling: paymentType, paymentVerified: paymentType === "verified",
       applicationType: "Manual Registration", manualCreationReason: reason,
@@ -1380,15 +1432,15 @@ function renderExpiringSoon() {
   const container = $("#expiring-soon-list");
   if (!container) return;
   const residents = state.users
-    .filter((user) => user.status === "Approved" && user.accessEndAt)
-    .map((user) => ({ user, remaining: daysUntil(user.accessEndAt) }))
+    .filter((user) => user.status === "Approved")
+    .flatMap((user) => getUserAccessPeriods(user).map((period) => ({ user, period, remaining: daysUntil(period.accessEndAt) })))
     .filter((item) => item.remaining >= 0 && item.remaining <= 30)
     .sort((a, b) => a.remaining - b.remaining)
     .slice(0, 5);
-  container.innerHTML = residents.length ? residents.map(({ user, remaining }) => `
+  container.innerHTML = residents.length ? residents.map(({ user, period, remaining }) => `
     <article class="expiry-row">
       <span class="expiry-avatar">${escapeHtml(getInitials(user.fullName || user.email))}</span>
-      <div><strong>${escapeHtml(user.fullName || user.email || "Resident")}</strong><small>Expires ${escapeHtml(formatAppDate(user.accessEndAt))}</small></div>
+      <div><strong>${escapeHtml(user.fullName || user.email || "Resident")}</strong><small>${escapeHtml(displayFacilityName(period.facilityName || "Membership"))} expires ${escapeHtml(formatAppDate(period.accessEndAt))}</small></div>
       <span class="expiry-days ${remaining <= 7 ? "urgent" : ""}">${remaining === 0 ? "Today" : `${remaining} day${remaining === 1 ? "" : "s"}`}</span>
       <button type="button" data-open-user="${user.id}" aria-label="View ${escapeHtml(user.fullName || "resident")}">View</button>
     </article>
@@ -3802,16 +3854,22 @@ async function approveUser(userId) {
 
 function createQrPassEmail(user, reason = "resend", accessFacilities = getUserAccess(user)) {
   const passUrl = buildPassUrl(user.token);
+  const facilityAccessLines = accessFacilities.map((name) => {
+    const period = Array.isArray(user.facilityAccessPeriods)
+      ? user.facilityAccessPeriods.find((item) => String(item.facilityName || "").trim().toLowerCase() === String(name).trim().toLowerCase())
+      : null;
+    return period?.accessEndAt ? `${name} - valid until ${formatAppDate(period.accessEndAt)}` : name;
+  }).join("\n");
   const subject = reason === "approved"
     ? "Facility access approved - QR pass issued"
     : reason === "updated"
     ? "Facility access updated"
     : "Your HTS QR pass";
   const body = reason === "approved"
-    ? `Your facility access has been approved.\n\nOpen your HTS QR pass here:\n${passUrl}\n\nPass token: ${user.token}`
+    ? `Your facility access has been approved.\n\nCurrent access:\n${facilityAccessLines}\n\nOpen your HTS QR pass here:\n${passUrl}\n\nPass token: ${user.token}`
     : reason === "updated"
-    ? `Your facility access has been updated.\n\nCurrent access: ${accessFacilities.join(", ")}\n\nYour existing HTS QR pass still works:\n${passUrl}\n\nPass token: ${user.token}`
-    : `Here is your HTS QR pass.\n\nCurrent access: ${accessFacilities.join(", ")}\n\nOpen your HTS QR pass here:\n${passUrl}\n\nPass token: ${user.token}`;
+    ? `Your facility access has been updated.\n\nCurrent access:\n${facilityAccessLines}\n\nYour existing HTS QR pass still works:\n${passUrl}\n\nPass token: ${user.token}`
+    : `Here is your HTS QR pass.\n\nCurrent access:\n${facilityAccessLines}\n\nOpen your HTS QR pass here:\n${passUrl}\n\nPass token: ${user.token}`;
 
   return {
     id: uid("email"),
@@ -4323,10 +4381,19 @@ async function processToken(rawToken) {
     return;
   }
 
-  if (!isMembershipActive(user)) {
+  if (!getUserAccess(user).includes(facility.name)) {
     clearVerifiedUser();
-    await logScanAttempt({ user, facility, token, state: "Expired / Invalid QR", scanResult: "Membership is expired or not active." });
-    setScanResult("Access Denied: membership is expired or not active.", "neutral");
+    await logScanAttempt({ user, facility, token, state: "Access Denied", scanResult: `${user.fullName || user.email} is not approved for ${facility.name}.` });
+    setScanResult(`Access Denied: ${user.fullName || user.email} is not approved for ${facility.name}.`, false);
+    return;
+  }
+
+  if (!isFacilityMembershipActive(user, facility)) {
+    const period = getFacilityAccessPeriod(user, facility);
+    const expiryDetail = period?.accessEndAt ? ` Access expired on ${formatAppDate(period.accessEndAt)}.` : " Membership is expired or not active.";
+    clearVerifiedUser();
+    await logScanAttempt({ user, facility, token, state: "Expired / Invalid QR", scanResult: `${facility.name} access is expired or not active.` });
+    setScanResult(`Access Denied:${expiryDetail}`, "neutral");
     return;
   }
 
@@ -4335,13 +4402,6 @@ async function processToken(rawToken) {
     clearVerifiedUser();
     await logScanAttempt({ user, facility, token, state: "Outside Allowed Time", scanResult: scheduleError });
     setScanResult(`Outside Allowed Time: ${scheduleError}`, "warning");
-    return;
-  }
-
-  if (!getUserAccess(user).includes(facility.name)) {
-    clearVerifiedUser();
-    await logScanAttempt({ user, facility, token, state: "Access Denied", scanResult: `${user.fullName || user.email} is not approved for ${facility.name}.` });
-    setScanResult(`Access Denied: ${user.fullName || user.email} is not approved for ${facility.name}.`, false);
     return;
   }
 
@@ -4356,6 +4416,37 @@ function isMembershipActive(user) {
   today.setHours(0, 0, 0, 0);
   const start = user.accessStartAt ? new Date(`${user.accessStartAt}T00:00:00`) : null;
   const end = user.accessEndAt ? new Date(`${user.accessEndAt}T23:59:59`) : null;
+  return (!start || today >= start) && (!end || today <= end);
+}
+
+function getFacilityAccessPeriod(user, facility) {
+  if (!Array.isArray(user.facilityAccessPeriods) || !user.facilityAccessPeriods.length) return null;
+  const facilityId = String(facility?.id || "").trim();
+  const facilityName = String(facility?.name || "").trim().toLowerCase();
+  return user.facilityAccessPeriods.find((period) =>
+    (facilityId && String(period.facilityId || "").trim() === facilityId)
+    || (facilityName && String(period.facilityName || "").trim().toLowerCase() === facilityName)
+  ) || null;
+}
+
+function getUserAccessPeriods(user) {
+  if (Array.isArray(user.facilityAccessPeriods) && user.facilityAccessPeriods.length) return user.facilityAccessPeriods;
+  if (!user.accessEndAt) return [];
+  const facilities = getUserAccess(user);
+  return (facilities.length ? facilities : [""]).map((facilityName) => ({
+    facilityName,
+    accessStartAt: user.accessStartAt || "",
+    accessEndAt: user.accessEndAt,
+  }));
+}
+
+function isFacilityMembershipActive(user, facility) {
+  const period = getFacilityAccessPeriod(user, facility);
+  if (!period) return isMembershipActive(user);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = period.accessStartAt ? new Date(`${period.accessStartAt}T00:00:00`) : null;
+  const end = period.accessEndAt ? new Date(`${period.accessEndAt}T23:59:59`) : null;
   return (!start || today >= start) && (!end || today <= end);
 }
 
@@ -4868,11 +4959,16 @@ function closeRowMenus() {
 $("#registration-form").addEventListener("submit", registerUser);
 $("#manual-resident-form")?.addEventListener("submit", createManualResident);
 $("#manual-resident-form")?.addEventListener("input", (event) => {
-  if (event.target.matches("#manual-resident-amount, #manual-resident-start, #manual-resident-end, [data-manual-booking-quantity]")) updateManualResidentCalculation();
+  if (event.target.matches("#manual-resident-amount, #manual-resident-start, [data-manual-quantity]")) updateManualResidentCalculation();
 });
 $("#manual-resident-form")?.addEventListener("change", (event) => {
   if (event.target.matches("#manual-resident-payment-type")) syncManualResidentPaymentFields();
-  if (event.target.matches('input[name="manualFacility"], #manual-resident-payment-type, #manual-qid-inspected, #manual-qid-matches, #manual-payment-inspected, #manual-payment-matches, #manual-resident-start, #manual-resident-end, [data-manual-booking-quantity]')) updateManualResidentCalculation();
+  if (event.target.matches('input[name="manualFacility"], #manual-resident-payment-type, #manual-qid-inspected, #manual-qid-matches, #manual-payment-inspected, #manual-payment-matches, #manual-resident-start, [data-manual-quantity]')) updateManualResidentCalculation();
+});
+$("#manual-resident-form")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-manual-quantity-delta]");
+  if (!button) return;
+  changeManualFacilityQuantity(button.dataset.manualQuantityName, Number(button.dataset.manualQuantityDelta));
 });
 $("#manual-resident-qid")?.addEventListener("input", (event) => { event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11); });
 $("#manual-resident-contact")?.addEventListener("input", (event) => formatQatarPhoneInput(event.target));
