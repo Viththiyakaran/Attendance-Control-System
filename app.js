@@ -898,6 +898,7 @@ function openManualResidentDrawer() {
   $("#manual-resident-end").value = "";
   $("#manual-resident-send-email").checked = true;
   $("#manual-resident-message").textContent = "";
+  setManualResidentProgress();
   renderManualResidentFacilities();
   syncManualResidentPaymentFields();
   updateManualResidentCalculation();
@@ -912,6 +913,7 @@ function closeManualResidentDrawer({ force = false } = {}) {
   if (layer) layer.hidden = true;
   document.body.classList.remove("manual-resident-open");
   $("#manual-resident-message").textContent = "";
+  setManualResidentProgress();
 }
 
 function syncManualResidentPaymentFields() {
@@ -1036,6 +1038,24 @@ function updateManualResidentReadiness(calculation = calculateManualResidentTota
   if (submit) submit.disabled = manualResidentBusy || !calculation.lineItems.length || !accessDatesReady || !matches || !qidChecks || !paymentChecks;
 }
 
+function setManualResidentProgress(text = "", { busy = false, error = false } = {}) {
+  const progress = $("#manual-resident-progress");
+  const progressText = $("#manual-resident-progress-text");
+  const form = $("#manual-resident-form");
+  const submit = $("#manual-resident-submit");
+  if (progress) {
+    progress.hidden = !text;
+    progress.classList.toggle("is-error", error);
+  }
+  if (progressText && text) progressText.textContent = text;
+  if (form) {
+    form.setAttribute("aria-busy", String(busy));
+    form.classList.toggle("is-busy", busy);
+  }
+  if (submit) submit.textContent = busy ? "Creating..." : "Create resident & QR";
+  $$('[data-close-manual-resident]').forEach((button) => { button.disabled = busy; });
+}
+
 function validateOptionalEvidence(file, label) {
   if (!file) return;
   if (!isAllowedQidFile(file)) throw new Error(`${label} must be a JPG, PNG, or PDF file.`);
@@ -1099,11 +1119,11 @@ async function createManualResident(event) {
 
     manualResidentBusy = true;
     submit.disabled = true;
-    message.textContent = "Creating resident and QR pass...";
+    message.textContent = "";
     const now = new Date().toISOString();
     const months = calculation.months;
     const residentId = uid("user");
-    message.textContent = qidEvidenceFile || paymentEvidenceFile ? "Preparing verification evidence..." : "Creating resident and QR pass...";
+    setManualResidentProgress(qidEvidenceFile || paymentEvidenceFile ? "Preparing verification files..." : "Preparing resident access...", { busy: true });
     const qidEvidence = qidEvidenceFile ? await prepareQidFile(qidEvidenceFile, `${residentId}-manual-qid`) : undefined;
     const paymentEvidence = paymentType !== "complimentary" && paymentEvidenceFile ? await prepareQidFile(paymentEvidenceFile, `${residentId}-manual-payment`) : undefined;
     const facilityPriceSnapshot = calculation.lineItems.map((item) => ({
@@ -1137,12 +1157,15 @@ async function createManualResident(event) {
       activityLog: [{ type: "Manual resident created", detail: reason, createdAt: now, actor: "Manager" }],
     };
 
+    setManualResidentProgress("Saving resident access...", { busy: true });
     await withTimeout(upsertDoc("users", resident), 15000, "Could not save the resident to Firestore.");
     state.users.push(resident);
     if (sendEmail) {
-      message.textContent = "Resident created. Sending QR pass email...";
+      setManualResidentProgress("Generating QR pass and sending email...", { busy: true });
       await sendAndLogQrPassEmail(resident, createQrPassEmail(resident, "approved", accessFacilities));
       await upsertDoc("users", resident);
+    } else {
+      setManualResidentProgress("Generating QR pass...", { busy: true });
     }
     saveState();
     residentPage = 1;
@@ -1152,6 +1175,7 @@ async function createManualResident(event) {
   } catch (error) {
     console.error(error);
     message.textContent = firebaseFriendlyError(error);
+    setManualResidentProgress("Resident was not created. Review the form message and try again.", { error: true });
   } finally {
     manualResidentBusy = false;
     updateManualResidentCalculation();

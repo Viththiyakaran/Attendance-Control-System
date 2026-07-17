@@ -482,8 +482,14 @@
                     <p id="manual-resident-message" class="form-message" role="status" aria-live="polite"></p>
                   </div>
                   <footer>
-                    <button type="button" data-close-manual-resident>Cancel</button>
-                    <button id="manual-resident-submit" class="primary" type="submit" disabled>Create resident &amp; QR</button>
+                    <div id="manual-resident-progress" class="manual-resident-progress" role="status" aria-live="polite" hidden>
+                      <span class="manual-progress-spinner" aria-hidden="true"></span>
+                      <span id="manual-resident-progress-text">Preparing resident access...</span>
+                    </div>
+                    <div class="manual-resident-footer-actions">
+                      <button type="button" data-close-manual-resident>Cancel</button>
+                      <button id="manual-resident-submit" class="primary" type="submit" disabled>Create resident &amp; QR</button>
+                    </div>
                   </footer>
                 </form>
               </div>
