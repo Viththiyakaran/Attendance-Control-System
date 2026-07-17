@@ -862,9 +862,18 @@ function changeResidentPage(direction) {
 function renderManualResidentFacilities() {
   const container = $("#manual-resident-facilities");
   if (!container) return;
-  const facilities = state.facilities.filter((facility) => facility.open !== false);
+  const seen = new Set();
+  const facilities = state.facilities.filter((facility) => {
+    const key = String(displayFacilityName(facility.name) || "").trim().toLowerCase();
+    if (!key || facility.open === false || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   container.innerHTML = facilities.length
-    ? facilities.map((facility) => `<label><input type="checkbox" name="manualFacility" value="${escapeHtml(facility.name)}" /><span><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><small>${escapeHtml(getFacilityPriceLabel(facility))}</small></span></label>`).join("")
+    ? facilities.map((facility) => {
+      const pricing = normalizeFacilityPricing(facility);
+      return `<div class="manual-facility-option"><label><input type="checkbox" name="manualFacility" value="${escapeHtml(facility.name)}" /><span><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><small>${escapeHtml(getFacilityPriceLabel(facility))}</small></span></label>${pricing.pricingType === "per_booking" ? `<label class="manual-booking-quantity">Bookings<input type="number" min="1" max="99" value="1" data-manual-booking-quantity="${escapeHtml(facility.name)}" disabled /></label>` : ""}</div>`;
+    }).join("")
     : emptyState("No active facilities", "Enable a facility before creating resident access.");
 }
 
@@ -880,6 +889,7 @@ function openManualResidentDrawer() {
   $("#manual-resident-message").textContent = "";
   renderManualResidentFacilities();
   syncManualResidentPaymentFields();
+  updateManualResidentCalculation();
   layer.hidden = false;
   document.body.classList.add("manual-resident-open");
   window.setTimeout(() => $("#manual-resident-name")?.focus(), 0);
@@ -902,6 +912,17 @@ function syncManualResidentPaymentFields() {
     input.required = !complimentary;
     if (complimentary) input.value = "0.00";
   }
+  $$('[data-manual-payment-check]').forEach((label) => {
+    label.hidden = complimentary;
+    const checkbox = label.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+      checkbox.disabled = complimentary;
+      if (complimentary) checkbox.checked = false;
+    }
+  });
+  const evidenceField = $("#manual-payment-evidence-field");
+  if (evidenceField) evidenceField.hidden = complimentary;
+  if (complimentary && $("#manual-payment-evidence")) $("#manual-payment-evidence").value = "";
 }
 
 function manualAccessMonths(startValue, endValue) {
@@ -909,6 +930,76 @@ function manualAccessMonths(startValue, endValue) {
   const end = new Date(`${endValue}T00:00:00`);
   const monthDifference = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
   return Math.max(1, monthDifference + (end.getDate() >= start.getDate() ? 0 : -1));
+}
+
+function getManualSelectedFacilities() {
+  return [...document.querySelectorAll('#manual-resident-facilities input[name="manualFacility"]:checked')].map((input) => input.value);
+}
+
+function getManualBookingQuantity(name) {
+  const input = [...document.querySelectorAll("[data-manual-booking-quantity]")].find((item) => item.dataset.manualBookingQuantity === name);
+  return Math.max(1, Math.min(99, Number(input?.value || 1)));
+}
+
+function calculateManualResidentTotal() {
+  const accessStartAt = $("#manual-resident-start")?.value || "";
+  const accessEndAt = $("#manual-resident-end")?.value || "";
+  const months = accessStartAt && accessEndAt ? manualAccessMonths(accessStartAt, accessEndAt) : 1;
+  const lineItems = getManualSelectedFacilities().map((name) => {
+    const facility = state.facilities.find((item) => String(item.name).trim().toLowerCase() === name.trim().toLowerCase());
+    const pricing = normalizeFacilityPricing(facility);
+    const unitMinor = pricing.pricingType === "free" ? 0 : moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice);
+    const quantity = pricing.pricingType === "monthly" ? months : pricing.pricingType === "per_booking" ? getManualBookingQuantity(name) : 1;
+    return { facility, name, pricing, unitMinor, quantity, totalMinor: unitMinor * quantity };
+  });
+  return {
+    months,
+    lineItems,
+    totalMinor: lineItems.reduce((sum, item) => sum + item.totalMinor, 0),
+    monthlyTotalMinor: lineItems.filter((item) => item.pricing.pricingType === "monthly").reduce((sum, item) => sum + item.unitMinor, 0),
+  };
+}
+
+function updateManualResidentCalculation() {
+  const calculation = calculateManualResidentTotal();
+  const container = $("#manual-payment-calculation");
+  const paidInput = $("#manual-resident-amount");
+  const paymentType = $("#manual-resident-payment-type")?.value || "verified";
+  const paidMinor = paymentType === "complimentary" ? 0 : moneyToMinor(paidInput?.value || "");
+  const paymentMatches = paymentType === "complimentary" || (!Number.isNaN(paidMinor) && paidMinor === calculation.totalMinor);
+
+  $$('[data-manual-booking-quantity]').forEach((input) => {
+    const selected = calculation.lineItems.some((item) => item.name === input.dataset.manualBookingQuantity);
+    input.disabled = !selected;
+  });
+
+  if (container) {
+    container.innerHTML = calculation.lineItems.length
+      ? `<div class="manual-calculation-lines">${calculation.lineItems.map((item) => `<span><strong>${escapeHtml(displayFacilityName(item.name))}</strong><small>${item.pricing.pricingType === "monthly" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} month${item.quantity === 1 ? "" : "s"}` : item.pricing.pricingType === "per_booking" ? `${formatMoney(item.unitMinor, item.pricing.currency)} x ${item.quantity} booking${item.quantity === 1 ? "" : "s"}` : "Free"}</small><b>${formatMoney(item.totalMinor, item.pricing.currency)}</b></span>`).join("")}</div><div class="manual-calculation-total"><span>Calculated total</span><strong>${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}</strong></div><p class="manual-payment-match ${paymentMatches ? "is-match" : "is-mismatch"}">${paymentType === "complimentary" ? "Complimentary access - payment is not required." : paidInput?.value ? paymentMatches ? "Paid amount matches the calculated total." : `Paid amount does not match ${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}.` : "Enter the paid amount to verify it against the total."}</p>`
+      : `<p class="helper-text">Select facilities to calculate the expected payment.</p>`;
+  }
+  updateManualResidentReadiness(calculation, paymentMatches);
+}
+
+function updateManualResidentReadiness(calculation = calculateManualResidentTotal(), paymentMatches) {
+  const paymentType = $("#manual-resident-payment-type")?.value || "verified";
+  const paidMinor = paymentType === "complimentary" ? 0 : moneyToMinor($("#manual-resident-amount")?.value || "");
+  const matches = typeof paymentMatches === "boolean" ? paymentMatches : paymentType === "complimentary" || (!Number.isNaN(paidMinor) && paidMinor === calculation.totalMinor);
+  const qidChecks = $("#manual-qid-inspected")?.checked && $("#manual-qid-matches")?.checked;
+  const paymentChecks = paymentType === "complimentary" || ($("#manual-payment-inspected")?.checked && $("#manual-payment-matches")?.checked);
+  const submit = $("#manual-resident-submit");
+  if (submit) submit.disabled = manualResidentBusy || !calculation.lineItems.length || !matches || !qidChecks || !paymentChecks;
+}
+
+function validateOptionalEvidence(file, label) {
+  if (!file) return;
+  if (!isAllowedQidFile(file)) throw new Error(`${label} must be a JPG, PNG, or PDF file.`);
+  if (file.size > MAX_QID_FILE_SIZE) throw new Error(`${label} must be 5 MB or smaller.`);
+}
+
+function manualDocumentRecord(prepared, original) {
+  if (!prepared || !original) return undefined;
+  return { name: prepared.name, type: prepared.type, data: prepared.data, storageMode: prepared.storageMode, originalName: original.name, originalSize: original.size, compressedSize: prepared.size };
 }
 
 async function createManualResident(event) {
@@ -924,11 +1015,14 @@ async function createManualResident(event) {
   const villaNumber = normalizeName($("#manual-resident-address").value);
   const accessStartAt = $("#manual-resident-start").value;
   const accessEndAt = $("#manual-resident-end").value;
-  const accessFacilities = [...document.querySelectorAll('#manual-resident-facilities input[name="manualFacility"]:checked')].map((input) => input.value);
+  const accessFacilities = getManualSelectedFacilities();
   const paymentType = $("#manual-resident-payment-type").value;
   const reason = normalizeName($("#manual-resident-reason").value);
   const sendEmail = $("#manual-resident-send-email").checked;
   const amountMinor = paymentType === "complimentary" ? 0 : moneyToMinor($("#manual-resident-amount").value);
+  const qidEvidenceFile = $("#manual-qid-evidence").files[0];
+  const paymentEvidenceFile = $("#manual-payment-evidence").files[0];
+  const calculation = calculateManualResidentTotal();
 
   try {
     if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter the resident's full name.");
@@ -939,7 +1033,13 @@ async function createManualResident(event) {
     if (villaNumber.length < 2) throw new Error("Enter the resident's villa or address.");
     if (!accessStartAt || !accessEndAt || new Date(`${accessEndAt}T23:59:59`) < new Date(`${accessStartAt}T00:00:00`)) throw new Error("Access expiry must be on or after the start date.");
     if (!accessFacilities.length) throw new Error("Select at least one facility.");
+    if (!Number.isInteger(calculation.totalMinor) || calculation.totalMinor < 0) throw new Error("One or more facility prices are invalid. Review facility pricing before creating access.");
     if (paymentType !== "complimentary" && (Number.isNaN(amountMinor) || amountMinor < 0)) throw new Error("Enter a valid non-negative paid amount with no more than two decimal places.");
+    if (paymentType !== "complimentary" && amountMinor !== calculation.totalMinor) throw new Error(`Paid amount must match the calculated total of ${formatMoney(calculation.totalMinor, DEFAULT_CURRENCY)}.`);
+    if (!$("#manual-qid-inspected").checked || !$("#manual-qid-matches").checked) throw new Error("Complete both Qatar ID verification checks.");
+    if (paymentType !== "complimentary" && (!$("#manual-payment-inspected").checked || !$("#manual-payment-matches").checked)) throw new Error("Complete both payment verification checks.");
+    validateOptionalEvidence(qidEvidenceFile, "Qatar ID evidence");
+    if (paymentType !== "complimentary") validateOptionalEvidence(paymentEvidenceFile, "Payment proof evidence");
     if (reason.length < 5) throw new Error("Enter a clear internal reason for manual creation.");
     const duplicate = state.users.find((user) => user.qidNumber === qidNumber || String(user.email || "").toLowerCase() === email);
     if (duplicate) throw new Error(`A record already exists for this ${duplicate.qidNumber === qidNumber ? "Qatar ID number" : "email address"}. Open the existing resident instead.`);
@@ -956,34 +1056,32 @@ async function createManualResident(event) {
     submit.disabled = true;
     message.textContent = "Creating resident and QR pass...";
     const now = new Date().toISOString();
-    const months = manualAccessMonths(accessStartAt, accessEndAt);
-    const facilityPriceSnapshot = accessFacilities.map((name) => {
-      const facility = state.facilities.find((item) => item.name === name);
-      const pricing = normalizeFacilityPricing(facility);
-      const unitMinor = pricing.pricingType === "free" ? 0 : moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice);
-      const quantity = pricing.pricingType === "monthly" ? months : 1;
-      return {
-        facilityId: facility?.id || "",
-        facilityName: name,
-        pricingType: pricing.pricingType,
-        unitPriceAtSubmission: minorToMoney(unitMinor),
-        selectedMonths: pricing.pricingType === "monthly" ? months : undefined,
-        bookingQuantity: pricing.pricingType === "per_booking" ? 1 : undefined,
-        lineTotal: minorToMoney(unitMinor * quantity),
-        currency: pricing.currency,
-      };
-    });
+    const months = calculation.months;
+    const residentId = uid("user");
+    message.textContent = qidEvidenceFile || paymentEvidenceFile ? "Preparing verification evidence..." : "Creating resident and QR pass...";
+    const qidEvidence = qidEvidenceFile ? await prepareQidFile(qidEvidenceFile, `${residentId}-manual-qid`) : undefined;
+    const paymentEvidence = paymentType !== "complimentary" && paymentEvidenceFile ? await prepareQidFile(paymentEvidenceFile, `${residentId}-manual-payment`) : undefined;
+    const facilityPriceSnapshot = calculation.lineItems.map((item) => ({
+      facilityId: item.facility?.id || "", facilityName: item.name, pricingType: item.pricing.pricingType,
+      unitPriceAtSubmission: minorToMoney(item.unitMinor),
+      selectedMonths: item.pricing.pricingType === "monthly" ? item.quantity : undefined,
+      bookingQuantity: item.pricing.pricingType === "per_booking" ? item.quantity : undefined,
+      lineTotal: minorToMoney(item.totalMinor), currency: item.pricing.currency,
+    }));
     const resident = {
-      id: uid("user"), fullName, email, qidNumber, dob, contactNumber, villaNumber,
+      id: residentId, fullName, email, qidNumber, dob, contactNumber, villaNumber,
       requestedFacilities: [...accessFacilities], accessFacilities: [...accessFacilities],
       accessMonths: months, facilityMonths: Object.fromEntries(accessFacilities.map((name) => [name, months])),
-      facilityPriceSnapshot, monthlyTotalQar: minorToMoney(facilityPriceSnapshot.reduce((sum, item) => item.pricingType === "monthly" ? sum + moneyToMinor(item.unitPriceAtSubmission) : sum, 0)),
+      facilityPriceSnapshot, monthlyTotalQar: minorToMoney(calculation.monthlyTotalMinor), expectedTotalQar: minorToMoney(calculation.totalMinor),
       totalQar: minorToMoney(amountMinor), totalMinor: amountMinor,
       paymentHandling: paymentType, paymentVerified: paymentType === "verified",
       applicationType: "Manual Registration", manualCreationReason: reason,
       createdByAdmin: true, createdSource: "admin-assisted-registration",
       status: "Approved", token: passToken(), createdAt: now, approvedAt: now, updatedAt: now,
       accessStartAt, accessEndAt,
+      qatarId: manualDocumentRecord(qidEvidence, qidEvidenceFile),
+      paymentProof: manualDocumentRecord(paymentEvidence, paymentEvidenceFile),
+      manualVerification: { qidInspected: true, qidNumberMatches: true, paymentProofInspected: paymentType === "verified", paidAmountMatches: paymentType === "verified", verifiedAt: now, verifiedBy: "Manager" },
       activityLog: [{ type: "Manual resident created", detail: reason, createdAt: now, actor: "Manager" }],
     };
 
@@ -1004,7 +1102,7 @@ async function createManualResident(event) {
     message.textContent = firebaseFriendlyError(error);
   } finally {
     manualResidentBusy = false;
-    submit.disabled = false;
+    updateManualResidentCalculation();
   }
 }
 
@@ -4769,7 +4867,13 @@ function closeRowMenus() {
 
 $("#registration-form").addEventListener("submit", registerUser);
 $("#manual-resident-form")?.addEventListener("submit", createManualResident);
-$("#manual-resident-payment-type")?.addEventListener("change", syncManualResidentPaymentFields);
+$("#manual-resident-form")?.addEventListener("input", (event) => {
+  if (event.target.matches("#manual-resident-amount, #manual-resident-start, #manual-resident-end, [data-manual-booking-quantity]")) updateManualResidentCalculation();
+});
+$("#manual-resident-form")?.addEventListener("change", (event) => {
+  if (event.target.matches("#manual-resident-payment-type")) syncManualResidentPaymentFields();
+  if (event.target.matches('input[name="manualFacility"], #manual-resident-payment-type, #manual-qid-inspected, #manual-qid-matches, #manual-payment-inspected, #manual-payment-matches, #manual-resident-start, #manual-resident-end, [data-manual-booking-quantity]')) updateManualResidentCalculation();
+});
 $("#manual-resident-qid")?.addEventListener("input", (event) => { event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11); });
 $("#manual-resident-contact")?.addEventListener("input", (event) => formatQatarPhoneInput(event.target));
 $("#user-search-form")?.addEventListener("submit", searchUsers);

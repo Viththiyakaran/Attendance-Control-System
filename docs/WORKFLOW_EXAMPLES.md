@@ -164,6 +164,8 @@ The current application implements/logs submission, renewal receipt, approval/QR
 
 If Ahmed cannot use the public form, the manager opens **Users / Residents**, selects **Add resident**, verifies Ahmed's identity directly, and enters his details. The manager selects the approved facilities and access dates, records a verified payment or complimentary-access reason, and provides an internal explanation for creating the record manually.
 
+The system calculates monthly facility prices from the access period and multiplies per-booking prices by the entered booking quantity. The manager enters the paid amount, which must match the calculated total, and completes the required Qatar ID and payment verification checks. Complimentary access bypasses the payment match but still requires an internal reason. Optional evidence files can be saved with the record.
+
 The system blocks duplicate Qatar IDs and email addresses. After confirmation it creates an approved resident record, generates a QR token, records that the manager created the access, and optionally emails the QR pass to Ahmed. The QR follows the same facility, status, schedule, and expiry checks as a QR created from a public application.
 
 ## When a new QR is required

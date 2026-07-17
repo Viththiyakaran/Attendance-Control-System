@@ -459,9 +459,23 @@
                       <legend>Facility access <span aria-hidden="true">*</span></legend>
                       <div id="manual-resident-facilities" class="manual-resident-facilities"></div>
                     </fieldset>
+                    <section id="manual-payment-calculation" class="manual-payment-calculation" aria-live="polite"></section>
                     <div class="manual-resident-grid">
                       <label>Payment handling <span aria-hidden="true">*</span><select id="manual-resident-payment-type"><option value="verified">Payment verified</option><option value="complimentary">Complimentary access</option></select></label>
                       <label id="manual-resident-amount-field">Paid amount (QAR) <span aria-hidden="true">*</span><input id="manual-resident-amount" inputmode="decimal" placeholder="0.00" required /></label>
+                    </div>
+                    <fieldset class="manual-verification-fieldset">
+                      <legend>Required verification</legend>
+                      <div class="manual-verification-checks">
+                        <label><input id="manual-qid-inspected" type="checkbox" /> Qatar ID has been physically inspected</label>
+                        <label><input id="manual-qid-matches" type="checkbox" /> Qatar ID number matches the resident</label>
+                        <label data-manual-payment-check><input id="manual-payment-inspected" type="checkbox" /> Payment proof has been inspected</label>
+                        <label data-manual-payment-check><input id="manual-payment-matches" type="checkbox" /> Paid amount matches the calculated total</label>
+                      </div>
+                    </fieldset>
+                    <div class="manual-evidence-grid">
+                      <label>Qatar ID evidence <small>Optional JPG, PNG or PDF up to 5 MB</small><input id="manual-qid-evidence" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" /></label>
+                      <label id="manual-payment-evidence-field">Payment proof evidence <small>Optional JPG, PNG or PDF up to 5 MB</small><input id="manual-payment-evidence" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" /></label>
                     </div>
                     <label class="manual-reason-field">Internal reason <span aria-hidden="true">*</span><textarea id="manual-resident-reason" rows="3" placeholder="Why this resident is being created manually" required></textarea></label>
                     <label class="manual-send-email"><input id="manual-resident-send-email" type="checkbox" checked /> Email the QR pass to the resident after creation</label>
@@ -469,7 +483,7 @@
                   </div>
                   <footer>
                     <button type="button" data-close-manual-resident>Cancel</button>
-                    <button class="primary" type="submit">Create resident &amp; QR</button>
+                    <button id="manual-resident-submit" class="primary" type="submit" disabled>Create resident &amp; QR</button>
                   </footer>
                 </form>
               </div>

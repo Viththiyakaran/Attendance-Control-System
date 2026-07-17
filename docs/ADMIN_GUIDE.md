@@ -45,9 +45,9 @@ The Residents page contains approved and suspended records, membership expiry, f
 
 ### Assisted registration
 
-Use **Add resident** only when a resident cannot complete the public application. Enter the resident's verified identity and contact information, choose access dates and facilities, record whether payment was verified or access is complimentary, and provide an internal reason.
+Use **Add resident** only when a resident cannot complete the public application. Enter the resident's verified identity and contact information, choose access dates and facilities, record whether payment was verified or access is complimentary, and provide an internal reason. Monthly prices are multiplied by the calculated access months; per-booking facilities include a booking quantity. The paid amount must exactly match the calculated total unless access is complimentary.
 
-Before saving, the system checks for an existing Qatar ID or email and shows a confirmation. A successful assisted registration is immediately approved, receives a QR token, and is marked as `Manual Registration` with an administrator audit entry. The manager can optionally send the QR pass by email. Identity and payment documents are not required for this assisted workflow.
+Before saving, the manager must confirm that the Qatar ID was inspected and matches the resident. Verified payments also require payment-proof and amount-match confirmations. Optional Qatar ID and payment evidence can be attached for the audit record. The system checks for an existing Qatar ID or email and shows a confirmation. A successful assisted registration is immediately approved, receives a QR token, and is marked as `Manual Registration` with an administrator audit entry. The manager can optionally send the QR pass by email.
 
 ## Payments
 
