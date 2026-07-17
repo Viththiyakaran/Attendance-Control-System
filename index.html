@@ -446,13 +446,13 @@
                   <div class="manual-resident-body">
                     <p class="helper-text">Create access only when a resident cannot submit the public application. This action is recorded as an admin-created registration.</p>
                     <div class="manual-resident-grid">
-                      <label>Full name <span aria-hidden="true">*</span><input id="manual-resident-name" autocomplete="name" placeholder="Ahmed Mohamed" required /></label>
-                      <label>Email <span aria-hidden="true">*</span><input id="manual-resident-email" type="email" autocomplete="email" placeholder="name@example.com" required /></label>
-                      <label>Qatar ID number <span aria-hidden="true">*</span><input id="manual-resident-qid" inputmode="numeric" maxlength="11" placeholder="11 digits" required /></label>
-                      <label>Date of birth <span aria-hidden="true">*</span><input id="manual-resident-dob" type="date" required /></label>
-                      <label>Contact number <span aria-hidden="true">*</span><input id="manual-resident-contact" type="tel" inputmode="tel" autocomplete="tel" placeholder="+974 1234 5678" required /></label>
-                      <label>Villa / address <span aria-hidden="true">*</span><input id="manual-resident-address" autocomplete="address-line1" placeholder="Villa, zone and street" required /></label>
-                      <label>Access starts <span aria-hidden="true">*</span><input id="manual-resident-start" type="date" required /></label>
+                      <label>Full name <span aria-hidden="true">*</span><input id="manual-resident-name" data-manual-validate autocomplete="name" placeholder="Ahmed Mohamed" required aria-describedby="manual-resident-name-error" /><small id="manual-resident-name-error" class="manual-field-validation"></small></label>
+                      <label>Email <span aria-hidden="true">*</span><input id="manual-resident-email" data-manual-validate type="email" autocomplete="email" placeholder="name@example.com" required aria-describedby="manual-resident-email-error" /><small id="manual-resident-email-error" class="manual-field-validation"></small></label>
+                      <label>Qatar ID number <span aria-hidden="true">*</span><input id="manual-resident-qid" data-manual-validate inputmode="numeric" maxlength="11" placeholder="11 digits" required aria-describedby="manual-resident-qid-error" /><small id="manual-resident-qid-error" class="manual-field-validation"></small></label>
+                      <label>Date of birth <span aria-hidden="true">*</span><input id="manual-resident-dob" data-manual-validate type="date" required aria-describedby="manual-resident-dob-error" /><small id="manual-resident-dob-error" class="manual-field-validation"></small></label>
+                      <label>Contact number <span aria-hidden="true">*</span><input id="manual-resident-contact" data-manual-validate type="tel" inputmode="tel" autocomplete="tel" placeholder="+974 1234 5678" required aria-describedby="manual-resident-contact-error" /><small id="manual-resident-contact-error" class="manual-field-validation"></small></label>
+                      <label>Villa / address <span aria-hidden="true">*</span><input id="manual-resident-address" data-manual-validate autocomplete="address-line1" placeholder="Villa, zone and street" required aria-describedby="manual-resident-address-error" /><small id="manual-resident-address-error" class="manual-field-validation"></small></label>
+                      <label>Access starts <span aria-hidden="true">*</span><input id="manual-resident-start" data-manual-validate type="date" required aria-describedby="manual-resident-start-error" /><small id="manual-resident-start-error" class="manual-field-validation"></small></label>
                       <label>Latest access expiry <small>Calculated from the longest selected facility</small><input id="manual-resident-end" type="date" readonly aria-readonly="true" /></label>
                     </div>
                     <fieldset class="manual-facility-fieldset">
@@ -477,7 +477,7 @@
                       <label>Qatar ID evidence <small>Optional JPG, PNG or PDF up to 5 MB</small><input id="manual-qid-evidence" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" /></label>
                       <label id="manual-payment-evidence-field">Payment proof evidence <small>Optional JPG, PNG or PDF up to 5 MB</small><input id="manual-payment-evidence" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" /></label>
                     </div>
-                    <label class="manual-reason-field">Internal reason <span aria-hidden="true">*</span><textarea id="manual-resident-reason" rows="3" placeholder="Why this resident is being created manually" required></textarea></label>
+                    <label class="manual-reason-field">Internal reason <span aria-hidden="true">*</span><textarea id="manual-resident-reason" data-manual-validate rows="3" placeholder="Why this resident is being created manually" required aria-describedby="manual-resident-reason-error"></textarea><small id="manual-resident-reason-error" class="manual-field-validation"></small></label>
                     <label class="manual-send-email"><input id="manual-resident-send-email" type="checkbox" checked /> Email the QR pass to the resident after creation</label>
                     <p id="manual-resident-message" class="form-message" role="status" aria-live="polite"></p>
                   </div>

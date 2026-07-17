@@ -898,6 +898,8 @@ function openManualResidentDrawer() {
   $("#manual-resident-end").value = "";
   $("#manual-resident-send-email").checked = true;
   $("#manual-resident-message").textContent = "";
+  $$('[data-manual-validate]').forEach((field) => { delete field.dataset.manualTouched; });
+  validateManualResidentFields();
   setManualResidentProgress();
   renderManualResidentFacilities();
   syncManualResidentPaymentFields();
@@ -1027,6 +1029,39 @@ function updateManualResidentCalculation() {
   updateManualResidentReadiness(calculation, paymentMatches);
 }
 
+function getManualResidentFieldStates() {
+  const email = $("#manual-resident-email")?.value.trim().toLowerCase() || "";
+  const qidNumber = $("#manual-resident-qid")?.value.trim() || "";
+  const duplicateEmail = email ? state.users.find((user) => String(user.email || "").trim().toLowerCase() === email) : null;
+  const duplicateQid = qidNumber ? state.users.find((user) => String(user.qidNumber || "").trim() === qidNumber) : null;
+  return [
+    { id: "manual-resident-name", valid: hasLetters(normalizeName($("#manual-resident-name")?.value || "")) && normalizeName($("#manual-resident-name")?.value || "").length >= 2, error: "Enter the resident's full name." },
+    { id: "manual-resident-email", valid: isValidEmail(email) && !duplicateEmail, error: duplicateEmail ? `Email already used by ${duplicateEmail.fullName || "an existing resident"}.` : "Enter a valid email address.", success: email && isValidEmail(email) ? "Email is available." : "" },
+    { id: "manual-resident-qid", valid: isValidQid(qidNumber) && !duplicateQid, error: duplicateQid ? `Qatar ID already registered to ${duplicateQid.fullName || "an existing resident"}.` : "Qatar ID must be exactly 11 digits.", success: isValidQid(qidNumber) ? "Qatar ID is available." : "" },
+    { id: "manual-resident-dob", valid: isPastDate($("#manual-resident-dob")?.value || ""), error: "Select a valid past date." },
+    { id: "manual-resident-contact", valid: normalizeName($("#manual-resident-contact")?.value || "").length >= 6, error: "Enter a valid contact number." },
+    { id: "manual-resident-address", valid: normalizeName($("#manual-resident-address")?.value || "").length >= 2, error: "Enter the resident's villa or address." },
+    { id: "manual-resident-start", valid: Boolean($("#manual-resident-start")?.value), error: "Select an access start date." },
+    { id: "manual-resident-reason", valid: normalizeName($("#manual-resident-reason")?.value || "").length >= 5, error: "Enter a clear internal reason." },
+  ];
+}
+
+function validateManualResidentFields({ showAll = false } = {}) {
+  const states = getManualResidentFieldStates();
+  states.forEach((stateItem) => {
+    const input = $(`#${stateItem.id}`);
+    const feedback = $(`#${stateItem.id}-error`);
+    if (!input || !feedback) return;
+    const show = showAll || input.dataset.manualTouched === "true";
+    const showError = show && !stateItem.valid;
+    const showSuccess = show && stateItem.valid && Boolean(stateItem.success);
+    feedback.textContent = showError ? stateItem.error : showSuccess ? stateItem.success : "";
+    feedback.classList.toggle("is-valid", showSuccess);
+    input.toggleAttribute("aria-invalid", showError);
+  });
+  return states.every((stateItem) => stateItem.valid);
+}
+
 function updateManualResidentReadiness(calculation = calculateManualResidentTotal(), paymentMatches) {
   const paymentType = $("#manual-resident-payment-type")?.value || "verified";
   const paidMinor = paymentType === "complimentary" ? 0 : moneyToMinor($("#manual-resident-amount")?.value || "");
@@ -1034,8 +1069,9 @@ function updateManualResidentReadiness(calculation = calculateManualResidentTota
   const qidChecks = $("#manual-qid-inspected")?.checked && $("#manual-qid-matches")?.checked;
   const paymentChecks = paymentType === "complimentary" || ($("#manual-payment-inspected")?.checked && $("#manual-payment-matches")?.checked);
   const accessDatesReady = Boolean($("#manual-resident-start")?.value) && calculation.lineItems.every((item) => item.accessStartAt && item.accessEndAt);
+  const requiredFieldsReady = validateManualResidentFields();
   const submit = $("#manual-resident-submit");
-  if (submit) submit.disabled = manualResidentBusy || !calculation.lineItems.length || !accessDatesReady || !matches || !qidChecks || !paymentChecks;
+  if (submit) submit.disabled = manualResidentBusy || !requiredFieldsReady || !calculation.lineItems.length || !accessDatesReady || !matches || !qidChecks || !paymentChecks;
 }
 
 function setManualResidentProgress(text = "", { busy = false, error = false } = {}) {
@@ -1090,6 +1126,7 @@ async function createManualResident(event) {
   const accessEndAt = calculation.overallAccessEndAt;
 
   try {
+    if (!validateManualResidentFields({ showAll: true })) throw new Error("Complete the highlighted required fields.");
     if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter the resident's full name.");
     if (!isValidEmail(email)) throw new Error("Enter a valid resident email address.");
     if (!isValidQid(qidNumber)) throw new Error("Qatar ID Number must be exactly 11 digits.");
@@ -4983,7 +5020,17 @@ function closeRowMenus() {
 $("#registration-form").addEventListener("submit", registerUser);
 $("#manual-resident-form")?.addEventListener("submit", createManualResident);
 $("#manual-resident-form")?.addEventListener("input", (event) => {
+  if (event.target.id === "manual-resident-qid") event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11);
+  if (event.target.id === "manual-resident-contact") formatQatarPhoneInput(event.target);
+  if (event.target.matches("[data-manual-validate]") && event.target.dataset.manualTouched === "true") validateManualResidentFields();
   if (event.target.matches("#manual-resident-amount, #manual-resident-start, [data-manual-quantity]")) updateManualResidentCalculation();
+  else if (event.target.matches("[data-manual-validate]")) updateManualResidentReadiness();
+});
+$("#manual-resident-form")?.addEventListener("focusout", (event) => {
+  if (!event.target.matches("[data-manual-validate]")) return;
+  event.target.dataset.manualTouched = "true";
+  validateManualResidentFields();
+  updateManualResidentReadiness();
 });
 $("#manual-resident-form")?.addEventListener("change", (event) => {
   if (event.target.matches("#manual-resident-payment-type")) syncManualResidentPaymentFields();
@@ -4994,8 +5041,6 @@ $("#manual-resident-form")?.addEventListener("click", (event) => {
   if (!button) return;
   changeManualFacilityQuantity(button.dataset.manualQuantityName, Number(button.dataset.manualQuantityDelta));
 });
-$("#manual-resident-qid")?.addEventListener("input", (event) => { event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11); });
-$("#manual-resident-contact")?.addEventListener("input", (event) => formatQatarPhoneInput(event.target));
 $("#user-search-form")?.addEventListener("submit", searchUsers);
 $("#user-search")?.addEventListener("input", updateUserSearch);
 $("#clear-user-search")?.addEventListener("click", clearUserSearch);

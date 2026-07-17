@@ -2042,6 +2042,9 @@
 .admin-page[data-admin-page="users"] .manual-resident-body input:not([type="checkbox"]),
 .admin-page[data-admin-page="users"] .manual-resident-body select,
 .admin-page[data-admin-page="users"] .manual-resident-body textarea { width: 100%; min-height: 44px; }
+.admin-page[data-admin-page="users"] .manual-resident-body [aria-invalid="true"] { border-color: #c43a2f; box-shadow: 0 0 0 2px rgba(196, 58, 47, .1); }
+.admin-page[data-admin-page="users"] .manual-field-validation { min-height: 16px; color: #b42318; font-size: .7rem; font-weight: 750; }
+.admin-page[data-admin-page="users"] .manual-field-validation.is-valid { color: #08735f; }
 .admin-page[data-admin-page="users"] .manual-facility-fieldset { display: grid; gap: 10px; margin: 0; padding: 14px; border: 1px solid var(--dashboard-border); border-radius: 12px; }
 .admin-page[data-admin-page="users"] .manual-facility-fieldset legend { padding: 0 6px; color: var(--dashboard-text); font-size: .82rem; font-weight: 900; }
 .admin-page[data-admin-page="users"] .manual-resident-facilities { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
