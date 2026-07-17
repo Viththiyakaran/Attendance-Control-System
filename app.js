@@ -85,6 +85,7 @@ let userStatusFilter = "all";
 let userSubmittedDateFilter = "";
 let selectedUserReviewId = "";
 let applicationReviewBusy = false;
+let manualResidentBusy = false;
 const applicationReviewDrafts = {};
 let reportPage = 1;
 let paymentPage = 1;
@@ -856,6 +857,155 @@ function changeResidentPage(direction) {
   const totalPages = Math.max(1, Math.ceil(state.users.filter(isResidentRecord).length / RESIDENT_PAGE_SIZE));
   residentPage = direction === "next" ? Math.min(residentPage + 1, totalPages) : Math.max(residentPage - 1, 1);
   renderApprovedResidents();
+}
+
+function renderManualResidentFacilities() {
+  const container = $("#manual-resident-facilities");
+  if (!container) return;
+  const facilities = state.facilities.filter((facility) => facility.open !== false);
+  container.innerHTML = facilities.length
+    ? facilities.map((facility) => `<label><input type="checkbox" name="manualFacility" value="${escapeHtml(facility.name)}" /><span><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><small>${escapeHtml(getFacilityPriceLabel(facility))}</small></span></label>`).join("")
+    : emptyState("No active facilities", "Enable a facility before creating resident access.");
+}
+
+function openManualResidentDrawer() {
+  const layer = $("#manual-resident-layer");
+  const form = $("#manual-resident-form");
+  if (!layer || !form) return;
+  form.reset();
+  const today = new Date();
+  $("#manual-resident-start").value = toDateInputValue(today);
+  $("#manual-resident-end").value = toDateInputValue(addYears(today, 1));
+  $("#manual-resident-send-email").checked = true;
+  $("#manual-resident-message").textContent = "";
+  renderManualResidentFacilities();
+  syncManualResidentPaymentFields();
+  layer.hidden = false;
+  document.body.classList.add("manual-resident-open");
+  window.setTimeout(() => $("#manual-resident-name")?.focus(), 0);
+}
+
+function closeManualResidentDrawer({ force = false } = {}) {
+  if (manualResidentBusy && !force) return;
+  const layer = $("#manual-resident-layer");
+  if (layer) layer.hidden = true;
+  document.body.classList.remove("manual-resident-open");
+  $("#manual-resident-message").textContent = "";
+}
+
+function syncManualResidentPaymentFields() {
+  const complimentary = $("#manual-resident-payment-type")?.value === "complimentary";
+  const field = $("#manual-resident-amount-field");
+  const input = $("#manual-resident-amount");
+  if (field) field.hidden = complimentary;
+  if (input) {
+    input.required = !complimentary;
+    if (complimentary) input.value = "0.00";
+  }
+}
+
+function manualAccessMonths(startValue, endValue) {
+  const start = new Date(`${startValue}T00:00:00`);
+  const end = new Date(`${endValue}T00:00:00`);
+  const monthDifference = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+  return Math.max(1, monthDifference + (end.getDate() >= start.getDate() ? 0 : -1));
+}
+
+async function createManualResident(event) {
+  event.preventDefault();
+  if (manualResidentBusy) return;
+  const submit = event.submitter || event.currentTarget.querySelector('[type="submit"]');
+  const message = $("#manual-resident-message");
+  const fullName = normalizeName($("#manual-resident-name").value);
+  const email = $("#manual-resident-email").value.trim().toLowerCase();
+  const qidNumber = $("#manual-resident-qid").value.trim();
+  const dob = $("#manual-resident-dob").value;
+  const contactNumber = normalizeName($("#manual-resident-contact").value);
+  const villaNumber = normalizeName($("#manual-resident-address").value);
+  const accessStartAt = $("#manual-resident-start").value;
+  const accessEndAt = $("#manual-resident-end").value;
+  const accessFacilities = [...document.querySelectorAll('#manual-resident-facilities input[name="manualFacility"]:checked')].map((input) => input.value);
+  const paymentType = $("#manual-resident-payment-type").value;
+  const reason = normalizeName($("#manual-resident-reason").value);
+  const sendEmail = $("#manual-resident-send-email").checked;
+  const amountMinor = paymentType === "complimentary" ? 0 : moneyToMinor($("#manual-resident-amount").value);
+
+  try {
+    if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter the resident's full name.");
+    if (!isValidEmail(email)) throw new Error("Enter a valid resident email address.");
+    if (!isValidQid(qidNumber)) throw new Error("Qatar ID Number must be exactly 11 digits.");
+    if (!isPastDate(dob)) throw new Error("Date of birth must be a valid past date.");
+    if (contactNumber.length < 6) throw new Error("Enter a valid contact number.");
+    if (villaNumber.length < 2) throw new Error("Enter the resident's villa or address.");
+    if (!accessStartAt || !accessEndAt || new Date(`${accessEndAt}T23:59:59`) < new Date(`${accessStartAt}T00:00:00`)) throw new Error("Access expiry must be on or after the start date.");
+    if (!accessFacilities.length) throw new Error("Select at least one facility.");
+    if (paymentType !== "complimentary" && (Number.isNaN(amountMinor) || amountMinor < 0)) throw new Error("Enter a valid non-negative paid amount with no more than two decimal places.");
+    if (reason.length < 5) throw new Error("Enter a clear internal reason for manual creation.");
+    const duplicate = state.users.find((user) => user.qidNumber === qidNumber || String(user.email || "").toLowerCase() === email);
+    if (duplicate) throw new Error(`A record already exists for this ${duplicate.qidNumber === qidNumber ? "Qatar ID number" : "email address"}. Open the existing resident instead.`);
+
+    const confirmed = await confirmAction({
+      title: `Create access for ${fullName}?`,
+      message: `This will approve ${accessFacilities.length} facility ${accessFacilities.length === 1 ? "membership" : "memberships"}, generate a QR pass, and record the registration as manually created by an administrator.`,
+      confirmText: "Create resident",
+      danger: false,
+    });
+    if (!confirmed) return;
+
+    manualResidentBusy = true;
+    submit.disabled = true;
+    message.textContent = "Creating resident and QR pass...";
+    const now = new Date().toISOString();
+    const months = manualAccessMonths(accessStartAt, accessEndAt);
+    const facilityPriceSnapshot = accessFacilities.map((name) => {
+      const facility = state.facilities.find((item) => item.name === name);
+      const pricing = normalizeFacilityPricing(facility);
+      const unitMinor = pricing.pricingType === "free" ? 0 : moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice);
+      const quantity = pricing.pricingType === "monthly" ? months : 1;
+      return {
+        facilityId: facility?.id || "",
+        facilityName: name,
+        pricingType: pricing.pricingType,
+        unitPriceAtSubmission: minorToMoney(unitMinor),
+        selectedMonths: pricing.pricingType === "monthly" ? months : undefined,
+        bookingQuantity: pricing.pricingType === "per_booking" ? 1 : undefined,
+        lineTotal: minorToMoney(unitMinor * quantity),
+        currency: pricing.currency,
+      };
+    });
+    const resident = {
+      id: uid("user"), fullName, email, qidNumber, dob, contactNumber, villaNumber,
+      requestedFacilities: [...accessFacilities], accessFacilities: [...accessFacilities],
+      accessMonths: months, facilityMonths: Object.fromEntries(accessFacilities.map((name) => [name, months])),
+      facilityPriceSnapshot, monthlyTotalQar: minorToMoney(facilityPriceSnapshot.reduce((sum, item) => item.pricingType === "monthly" ? sum + moneyToMinor(item.unitPriceAtSubmission) : sum, 0)),
+      totalQar: minorToMoney(amountMinor), totalMinor: amountMinor,
+      paymentHandling: paymentType, paymentVerified: paymentType === "verified",
+      applicationType: "Manual Registration", manualCreationReason: reason,
+      createdByAdmin: true, createdSource: "admin-assisted-registration",
+      status: "Approved", token: passToken(), createdAt: now, approvedAt: now, updatedAt: now,
+      accessStartAt, accessEndAt,
+      activityLog: [{ type: "Manual resident created", detail: reason, createdAt: now, actor: "Manager" }],
+    };
+
+    await withTimeout(upsertDoc("users", resident), 15000, "Could not save the resident to Firestore.");
+    state.users.push(resident);
+    if (sendEmail) {
+      message.textContent = "Resident created. Sending QR pass email...";
+      await sendAndLogQrPassEmail(resident, createQrPassEmail(resident, "approved", accessFacilities));
+      await upsertDoc("users", resident);
+    }
+    saveState();
+    residentPage = 1;
+    closeManualResidentDrawer({ force: true });
+    render();
+    notify(sendEmail ? "Resident created and QR pass email prepared." : "Resident created with an active QR pass.");
+  } catch (error) {
+    console.error(error);
+    message.textContent = firebaseFriendlyError(error);
+  } finally {
+    manualResidentBusy = false;
+    submit.disabled = false;
+  }
 }
 
 function summaryCard(title, value, detail) {
@@ -4493,6 +4643,8 @@ document.addEventListener("click", (event) => {
   const exportPaymentReportButton = event.target.closest("[data-export-payment-report]");
   const startNewApplication = event.target.closest("[data-start-new-application]");
   const toggleAddFacility = event.target.closest("[data-toggle-add-facility]");
+  const openManualResident = event.target.closest("[data-open-manual-resident]");
+  const closeManualResident = event.target.closest("[data-close-manual-resident]");
   const editFacilityButton = event.target.closest("[data-edit-facility]");
   const cancelFacilityEdit = event.target.closest("[data-cancel-facility-edit]");
   const copyPayment = event.target.closest("[data-copy-payment]");
@@ -4548,6 +4700,8 @@ document.addEventListener("click", (event) => {
   if (exportToday) exportTodayReport();
   if (exportPaymentReportButton) exportPaymentReport();
   if (startNewApplication) resetRegistrationSuccess();
+  if (openManualResident) openManualResidentDrawer();
+  if (closeManualResident) closeManualResidentDrawer();
   if (toggleAddFacility) {
     const form = $("#facility-form");
     if (form) {
@@ -4605,6 +4759,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeRowMenus();
     document.body.classList.remove("admin-drawer-open");
+    closeManualResidentDrawer();
   }
 });
 
@@ -4613,6 +4768,10 @@ function closeRowMenus() {
 }
 
 $("#registration-form").addEventListener("submit", registerUser);
+$("#manual-resident-form")?.addEventListener("submit", createManualResident);
+$("#manual-resident-payment-type")?.addEventListener("change", syncManualResidentPaymentFields);
+$("#manual-resident-qid")?.addEventListener("input", (event) => { event.target.value = event.target.value.replace(/\D/g, "").slice(0, 11); });
+$("#manual-resident-contact")?.addEventListener("input", (event) => formatQatarPhoneInput(event.target));
 $("#user-search-form")?.addEventListener("submit", searchUsers);
 $("#user-search")?.addEventListener("input", updateUserSearch);
 $("#clear-user-search")?.addEventListener("click", clearUserSearch);

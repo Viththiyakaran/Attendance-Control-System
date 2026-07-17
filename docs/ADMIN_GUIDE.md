@@ -43,6 +43,12 @@ Changing a facility price affects new applications only. Existing reviews use th
 
 The Residents page contains approved and suspended records, membership expiry, facilities, QR status, and actions for viewing, resending passes, suspending, or archiving.
 
+### Assisted registration
+
+Use **Add resident** only when a resident cannot complete the public application. Enter the resident's verified identity and contact information, choose access dates and facilities, record whether payment was verified or access is complimentary, and provide an internal reason.
+
+Before saving, the system checks for an existing Qatar ID or email and shows a confirmation. A successful assisted registration is immediately approved, receives a QR token, and is marked as `Manual Registration` with an administrator audit entry. The manager can optionally send the QR pass by email. Identity and payment documents are not required for this assisted workflow.
+
 ## Payments
 
 The Payments page shows verification status, submitted total, reference, and a link to the application review. Totals are derived from submitted application snapshots.

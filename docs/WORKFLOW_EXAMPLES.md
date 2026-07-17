@@ -160,6 +160,12 @@ Ahmed's existing Gym access and QR remain unchanged. Tennis is not added. The re
 
 The current application implements/logs submission, renewal receipt, approval/QR, and rejection emails. Automated expiry reminders and fully facility-specific membership emails require additional implementation.
 
+## Scenario 8: Manager creates assisted access
+
+If Ahmed cannot use the public form, the manager opens **Users / Residents**, selects **Add resident**, verifies Ahmed's identity directly, and enters his details. The manager selects the approved facilities and access dates, records a verified payment or complimentary-access reason, and provides an internal explanation for creating the record manually.
+
+The system blocks duplicate Qatar IDs and email addresses. After confirmation it creates an approved resident record, generates a QR token, records that the manager created the access, and optionally emails the QR pass to Ahmed. The QR follows the same facility, status, schedule, and expiry checks as a QR created from a public application.
+
 ## When a new QR is required
 
 A new QR should only be issued when:

@@ -425,13 +425,54 @@
             <section class="admin-page" data-admin-page="users">
               <section class="panel">
                 <div class="section-heading">
-                  <p class="eyebrow">Users</p>
-                  <h2>Approved resident access</h2>
+                  <div>
+                    <p class="eyebrow">Users</p>
+                    <h2>Approved resident access</h2>
+                  </div>
+                  <button class="primary" type="button" data-open-manual-resident>Add resident</button>
                 </div>
                 <div id="resident-summary" class="summary-grid"></div>
                 <div id="resident-table-body" class="application-review-list"></div>
                 <div id="resident-cards" class="mobile-record-list"></div>
               </section>
+
+              <div id="manual-resident-layer" class="manual-resident-layer" hidden>
+                <button class="manual-resident-backdrop" type="button" data-close-manual-resident aria-label="Close assisted registration"></button>
+                <form id="manual-resident-form" class="manual-resident-drawer" aria-labelledby="manual-resident-title" novalidate>
+                  <header>
+                    <div><p class="eyebrow">Assisted registration</p><h2 id="manual-resident-title">Add resident</h2></div>
+                    <button type="button" data-close-manual-resident aria-label="Close assisted registration">&times;</button>
+                  </header>
+                  <div class="manual-resident-body">
+                    <p class="helper-text">Create access only when a resident cannot submit the public application. This action is recorded as an admin-created registration.</p>
+                    <div class="manual-resident-grid">
+                      <label>Full name <span aria-hidden="true">*</span><input id="manual-resident-name" autocomplete="name" placeholder="Ahmed Mohamed" required /></label>
+                      <label>Email <span aria-hidden="true">*</span><input id="manual-resident-email" type="email" autocomplete="email" placeholder="name@example.com" required /></label>
+                      <label>Qatar ID number <span aria-hidden="true">*</span><input id="manual-resident-qid" inputmode="numeric" maxlength="11" placeholder="11 digits" required /></label>
+                      <label>Date of birth <span aria-hidden="true">*</span><input id="manual-resident-dob" type="date" required /></label>
+                      <label>Contact number <span aria-hidden="true">*</span><input id="manual-resident-contact" type="tel" inputmode="tel" autocomplete="tel" placeholder="+974 1234 5678" required /></label>
+                      <label>Villa / address <span aria-hidden="true">*</span><input id="manual-resident-address" autocomplete="address-line1" placeholder="Villa, zone and street" required /></label>
+                      <label>Access starts <span aria-hidden="true">*</span><input id="manual-resident-start" type="date" required /></label>
+                      <label>Access expires <span aria-hidden="true">*</span><input id="manual-resident-end" type="date" required /></label>
+                    </div>
+                    <fieldset class="manual-facility-fieldset">
+                      <legend>Facility access <span aria-hidden="true">*</span></legend>
+                      <div id="manual-resident-facilities" class="manual-resident-facilities"></div>
+                    </fieldset>
+                    <div class="manual-resident-grid">
+                      <label>Payment handling <span aria-hidden="true">*</span><select id="manual-resident-payment-type"><option value="verified">Payment verified</option><option value="complimentary">Complimentary access</option></select></label>
+                      <label id="manual-resident-amount-field">Paid amount (QAR) <span aria-hidden="true">*</span><input id="manual-resident-amount" inputmode="decimal" placeholder="0.00" required /></label>
+                    </div>
+                    <label class="manual-reason-field">Internal reason <span aria-hidden="true">*</span><textarea id="manual-resident-reason" rows="3" placeholder="Why this resident is being created manually" required></textarea></label>
+                    <label class="manual-send-email"><input id="manual-resident-send-email" type="checkbox" checked /> Email the QR pass to the resident after creation</label>
+                    <p id="manual-resident-message" class="form-message" role="status" aria-live="polite"></p>
+                  </div>
+                  <footer>
+                    <button type="button" data-close-manual-resident>Cancel</button>
+                    <button class="primary" type="submit">Create resident &amp; QR</button>
+                  </footer>
+                </form>
+              </div>
             </section>
 
             <section class="admin-page" data-admin-page="facilities">
