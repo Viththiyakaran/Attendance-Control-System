@@ -72,7 +72,7 @@ const ALLOWED_QID_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 const initialState = {
   users: [],
-  facilities: DEFAULT_FACILITIES.map((facility) => ({ id: uid("facility"), open: true, pricingType: /booking/i.test(`${facility.days} ${facility.timing}`) ? "per_booking" : "monthly", monthlyPrice: "100.00", bookingPrice: "100.00", currency: DEFAULT_CURRENCY, minimumMonths: 1, maximumMonths: 12, ...facility })),
+  facilities: DEFAULT_FACILITIES.map((facility) => ({ id: defaultFacilityId(facility.name), open: true, pricingType: /booking/i.test(`${facility.days} ${facility.timing}`) ? "per_booking" : "monthly", monthlyPrice: "100.00", bookingPrice: "100.00", currency: DEFAULT_CURRENCY, minimumMonths: 1, maximumMonths: 12, ...facility })),
   logs: [],
   emails: [],
   settings: { ...DEFAULT_BRANDING },
@@ -135,17 +135,25 @@ async function loadState() {
     ]);
     const brandingSettings = appSettings.find((item) => item.id === "branding") || {};
 
+    const facilityCleanup = deduplicateExactFacilities({ users, facilities, logs });
     const nextState = {
-      users,
-      facilities: mergeDefaultFacilities(facilities),
-      logs,
+      users: facilityCleanup.users,
+      facilities: mergeDefaultFacilities(facilityCleanup.facilities),
+      logs: facilityCleanup.logs,
       emails,
       settings: { ...DEFAULT_BRANDING, ...storedSettings, ...brandingSettings },
     };
 
-    await Promise.all(nextState.facilities
-      .filter((facility) => !facilities.some((item) => item.id === facility.id))
-      .map((facility) => upsertDoc("facilities", facility)));
+    try {
+      await Promise.all(facilityCleanup.changedUsers.map((user) => upsertDoc("users", user)));
+      await Promise.all(facilityCleanup.changedLogs.map((log) => upsertDoc("attendance_logs", log)));
+      await Promise.all(facilityCleanup.duplicateIds.map((id) => deleteCollectionDoc("facilities", id)));
+      await Promise.all(nextState.facilities
+        .filter((facility) => !facilityCleanup.facilities.some((item) => item.id === facility.id))
+        .map((facility) => upsertDoc("facilities", facility)));
+    } catch (cleanupError) {
+      console.warn("Facility duplicate cleanup could not be fully saved. It will be retried on the next load.", cleanupError);
+    }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
     return nextState;
@@ -267,13 +275,116 @@ function mergeDefaultFacilities(existingFacilities) {
     }
 
     facilities.push({
-      id: uid("facility"),
+      id: defaultFacilityId(defaultFacility.name),
       open: true,
       ...normalizeFacilityPricing(defaultFacility),
       ...defaultFacility,
     });
   });
   return facilities;
+}
+
+function defaultFacilityId(name) {
+  const slug = String(name || "facility")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `default-${slug || "facility"}`;
+}
+
+function facilityIdentityKey(facility) {
+  const pricing = normalizeFacilityPricing(facility);
+  const normalizedMoney = (value) => {
+    const minor = moneyToMinor(value);
+    return Number.isNaN(minor) ? String(value || "") : minor;
+  };
+  return JSON.stringify({
+    name: normalizeName(String(facility.name || "")).toLowerCase(),
+    location: normalizeName(String(facility.location || "")).toLowerCase(),
+    timing: normalizeName(String(facility.timing || "")).toLowerCase(),
+    days: normalizeName(String(facility.days || "")).toLowerCase(),
+    open: facility.open !== false,
+    pricingType: pricing.pricingType,
+    monthlyPrice: normalizedMoney(pricing.monthlyPrice),
+    bookingPrice: normalizedMoney(pricing.bookingPrice),
+    currency: String(pricing.currency || DEFAULT_CURRENCY).toUpperCase(),
+    minimumMonths: pricing.minimumMonths,
+    maximumMonths: pricing.maximumMonths,
+  });
+}
+
+function deduplicateExactFacilities({ users, facilities, logs }) {
+  const groups = new Map();
+  facilities.forEach((facility) => {
+    const key = facilityIdentityKey(facility);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(facility);
+  });
+
+  const referenceCount = (facilityId) => {
+    const id = String(facilityId || "");
+    const userReferences = users.reduce((count, user) => count
+      + (Array.isArray(user.facilityAccessPeriods) ? user.facilityAccessPeriods.filter((item) => String(item.facilityId || "") === id).length : 0)
+      + (Array.isArray(user.facilityPriceSnapshot) ? user.facilityPriceSnapshot.filter((item) => String(item.facilityId || "") === id).length : 0), 0);
+    return userReferences + logs.filter((log) => String(log.facilityId || "") === id).length;
+  };
+
+  const replacementIds = new Map();
+  groups.forEach((matches) => {
+    if (matches.length < 2) return;
+    const [canonical, ...duplicates] = [...matches].sort((left, right) => {
+      const referenceDifference = referenceCount(right.id) - referenceCount(left.id);
+      if (referenceDifference) return referenceDifference;
+      const leftCreated = String(left.createdAt || "");
+      const rightCreated = String(right.createdAt || "");
+      if (leftCreated !== rightCreated) return leftCreated.localeCompare(rightCreated);
+      return String(left.id).localeCompare(String(right.id));
+    });
+    duplicates.forEach((duplicate) => replacementIds.set(String(duplicate.id), String(canonical.id)));
+  });
+
+  const remapItems = (items) => {
+    let changed = false;
+    const remapped = items.map((item) => {
+      const replacement = replacementIds.get(String(item.facilityId || ""));
+      if (!replacement) return item;
+      changed = true;
+      return { ...item, facilityId: replacement };
+    });
+    return { changed, items: remapped };
+  };
+
+  const changedUsers = [];
+  const nextUsers = users.map((user) => {
+    const periods = remapItems(Array.isArray(user.facilityAccessPeriods) ? user.facilityAccessPeriods : []);
+    const snapshots = remapItems(Array.isArray(user.facilityPriceSnapshot) ? user.facilityPriceSnapshot : []);
+    if (!periods.changed && !snapshots.changed) return user;
+    const nextUser = { ...user };
+    if (Array.isArray(user.facilityAccessPeriods)) nextUser.facilityAccessPeriods = periods.items;
+    if (Array.isArray(user.facilityPriceSnapshot)) nextUser.facilityPriceSnapshot = snapshots.items;
+    changedUsers.push(nextUser);
+    return nextUser;
+  });
+
+  const changedLogs = [];
+  const nextLogs = logs.map((log) => {
+    const replacement = replacementIds.get(String(log.facilityId || ""));
+    if (!replacement) return log;
+    const nextLog = { ...log, facilityId: replacement };
+    changedLogs.push(nextLog);
+    return nextLog;
+  });
+
+  const duplicateIds = [...replacementIds.keys()];
+  return {
+    users: nextUsers,
+    facilities: facilities.filter((facility) => !replacementIds.has(String(facility.id))),
+    logs: nextLogs,
+    changedUsers,
+    changedLogs,
+    duplicateIds,
+  };
 }
 
 function saveState() {

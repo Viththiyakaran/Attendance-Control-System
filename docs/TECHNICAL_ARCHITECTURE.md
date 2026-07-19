@@ -31,6 +31,8 @@ Browser SPA
 
 On startup, the app loads Firestore collections in parallel. It merges facility defaults, normalizes legacy fields, and stores a local backup under `facility-access-system-v1`. Firestore is authoritative when available; local storage is a fallback.
 
+Default facilities use deterministic document IDs so simultaneous first-time loads cannot seed multiple copies. During loading, exact duplicate facility records are consolidated. Resident access-period, price-snapshot, and attendance-log references are moved to the retained facility before duplicate documents are removed. Records sharing a name but containing different schedules, pricing, or status are not automatically merged.
+
 Session flags:
 
 - `facility-admin-auth`: administrator browser session.
