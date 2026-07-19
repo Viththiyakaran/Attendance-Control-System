@@ -8,7 +8,11 @@
     <link rel="stylesheet" href="/admin-dashboard.css" />
     <link rel="stylesheet" href="/customer-wizard.css" />
   </head>
-  <body>
+  <body class="app-booting">
+    <div class="app-boot-screen" id="app-boot-screen" role="status" aria-live="polite">
+      <span class="app-boot-spinner" aria-hidden="true"></span>
+      <strong>Loading Facility Access…</strong>
+    </div>
     <header class="topbar public-header">
       <div>
         <p class="eyebrow">Facility Access</p>
@@ -18,7 +22,7 @@
     </header>
 
     <main>
-      <section class="view active" id="register-view">
+      <section class="view" id="register-view">
         <aside class="public-showcase" aria-label="Facility access system overview">
           <div class="public-brand-card">
             <span class="public-brand-mark" aria-hidden="true">HTS</span>

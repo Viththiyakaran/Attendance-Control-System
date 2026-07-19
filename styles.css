@@ -6895,6 +6895,49 @@ dialog::backdrop {
   background: #eaf2ef;
 }
 
+.app-booting {
+  overflow: hidden;
+}
+
+.app-booting > :not(.app-boot-screen) {
+  visibility: hidden;
+}
+
+.app-boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  background: #f2f6f4;
+  color: #16483e;
+  text-align: center;
+}
+
+.app-boot-screen[hidden] {
+  display: none;
+}
+
+.app-boot-spinner {
+  width: 38px;
+  height: 38px;
+  border: 4px solid #d3e6df;
+  border-top-color: #08735f;
+  border-radius: 50%;
+  animation: app-boot-spin .8s linear infinite;
+}
+
+@keyframes app-boot-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-boot-spinner { animation-duration: 1.8s; }
+}
+
 #admin-login-panel {
   position: fixed;
   inset: 0;

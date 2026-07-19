@@ -604,6 +604,8 @@ function switchView(view, options = {}) {
     if (scannerUnlocked && !passDisplayMode) autoStartScanner();
   }
   renderAdminAccess();
+  document.body.classList.remove("app-booting");
+  $("#app-boot-screen")?.setAttribute("hidden", "");
 }
 
 function handleRoute() {
