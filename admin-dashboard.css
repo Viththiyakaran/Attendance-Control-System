@@ -1791,6 +1791,35 @@
   width: 100% !important;
 }
 
+.admin-page[data-admin-page="facilities"] .facility-table-tools {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(190px, 260px);
+  gap: 12px;
+  align-items: end;
+  margin: 0 0 14px;
+}
+
+.admin-page[data-admin-page="facilities"] .facility-table-tools label {
+  display: grid;
+  gap: 6px;
+  color: var(--dashboard-muted);
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.admin-page[data-admin-page="facilities"] .facility-table-tools :is(input, select) {
+  width: 100%;
+  min-height: 44px;
+  border-color: var(--dashboard-border);
+  background-color: #fff;
+}
+
+.admin-page[data-admin-page="facilities"] .facility-table-tools :is(input, select):focus-visible {
+  outline: 3px solid rgba(8,127,101,.22);
+  outline-offset: 2px;
+  border-color: var(--dashboard-green);
+}
+
 .admin-page[data-admin-page="facilities"] .facility-table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -1911,6 +1940,7 @@
 .admin-page[data-admin-page="facilities"] .facility-drawer-body .facility-edit-pricing { grid-template-columns: 1fr 1fr; }
 
 @media (max-width: 760px) {
+  .admin-page[data-admin-page="facilities"] .facility-table-tools { grid-template-columns: 1fr; }
   .admin-page[data-admin-page="facilities"] .facility-table-wrap { display: none; }
   .admin-page[data-admin-page="facilities"] .facility-mobile-list { display: grid; gap: 12px; }
   .admin-page[data-admin-page="facilities"] .facility-mobile-card { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--dashboard-border); border-radius: 14px; background: #fff; }

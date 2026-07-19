@@ -91,6 +91,8 @@ let reportPage = 1;
 let paymentPage = 1;
 let residentPage = 1;
 let facilityPage = 1;
+let facilitySearchQuery = "";
+let facilitySortOrder = "default";
 let accountPage = 1;
 let accountStatusFilter = "all";
 let accountSearchQuery = "";
@@ -1286,10 +1288,11 @@ function renderFacilities() {
   const form = $("#facility-form");
   if (!list) return;
   if (form) form.classList.toggle("is-collapsed", !form.dataset.open);
-  const totalPages = Math.max(1, Math.ceil(state.facilities.length / FACILITY_PAGE_SIZE));
+  const visibleFacilities = getFilteredSortedFacilities();
+  const totalPages = Math.max(1, Math.ceil(visibleFacilities.length / FACILITY_PAGE_SIZE));
   facilityPage = Math.min(Math.max(facilityPage, 1), totalPages);
   const startIndex = (facilityPage - 1) * FACILITY_PAGE_SIZE;
-  const pageFacilities = state.facilities.slice(startIndex, startIndex + FACILITY_PAGE_SIZE);
+  const pageFacilities = visibleFacilities.slice(startIndex, startIndex + FACILITY_PAGE_SIZE);
   const rows = pageFacilities.map((facility) => {
     const availability = getFacilityAvailability(facility);
     return `
@@ -1307,12 +1310,53 @@ function renderFacilities() {
     return `<article class="facility-mobile-card"><div><strong>${escapeHtml(displayFacilityName(facility.name))}</strong><span class="status ${facility.open ? "open" : "neutral"}">${facility.open ? "Active" : "Disabled"}</span></div><p>${escapeHtml(getFacilityPriceLabel(facility))}</p><dl><div><dt>Location</dt><dd>${escapeHtml(facility.location || "-")}</dd></div><div><dt>Schedule</dt><dd>${escapeHtml(facility.timing || "-")}</dd></div><div><dt>Days</dt><dd>${escapeHtml(facility.days || "-")}</dd></div><div><dt>Today</dt><dd><span class="status ${availabilityStatusClass(facility, availability)}">${escapeHtml(availability.label)}</span></dd></div></dl><div class="facility-table-actions"><button type="button" data-edit-facility="${facility.id}">Edit</button><button class="switch" type="button" role="switch" aria-label="${facility.open ? "Disable" : "Enable"} ${escapeHtml(facility.name)}" aria-checked="${facility.open}" data-toggle-facility="${facility.id}"></button><details class="row-menu"><summary aria-label="More actions for ${escapeHtml(facility.name)}">&hellip;</summary><button type="button" data-delete-facility="${facility.id}">Delete facility</button></details></div></article>`;
   }).join("");
   const editingFacility = state.facilities.find((facility) => String(facility.id) === String(editingFacilityId));
-  const pagination = `<div class="facility-pagination"><button type="button" data-facility-page="prev" ${facilityPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageFacilities.length, state.facilities.length)} of ${state.facilities.length} facilities</span><button type="button" data-facility-page="next" ${facilityPage === totalPages ? "disabled" : ""}>Next</button></div>`;
-  list.innerHTML = state.facilities.length ? `<div class="facility-table-wrap"><table class="facility-table"><thead><tr><th>Facility</th><th>Location</th><th>Schedule</th><th>Days</th><th>Price</th><th>Today</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div><div class="facility-mobile-list">${cards}</div>${pagination}${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}` : emptyState("No facilities", "Add a facility to begin managing access.");
+  const pagination = `<div class="facility-pagination"><button type="button" data-facility-page="prev" ${facilityPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageFacilities.length, visibleFacilities.length)} of ${visibleFacilities.length} facilities</span><button type="button" data-facility-page="next" ${facilityPage === totalPages ? "disabled" : ""}>Next</button></div>`;
+  if (!state.facilities.length) {
+    list.innerHTML = emptyState("No facilities", "Add a facility to begin managing access.");
+    return;
+  }
+  if (!visibleFacilities.length) {
+    list.innerHTML = `${emptyState("No matching facilities", "Try a different facility name, location or schedule.")}${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}`;
+    return;
+  }
+  list.innerHTML = `<div class="facility-table-wrap"><table class="facility-table"><thead><tr><th>Facility</th><th>Location</th><th>Schedule</th><th>Days</th><th>Price</th><th>Today</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table></div><div class="facility-mobile-list">${cards}</div>${pagination}${editingFacility ? renderFacilityEditDrawer(editingFacility) : ""}`;
+}
+
+function getFilteredSortedFacilities() {
+  const query = facilitySearchQuery.trim().toLowerCase();
+  const filtered = state.facilities.filter((facility) => {
+    if (!query) return true;
+    const availability = getFacilityAvailability(facility);
+    return [
+      facility.name,
+      facility.location,
+      facility.timing,
+      facility.days,
+      getFacilityPriceLabel(facility),
+      availability.label,
+      facility.open ? "Active" : "Disabled",
+    ].some((value) => String(value || "").toLowerCase().includes(query));
+  });
+
+  const byText = (left, right, field) => String(left[field] || "").localeCompare(String(right[field] || ""), undefined, { sensitivity: "base" });
+  const priceMinor = (facility) => {
+    const pricing = normalizeFacilityPricing(facility);
+    if (pricing.pricingType === "free") return 0;
+    return moneyToMinor(pricing.pricingType === "per_booking" ? pricing.bookingPrice : pricing.monthlyPrice) || 0;
+  };
+  const sorted = [...filtered];
+  if (facilitySortOrder === "name-asc") sorted.sort((left, right) => byText(left, right, "name"));
+  if (facilitySortOrder === "name-desc") sorted.sort((left, right) => byText(right, left, "name"));
+  if (facilitySortOrder === "location-asc") sorted.sort((left, right) => byText(left, right, "location") || byText(left, right, "name"));
+  if (facilitySortOrder === "price-asc") sorted.sort((left, right) => priceMinor(left) - priceMinor(right) || byText(left, right, "name"));
+  if (facilitySortOrder === "price-desc") sorted.sort((left, right) => priceMinor(right) - priceMinor(left) || byText(left, right, "name"));
+  if (facilitySortOrder === "status-active") sorted.sort((left, right) => Number(right.open) - Number(left.open) || byText(left, right, "name"));
+  if (facilitySortOrder === "status-disabled") sorted.sort((left, right) => Number(left.open) - Number(right.open) || byText(left, right, "name"));
+  return sorted;
 }
 
 function changeFacilityPage(direction) {
-  const totalPages = Math.max(1, Math.ceil(state.facilities.length / FACILITY_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(getFilteredSortedFacilities().length / FACILITY_PAGE_SIZE));
   facilityPage = direction === "next"
     ? Math.min(facilityPage + 1, totalPages)
     : Math.max(facilityPage - 1, 1);
@@ -5157,6 +5201,12 @@ $$("[data-clear-file]").forEach((button) => {
 });
 window.addEventListener("popstate", handleRoute);
 document.addEventListener("change", (event) => {
+  if (event.target.matches("#facility-sort")) {
+    facilitySortOrder = event.target.value || "default";
+    facilityPage = 1;
+    editingFacilityId = "";
+    renderFacilities();
+  }
   if (event.target.matches("[data-verification-check]")) {
     captureReviewDraft();
     reviewVerificationProgress();
@@ -5169,6 +5219,12 @@ document.addEventListener("change", (event) => {
   }
 });
 document.addEventListener("input", (event) => {
+  if (event.target.matches("#facility-search")) {
+    facilitySearchQuery = event.target.value;
+    facilityPage = 1;
+    editingFacilityId = "";
+    renderFacilities();
+  }
   if (event.target.matches("#review-full-name, #review-qid-number, #review-dob, #review-internal-note")) captureReviewDraft();
 });
 

@@ -521,6 +521,25 @@
                   <p id="facility-pricing-error" class="field-error" role="alert"></p>
                   <button class="primary" type="submit">Add</button>
                 </form>
+                <div class="facility-table-tools" role="search" aria-label="Filter and sort facilities">
+                  <label>
+                    <span>Search facilities</span>
+                    <input id="facility-search" type="search" placeholder="Search name, location or schedule" autocomplete="off" />
+                  </label>
+                  <label>
+                    <span>Sort by</span>
+                    <select id="facility-sort">
+                      <option value="default">Default order</option>
+                      <option value="name-asc">Facility name A–Z</option>
+                      <option value="name-desc">Facility name Z–A</option>
+                      <option value="location-asc">Location A–Z</option>
+                      <option value="price-asc">Price: low to high</option>
+                      <option value="price-desc">Price: high to low</option>
+                      <option value="status-active">Status: active first</option>
+                      <option value="status-disabled">Status: disabled first</option>
+                    </select>
+                  </label>
+                </div>
                 <div id="facility-list" class="facility-list"></div>
               </section>
             </section>
