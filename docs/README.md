@@ -4,6 +4,7 @@
 |---|---|---|
 | Residents | [User guide](USER_GUIDE.md) | Applications, renewals, documents, payments, and QR passes |
 | Everyone | [Workflow examples](WORKFLOW_EXAMPLES.md) | End-to-end scenarios for applications, added facilities, QR scanning, and emails |
+| Owners and managers | [Handwritten request comparison](HANDWRITTEN-REQUEST-COMPARISON.md) | Final implementation mapped to the ten photographed requirements |
 | Managers | [Administrator guide](ADMIN_GUIDE.md) | Reviews, facilities, residents, payments, notifications, settings, and reports |
 | Gate staff | [Operations guide](OPERATIONS_GUIDE.md) | Scanner setup, scanning, access results, and incident handling |
 | Developers | [Technical architecture](TECHNICAL_ARCHITECTURE.md) | Components, routes, state, integrations, and code structure |

@@ -453,7 +453,6 @@
                       <label>Full name <span aria-hidden="true">*</span><input id="manual-resident-name" data-manual-validate autocomplete="name" placeholder="Ahmed Mohamed" required aria-describedby="manual-resident-name-error" /><small id="manual-resident-name-error" class="manual-field-validation"></small></label>
                       <label>Email <span aria-hidden="true">*</span><input id="manual-resident-email" data-manual-validate type="email" autocomplete="email" placeholder="name@example.com" required aria-describedby="manual-resident-email-error" /><small id="manual-resident-email-error" class="manual-field-validation"></small></label>
                       <label>Qatar ID number <span aria-hidden="true">*</span><input id="manual-resident-qid" data-manual-validate inputmode="numeric" maxlength="11" placeholder="11 digits" required aria-describedby="manual-resident-qid-error" /><small id="manual-resident-qid-error" class="manual-field-validation"></small></label>
-                      <label>Date of birth <span aria-hidden="true">*</span><input id="manual-resident-dob" data-manual-validate type="date" required aria-describedby="manual-resident-dob-error" /><small id="manual-resident-dob-error" class="manual-field-validation"></small></label>
                       <label>Contact number <span aria-hidden="true">*</span><input id="manual-resident-contact" data-manual-validate type="tel" inputmode="tel" autocomplete="tel" placeholder="+974 1234 5678" required aria-describedby="manual-resident-contact-error" /><small id="manual-resident-contact-error" class="manual-field-validation"></small></label>
                       <label>Villa / address <span aria-hidden="true">*</span><input id="manual-resident-address" data-manual-validate autocomplete="address-line1" placeholder="Villa, zone and street" required aria-describedby="manual-resident-address-error" /><small id="manual-resident-address-error" class="manual-field-validation"></small></label>
                       <label>Access starts <span aria-hidden="true">*</span><input id="manual-resident-start" data-manual-validate type="date" required aria-describedby="manual-resident-start-error" /><small id="manual-resident-start-error" class="manual-field-validation"></small></label>
@@ -465,7 +464,7 @@
                     </fieldset>
                     <section id="manual-payment-calculation" class="manual-payment-calculation" aria-live="polite"></section>
                     <div class="manual-resident-grid">
-                      <label>Payment handling <span aria-hidden="true">*</span><select id="manual-resident-payment-type"><option value="verified">Payment verified</option><option value="complimentary">Complimentary access</option></select></label>
+                      <label>Payment handling <span aria-hidden="true">*</span><select id="manual-resident-payment-type"><option value="verified">Bank transfer verified</option><option value="cash">Cash received</option><option value="complimentary">Complimentary access</option></select></label>
                       <label id="manual-resident-amount-field">Paid amount (QAR) <span aria-hidden="true">*</span><input id="manual-resident-amount" inputmode="decimal" placeholder="0.00" required /></label>
                     </div>
                     <fieldset class="manual-verification-fieldset">
@@ -645,11 +644,11 @@
                 <section class="account-report" aria-labelledby="account-report-title">
                   <div class="account-report-heading">
                     <div><p class="eyebrow">Accounts</p><h2 id="account-report-title">Payment accounts</h2><p class="helper-text">Monthly revenue and resident payment records in QAR.</p></div>
-                    <div class="account-report-actions"><button type="button" id="export-account-csv">Export CSV</button><button type="button" id="export-account-pdf" class="primary">Export PDF</button></div>
+                    <div class="account-report-actions"><button type="button" id="export-account-csv">Export Excel (CSV)</button><button type="button" id="export-account-pdf" class="primary">Export PDF</button></div>
                   </div>
                   <div id="account-summary-cards" class="account-summary-cards"></div>
                   <div class="account-report-grid">
-                    <article class="account-chart-card"><div class="account-card-heading"><h3>Monthly revenue</h3><label>Year<select id="account-year-filter" aria-label="Revenue year"></select></label></div><div id="monthly-revenue-chart" class="monthly-revenue-chart"></div></article>
+                    <article class="account-chart-card"><div class="account-card-heading"><h3>Monthly revenue</h3><div class="account-period-filters"><label>Month<select id="account-month-filter" aria-label="Payment month"><option value="all">All months</option><option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option><option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option><option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option><option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option></select></label><label>Year<select id="account-year-filter" aria-label="Revenue year"></select></label></div></div><div id="monthly-revenue-chart" class="monthly-revenue-chart"></div></article>
                     <article class="account-daily-card"><h3>Current activity</h3><div id="account-daily-summary"></div></article>
                   </div>
                   <div class="account-payment-section">

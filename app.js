@@ -86,6 +86,7 @@ let userSubmittedDateFilter = "";
 let selectedUserReviewId = "";
 let applicationReviewBusy = false;
 let manualResidentBusy = false;
+let manualResidentEditingId = "";
 const applicationReviewDrafts = {};
 let reportPage = 1;
 let paymentPage = 1;
@@ -97,6 +98,7 @@ let accountPage = 1;
 let accountStatusFilter = "all";
 let accountSearchQuery = "";
 let accountReportYear = new Date().getFullYear();
+let accountReportMonth = "all";
 let reportFacilityFilter = "all";
 let reportStatusFilter = "all";
 let exceptionReasonFilter = "all";
@@ -953,15 +955,15 @@ function renderApprovedResidents() {
       const residentName = user.fullName || user.email || "Resident";
       const membershipLabel = getResidentMembershipLabel(user);
       const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
-      return `<tr><td><div class="resident-person-cell"><span>${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? `<br>QID ${escapeHtml(user.qidNumber)}` : ""}</small></div></div></td><td>${escapeHtml(user.villaNumber || "-")}</td><td>${renderFacilitySummary(getUserAccess(user))}</td><td><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></td><td>${escapeHtml(formatAppDate(user.accessEndAt))}</td><td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td><td><div class="resident-table-actions"><button type="button" data-open-user="${user.id}">View</button><details class="row-menu"><summary aria-label="More resident actions">&hellip;</summary><button type="button" data-open-user="${user.id}">Edit access</button>${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button><button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}<button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button></details></div></td></tr>`;
+      return `<tr><td><div class="resident-person-cell"><span>${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}${user.qidNumber ? `<br>QID ${escapeHtml(user.qidNumber)}` : ""}</small></div></div></td><td>${escapeHtml(user.villaNumber || "-")}</td><td>${renderFacilitySummary(getUserAccess(user))}</td><td><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></td><td>${escapeHtml(formatAppDate(user.accessStartAt))}<br><small>to ${escapeHtml(formatAppDate(user.accessEndAt))}</small></td><td>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</td><td><div class="resident-table-actions"><button type="button" data-open-user="${user.id}">View</button><details class="row-menu"><summary aria-label="More resident actions">&hellip;</summary><button type="button" data-extend-resident="${user.id}">Extend access</button>${user.status === "Approved" ? `<button type="button" data-send-pass-user="${user.id}">Resend QR pass</button><button type="button" data-suspend-user="${user.id}">Suspend access</button>` : ""}<button type="button" data-delete-user="${user.id}">${isDemoRecord(user) ? "Delete demo record" : "Archive record"}</button></details></div></td></tr>`;
     }).join("");
     const mobileRows = pageRows.map((user) => {
       const residentName = user.fullName || user.email || "Resident";
       const membershipLabel = getResidentMembershipLabel(user);
       const membershipClass = user.status === "Suspended" ? "Rejected" : membershipLabel === "Expired" ? "warning" : "Approved";
-      return `<article><div><span class="resident-mobile-avatar">${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}</small></div><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></div><dl><div><dt>Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div><div><dt>Expiry</dt><dd>${escapeHtml(formatAppDate(user.accessEndAt))}</dd></div><div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div><div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div></dl><button type="button" data-open-user="${user.id}">View resident</button></article>`;
+      return `<article><div><span class="resident-mobile-avatar">${escapeHtml(getInitials(residentName))}</span><div><strong>${escapeHtml(residentName)}</strong><small>${escapeHtml(maskEmail(user.email))}</small></div><span class="status ${membershipClass}">${escapeHtml(membershipLabel)}</span></div><dl><div><dt>Address</dt><dd>${escapeHtml(user.villaNumber || "-")}</dd></div><div><dt>Access period</dt><dd>${escapeHtml(formatAppDate(user.accessStartAt))} to ${escapeHtml(formatAppDate(user.accessEndAt))}</dd></div><div><dt>Facilities</dt><dd>${renderFacilitySummary(getUserAccess(user))}</dd></div><div><dt>QR pass</dt><dd>${user.lastQrPassSentAt ? `Sent ${escapeHtml(formatRelativeTime(user.lastQrPassSentAt))}` : "Not sent"}</dd></div></dl><div class="record-actions"><button type="button" data-open-user="${user.id}">View resident</button><button type="button" data-extend-resident="${user.id}">Extend access</button></div></article>`;
     }).join("");
-    list.innerHTML = rows.length ? `<div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Resident</th><th>Villa / Address</th><th>Facilities</th><th>Membership</th><th>Expiry</th><th>QR pass</th><th>Actions</th></tr></thead><tbody>${tableRows}</tbody></table></div><div class="resident-mobile-list">${mobileRows}</div><div class="resident-pagination"><button type="button" data-resident-page="prev" ${residentPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageRows.length, rows.length)} of ${rows.length} residents</span><button type="button" data-resident-page="next" ${residentPage === totalPages ? "disabled" : ""}>Next</button></div>` : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
+    list.innerHTML = rows.length ? `<div class="resident-table-wrap"><table class="resident-table"><thead><tr><th>Resident</th><th>Villa / Address</th><th>Facilities</th><th>Membership</th><th>Access period</th><th>QR pass</th><th>Actions</th></tr></thead><tbody>${tableRows}</tbody></table></div><div class="resident-mobile-list">${mobileRows}</div><div class="resident-pagination"><button type="button" data-resident-page="prev" ${residentPage === 1 ? "disabled" : ""}>Previous</button><span>${startIndex + 1}-${Math.min(startIndex + pageRows.length, rows.length)} of ${rows.length} residents</span><button type="button" data-resident-page="next" ${residentPage === totalPages ? "disabled" : ""}>Next</button></div>` : emptyState("No approved residents yet", "Approved applications will appear here after verification.");
   }
 
   if (cards) {
@@ -1003,11 +1005,23 @@ function renderManualResidentFacilities() {
     : emptyState("No active facilities", "Enable a facility before creating resident access.");
 }
 
-function openManualResidentDrawer() {
+function openManualResidentDrawer(residentId = "") {
   const layer = $("#manual-resident-layer");
   const form = $("#manual-resident-form");
   if (!layer || !form) return;
   form.reset();
+  manualResidentEditingId = residentId;
+  const resident = residentId ? state.users.find((user) => user.id === residentId) : null;
+  $("#manual-resident-title").textContent = resident ? "Extend resident access" : "Add resident";
+  $("#manual-resident-submit").textContent = resident ? "Extend access & keep QR" : "Create resident & QR";
+  if (resident) {
+    $("#manual-resident-name").value = resident.fullName || "";
+    $("#manual-resident-email").value = resident.email || "";
+    $("#manual-resident-qid").value = resident.qidNumber || "";
+    $("#manual-resident-contact").value = resident.contactNumber || "";
+    $("#manual-resident-address").value = resident.villaNumber || "";
+    $("#manual-resident-reason").placeholder = "Optional note about this extension or advance payment";
+  }
   const today = new Date();
   $("#manual-resident-start").value = toDateInputValue(today);
   $("#manual-resident-end").value = "";
@@ -1031,6 +1045,7 @@ function closeManualResidentDrawer({ force = false } = {}) {
   document.body.classList.remove("manual-resident-open");
   $("#manual-resident-message").textContent = "";
   setManualResidentProgress();
+  manualResidentEditingId = "";
 }
 
 function syncManualResidentPaymentFields() {
@@ -1147,17 +1162,15 @@ function updateManualResidentCalculation() {
 function getManualResidentFieldStates() {
   const email = $("#manual-resident-email")?.value.trim().toLowerCase() || "";
   const qidNumber = $("#manual-resident-qid")?.value.trim() || "";
-  const duplicateEmail = email ? state.users.find((user) => String(user.email || "").trim().toLowerCase() === email) : null;
-  const duplicateQid = qidNumber ? state.users.find((user) => String(user.qidNumber || "").trim() === qidNumber) : null;
+  const duplicateQid = qidNumber ? state.users.find((user) => user.id !== manualResidentEditingId && String(user.qidNumber || "").trim() === qidNumber) : null;
   return [
     { id: "manual-resident-name", valid: hasLetters(normalizeName($("#manual-resident-name")?.value || "")) && normalizeName($("#manual-resident-name")?.value || "").length >= 2, error: "Enter the resident's full name." },
-    { id: "manual-resident-email", valid: isValidEmail(email) && !duplicateEmail, error: duplicateEmail ? `Email already used by ${duplicateEmail.fullName || "an existing resident"}.` : "Enter a valid email address.", success: email && isValidEmail(email) ? "Email is available." : "" },
+    { id: "manual-resident-email", valid: isValidEmail(email), error: "Enter a valid email address.", success: email && isValidEmail(email) ? "Email accepted. A parent email may be shared by children." : "" },
     { id: "manual-resident-qid", valid: isValidQid(qidNumber) && !duplicateQid, error: duplicateQid ? `Qatar ID already registered to ${duplicateQid.fullName || "an existing resident"}.` : "Qatar ID must be exactly 11 digits.", success: isValidQid(qidNumber) ? "Qatar ID is available." : "" },
-    { id: "manual-resident-dob", valid: isPastDate($("#manual-resident-dob")?.value || ""), error: "Select a valid past date." },
     { id: "manual-resident-contact", valid: normalizeName($("#manual-resident-contact")?.value || "").length >= 6, error: "Enter a valid contact number." },
     { id: "manual-resident-address", valid: normalizeName($("#manual-resident-address")?.value || "").length >= 2, error: "Enter the resident's villa or address." },
     { id: "manual-resident-start", valid: Boolean($("#manual-resident-start")?.value), error: "Select an access start date." },
-    { id: "manual-resident-reason", valid: normalizeName($("#manual-resident-reason")?.value || "").length >= 5, error: "Enter a clear internal reason." },
+    { id: "manual-resident-reason", valid: Boolean(manualResidentEditingId) || normalizeName($("#manual-resident-reason")?.value || "").length >= 5, error: "Enter a clear internal reason." },
   ];
 }
 
@@ -1203,7 +1216,7 @@ function setManualResidentProgress(text = "", { busy = false, error = false } = 
     form.setAttribute("aria-busy", String(busy));
     form.classList.toggle("is-busy", busy);
   }
-  if (submit) submit.textContent = busy ? "Creating..." : "Create resident & QR";
+  if (submit) submit.textContent = busy ? (manualResidentEditingId ? "Extending..." : "Creating...") : (manualResidentEditingId ? "Extend access & keep QR" : "Create resident & QR");
   $$('[data-close-manual-resident]').forEach((button) => { button.disabled = busy; });
 }
 
@@ -1226,7 +1239,6 @@ async function createManualResident(event) {
   const fullName = normalizeName($("#manual-resident-name").value);
   const email = $("#manual-resident-email").value.trim().toLowerCase();
   const qidNumber = $("#manual-resident-qid").value.trim();
-  const dob = $("#manual-resident-dob").value;
   const contactNumber = normalizeName($("#manual-resident-contact").value);
   const villaNumber = normalizeName($("#manual-resident-address").value);
   const accessStartAt = $("#manual-resident-start").value;
@@ -1245,7 +1257,6 @@ async function createManualResident(event) {
     if (!hasLetters(fullName) || fullName.length < 2) throw new Error("Enter the resident's full name.");
     if (!isValidEmail(email)) throw new Error("Enter a valid resident email address.");
     if (!isValidQid(qidNumber)) throw new Error("Qatar ID Number must be exactly 11 digits.");
-    if (!isPastDate(dob)) throw new Error("Date of birth must be a valid past date.");
     if (contactNumber.length < 6) throw new Error("Enter a valid contact number.");
     if (villaNumber.length < 2) throw new Error("Enter the resident's villa or address.");
     if (!accessStartAt || !accessEndAt) throw new Error("Select an access start date and at least one facility duration.");
@@ -1257,14 +1268,17 @@ async function createManualResident(event) {
     if (paymentType !== "complimentary" && (!$("#manual-payment-inspected").checked || !$("#manual-payment-matches").checked)) throw new Error("Complete both payment verification checks.");
     validateOptionalEvidence(qidEvidenceFile, "Qatar ID evidence");
     if (paymentType !== "complimentary") validateOptionalEvidence(paymentEvidenceFile, "Payment proof evidence");
-    if (reason.length < 5) throw new Error("Enter a clear internal reason for manual creation.");
-    const duplicate = state.users.find((user) => user.qidNumber === qidNumber || String(user.email || "").toLowerCase() === email);
-    if (duplicate) throw new Error(`A record already exists for this ${duplicate.qidNumber === qidNumber ? "Qatar ID number" : "email address"}. Open the existing resident instead.`);
+    if (!manualResidentEditingId && reason.length < 5) throw new Error("Enter a clear internal reason for manual creation.");
+    const duplicate = state.users.find((user) => user.id !== manualResidentEditingId && user.qidNumber === qidNumber);
+    if (duplicate) throw new Error("This Qatar ID is already registered. Open the existing resident and extend access instead.");
 
+    const extendingResident = manualResidentEditingId ? state.users.find((user) => user.id === manualResidentEditingId) : null;
     const confirmed = await confirmAction({
-      title: `Create access for ${fullName}?`,
-      message: `This will approve ${accessFacilities.length} facility ${accessFacilities.length === 1 ? "membership" : "memberships"}, generate a QR pass, and record the registration as manually created by an administrator.`,
-      confirmText: "Create resident",
+      title: extendingResident ? `Extend access for ${fullName}?` : `Create access for ${fullName}?`,
+      message: extendingResident
+        ? `This records the selected future access periods and payment. ${fullName} will continue using the same QR code.`
+        : `This will approve ${accessFacilities.length} facility ${accessFacilities.length === 1 ? "membership" : "memberships"}, generate a QR pass, and record the registration as manually created by an administrator.`,
+      confirmText: extendingResident ? "Extend access" : "Create resident",
       danger: false,
     });
     if (!confirmed) return;
@@ -1292,20 +1306,66 @@ async function createManualResident(event) {
       selectedMonths: item.pricing.pricingType === "monthly" ? item.quantity : undefined,
       bookingQuantity: item.pricing.pricingType === "per_booking" ? item.quantity : undefined,
     }));
+    const existingResident = manualResidentEditingId ? state.users.find((user) => user.id === manualResidentEditingId) : null;
+    if (existingResident) {
+      const extensionId = uid("user");
+      const mergedFacilities = [...new Set([...(existingResident.accessFacilities || []), ...accessFacilities])];
+      existingResident.facilityAccessPeriods = [...(existingResident.facilityAccessPeriods || []), ...facilityAccessPeriods];
+      existingResident.facilityPriceSnapshot = [...(existingResident.facilityPriceSnapshot || []), ...facilityPriceSnapshot];
+      existingResident.fullName = fullName;
+      existingResident.email = email;
+      existingResident.contactNumber = contactNumber;
+      existingResident.villaNumber = villaNumber;
+      existingResident.accessFacilities = mergedFacilities;
+      existingResident.requestedFacilities = mergedFacilities;
+      existingResident.accessStartAt = [existingResident.accessStartAt, accessStartAt].filter(Boolean).sort()[0] || accessStartAt;
+      existingResident.accessEndAt = [existingResident.accessEndAt, accessEndAt].filter(Boolean).sort().at(-1) || accessEndAt;
+      existingResident.updatedAt = now;
+      existingResident.status = "Approved";
+      existingResident.activityLog = [...(existingResident.activityLog || []), { type: "Manual access extension", detail: reason || `${accessFacilities.length} facility access period added`, createdAt: now, actor: "Manager" }];
+      const extensionRecord = {
+        id: extensionId, fullName, email, qidNumber, contactNumber, villaNumber,
+        requestedFacilities: [...accessFacilities], accessFacilities: [...accessFacilities],
+        accessMonths: months, facilityPriceSnapshot, facilityAccessPeriods,
+        totalQar: minorToMoney(amountMinor), totalMinor: amountMinor,
+        paymentHandling: paymentType, paymentVerified: paymentType !== "complimentary",
+        applicationType: "Manual Extension", renewalOf: existingResident.id,
+        manualCreationReason: reason || "Manual future access extension",
+        createdByAdmin: true, createdSource: "admin-assisted-extension",
+        status: "Renewal Approved", token: existingResident.token,
+        createdAt: now, approvedAt: now, updatedAt: now, accessStartAt, accessEndAt,
+        qatarId: manualDocumentRecord(qidEvidence, qidEvidenceFile),
+        paymentProof: manualDocumentRecord(paymentEvidence, paymentEvidenceFile),
+        activityLog: [{ type: "Manual extension approved", detail: reason || "Future access period recorded", createdAt: now, actor: "Manager" }],
+      };
+      setManualResidentProgress("Saving the extension and keeping the existing QR active...", { busy: true });
+      await Promise.all([upsertDoc("users", existingResident), upsertDoc("users", extensionRecord)]);
+      state.users.push(extensionRecord);
+      if (sendEmail) {
+        setManualResidentProgress("Sending the updated access dates to the resident...", { busy: true });
+        await sendAndLogQrPassEmail(existingResident, createQrPassEmail(existingResident, "updated", mergedFacilities));
+        await upsertDoc("users", existingResident);
+      }
+      saveState();
+      closeManualResidentDrawer({ force: true });
+      render();
+      notify("Access extended. The resident keeps the same QR code.");
+      return;
+    }
     const resident = {
-      id: residentId, fullName, email, qidNumber, dob, contactNumber, villaNumber,
+      id: residentId, fullName, email, qidNumber, dob: "", contactNumber, villaNumber,
       requestedFacilities: [...accessFacilities], accessFacilities: [...accessFacilities],
       accessMonths: months, facilityMonths: Object.fromEntries(calculation.lineItems.filter((item) => item.pricing.pricingType === "monthly").map((item) => [item.name, item.quantity])),
       facilityPriceSnapshot, facilityAccessPeriods, monthlyTotalQar: minorToMoney(calculation.monthlyTotalMinor), expectedTotalQar: minorToMoney(calculation.totalMinor),
       totalQar: minorToMoney(amountMinor), totalMinor: amountMinor,
-      paymentHandling: paymentType, paymentVerified: paymentType === "verified",
+      paymentHandling: paymentType, paymentVerified: paymentType !== "complimentary",
       applicationType: "Manual Registration", manualCreationReason: reason,
       createdByAdmin: true, createdSource: "admin-assisted-registration",
       status: "Approved", token: passToken(), createdAt: now, approvedAt: now, updatedAt: now,
       accessStartAt, accessEndAt,
       qatarId: manualDocumentRecord(qidEvidence, qidEvidenceFile),
       paymentProof: manualDocumentRecord(paymentEvidence, paymentEvidenceFile),
-      manualVerification: { qidInspected: true, qidNumberMatches: true, paymentProofInspected: paymentType === "verified", paidAmountMatches: paymentType === "verified", verifiedAt: now, verifiedBy: "Manager" },
+      manualVerification: { qidInspected: true, qidNumberMatches: true, paymentProofInspected: paymentType !== "complimentary", paidAmountMatches: paymentType !== "complimentary", verifiedAt: now, verifiedBy: "Manager" },
       activityLog: [{ type: "Manual resident created", detail: reason, createdAt: now, actor: "Manager" }],
     };
 
@@ -1534,17 +1594,26 @@ function renderWeeklyUsageChart() {
   const container = $("#weekly-usage-chart");
   if (!container) return;
   const logs = getDashboardPeriodLogs(usagePeriod);
-  const usage = getFacilityOptions().map((facility) => ({
-    name: facility.name,
-    count: logs.filter((log) => log.facilityId === facility.id || log.facilityName === facility.name).length,
-  })).sort((a, b) => b.count - a.count).slice(0, 5);
+  const usage = getFacilityOptions().map((facility) => {
+    const facilityLogs = logs.filter((log) => log.facilityId === facility.id || log.facilityName === facility.name);
+    const visits = facilityLogs.filter((log) => log.state === "Checked In").length;
+    const denied = facilityLogs.filter((log) => log.state !== "Checked In" && log.state !== "Checked Out").length;
+    const latestByResident = new Map();
+    facilityLogs.forEach((log) => {
+      const key = log.userId || log.token || log.qidNumber || log.id;
+      const previous = latestByResident.get(key);
+      if (!previous || new Date(log.checkInAt) > new Date(previous.checkInAt)) latestByResident.set(key, log);
+    });
+    const inside = [...latestByResident.values()].filter((log) => log.state === "Checked In").length;
+    return { name: facility.name, count: usagePeriod === "today" ? visits : facilityLogs.length, visits, inside, denied };
+  }).sort((a, b) => b.count - a.count).slice(0, 5);
   const max = Math.max(1, ...usage.map((item) => item.count));
   const periodLabel = usagePeriod === "today" ? "Today" : usagePeriod === "month" ? "This month" : "This week";
 
   container.innerHTML = logs.length ? `
     <div class="chart-heading">
       <strong>${periodLabel} usage</strong>
-      <small>${logs.length} scanner event${logs.length === 1 ? "" : "s"}</small>
+      <small>${usagePeriod === "today" ? `${usage.reduce((sum, item) => sum + item.visits, 0)} visits · ${usage.reduce((sum, item) => sum + item.inside, 0)} currently inside · ${usage.reduce((sum, item) => sum + item.denied, 0)} denied` : `${logs.length} scanner event${logs.length === 1 ? "" : "s"}`}</small>
     </div>
     <div class="chart-bars">
       ${usage.map((item) => `
@@ -1553,7 +1622,7 @@ function renderWeeklyUsageChart() {
           <div class="chart-track">
             <div class="chart-bar" style="width: ${Math.max(4, (item.count / max) * 100)}%"></div>
           </div>
-          <strong>${item.count} (${Math.round((item.count / Math.max(1, logs.length)) * 100)}%)</strong>
+          <strong>${usagePeriod === "today" ? `${item.visits} visits · ${item.inside} inside${item.denied ? ` · ${item.denied} denied` : ""}` : `${item.count} (${Math.round((item.count / Math.max(1, logs.length)) * 100)}%)`}</strong>
         </div>
       `).join("")}
     </div>
@@ -1899,10 +1968,13 @@ function maskAccountQid(value) {
 function getAccountPayments() {
   return getPaymentReviewRecords().filter((user) => {
     const payment = getPaymentStatus(user);
+    const paymentDate = new Date(user.approvedAt || user.createdAt);
     const query = accountSearchQuery.toLowerCase();
     const matchesStatus = accountStatusFilter === "all" || payment.label === accountStatusFilter;
     const matchesSearch = !query || [user.fullName, user.contactNumber, user.email, user.id].some((value) => String(value || "").toLowerCase().includes(query));
-    return matchesStatus && matchesSearch;
+    const matchesYear = paymentDate.getFullYear() === accountReportYear;
+    const matchesMonth = accountReportMonth === "all" || paymentDate.getMonth() === Number(accountReportMonth);
+    return matchesStatus && matchesSearch && matchesYear && matchesMonth;
   });
 }
 
@@ -1919,17 +1991,20 @@ function renderAccountReport() {
   const daily = $("#account-daily-summary");
   const table = $("#account-payment-table");
   const yearFilter = $("#account-year-filter");
-  if (!summary || !chart || !daily || !table || !yearFilter) return;
+  const monthFilter = $("#account-month-filter");
+  if (!summary || !chart || !daily || !table || !yearFilter || !monthFilter) return;
   const allPayments = getPaymentReviewRecords();
   const years = [...new Set([new Date().getFullYear(), ...allPayments.map((user) => new Date(user.approvedAt || user.createdAt).getFullYear()).filter(Number.isFinite)])].sort((a, b) => b - a);
   yearFilter.innerHTML = years.map((year) => `<option value="${year}" ${year === accountReportYear ? "selected" : ""}>${year}</option>`).join("");
+  monthFilter.value = accountReportMonth;
   if (!years.includes(accountReportYear)) accountReportYear = years[0];
-  const verified = allPayments.filter((user) => ["Approved", "Renewal Approved"].includes(user.status));
+  const periodPayments = getAccountPayments();
+  const verified = periodPayments.filter((user) => ["Approved", "Renewal Approved"].includes(user.status));
   const totalRevenue = verified.reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
+  const pending = periodPayments.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
+  const periodName = accountReportMonth === "all" ? String(accountReportYear) : `${new Intl.DateTimeFormat("en-QA", { month: "long" }).format(new Date(2024, Number(accountReportMonth), 1))} ${accountReportYear}`;
+  summary.innerHTML = [summaryCard("Selected revenue", `QAR ${totalRevenue.toFixed(2)}`, periodName), summaryCard("Payment records", periodPayments.length, "Selected period"), summaryCard("Paid users", verified.length, "Verified accounts"), summaryCard("Pending payments", pending, "Need manager review")].join("");
   const now = new Date();
-  const monthRevenue = verified.filter((user) => { const date = new Date(user.approvedAt || user.createdAt); return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth(); }).reduce((sum, user) => sum + Number(user.totalQar || 0), 0);
-  const pending = allPayments.filter((user) => getPaymentStatus(user).label === "Pending verification").length;
-  summary.innerHTML = [summaryCard("Total revenue", `QAR ${totalRevenue.toFixed(2)}`, "Verified payments"), summaryCard("This month", `QAR ${monthRevenue.toFixed(2)}`, "Approved this month"), summaryCard("Paid users", verified.length, "Verified accounts"), summaryCard("Pending payments", pending, "Need manager review")].join("");
   const monthly = Array(12).fill(0);
   verified.forEach((user) => { const date = new Date(user.approvedAt || user.createdAt); if (date.getFullYear() === accountReportYear) monthly[date.getMonth()] += Number(user.totalQar || 0); });
   const maxRevenue = Math.max(...monthly, 1);
@@ -1956,8 +2031,8 @@ function exportAccountCsv() {
   const rows = getAccountPayments().map((user) => [user.fullName || "Applicant", maskAccountQid(user.qidNumber), user.contactNumber || "-", Number(user.totalQar || 0).toFixed(2), getPaymentDuration(user), getPaymentStatus(user).label, formatDateTime(user.createdAt, "date"), String(user.id).slice(-8)]);
   const csv = [headers, ...rows].map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(",")).join("\n");
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  link.download = `payment-accounts-${accountReportYear}.csv`;
+  link.href = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "application/vnd.ms-excel;charset=utf-8" }));
+  link.download = `payment-accounts-${accountReportYear}-${accountReportMonth === "all" ? "all-months" : Number(accountReportMonth) + 1}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -2211,6 +2286,44 @@ function confirmAction({ title, message, confirmText = "Confirm", danger = true 
     content.querySelector("[data-confirm-ok]").addEventListener("click", () => cleanup(true), { once: true });
     dialog.addEventListener("cancel", () => cleanup(false), { once: true });
     dialog.showModal();
+  });
+}
+
+function confirmManagerPassword({ title, message, confirmText = "Continue" }) {
+  const dialog = $("#confirm-dialog");
+  const content = $("#confirm-dialog-content");
+  if (!dialog || !content) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    content.innerHTML = `
+      <div class="section-heading">
+        <p class="eyebrow">Manager verification</p>
+        <h2>${escapeHtml(title)}</h2>
+        <p class="helper-text">${escapeHtml(message)}</p>
+      </div>
+      <label>Manager password<input type="password" data-manager-password autocomplete="current-password" /></label>
+      <p class="form-message" data-manager-password-error role="alert"></p>
+      <div class="dialog-actions">
+        <button type="button" data-confirm-cancel>Cancel</button>
+        <button class="primary" type="button" data-confirm-ok>${escapeHtml(confirmText)}</button>
+      </div>`;
+    const password = content.querySelector("[data-manager-password]");
+    const finish = (result) => {
+      dialog.close();
+      content.innerHTML = "";
+      resolve(result);
+    };
+    content.querySelector("[data-confirm-cancel]").addEventListener("click", () => finish(false), { once: true });
+    content.querySelector("[data-confirm-ok]").addEventListener("click", () => {
+      if (password.value !== ADMIN_CREDENTIALS.password) {
+        content.querySelector("[data-manager-password-error]").textContent = "Manager password is incorrect.";
+        password.focus();
+        return;
+      }
+      finish(true);
+    });
+    dialog.addEventListener("cancel", () => finish(false), { once: true });
+    dialog.showModal();
+    password.focus();
   });
 }
 
@@ -2517,7 +2630,7 @@ function exportReportPdf() {
 }
 
 function exportPaymentReport() {
-  const payments = getPaymentReviewRecords();
+  const payments = getAccountPayments();
   if (!payments.length) {
     notify("No payment records are available to export.", "warning");
     return;
@@ -3487,18 +3600,11 @@ async function registerUser(event) {
     if (paymentFile.size > MAX_QID_FILE_SIZE) throw new Error("Payment proof file must be 5 MB or smaller.");
     const duplicatePending = state.users.find((user) =>
       ["Pending", "Renewal Pending"].includes(user.status)
-      && (user.email.toLowerCase() === email || user.qidNumber === qidNumber)
+      && user.qidNumber === qidNumber
     );
     if (duplicatePending) throw new Error("You already have a pending application. Please wait for admin review.");
-    const conflictingApproved = state.users.find((user) =>
-      user.status === "Approved"
-      && (user.email.toLowerCase() === email || user.qidNumber === qidNumber)
-      && !(user.email.toLowerCase() === email && user.qidNumber === qidNumber)
-    );
-    if (conflictingApproved) throw new Error("Existing resident details do not match. Use the same Qatar ID and email, or contact admin.");
     const existingApproved = state.users.find((user) =>
       user.status === "Approved"
-      && user.email.toLowerCase() === email
       && user.qidNumber === qidNumber
     );
 
@@ -4073,9 +4179,10 @@ async function approveUser(userId) {
 function createQrPassEmail(user, reason = "resend", accessFacilities = getUserAccess(user)) {
   const passUrl = buildPassUrl(user.token);
   const facilityAccessLines = accessFacilities.map((name) => {
-    const period = Array.isArray(user.facilityAccessPeriods)
-      ? user.facilityAccessPeriods.find((item) => String(item.facilityName || "").trim().toLowerCase() === String(name).trim().toLowerCase())
-      : null;
+    const matchingPeriods = Array.isArray(user.facilityAccessPeriods)
+      ? user.facilityAccessPeriods.filter((item) => String(item.facilityName || "").trim().toLowerCase() === String(name).trim().toLowerCase())
+      : [];
+    const period = [...matchingPeriods].sort((a, b) => String(b.accessEndAt || "").localeCompare(String(a.accessEndAt || "")))[0] || null;
     return period?.accessEndAt ? `${name} - valid until ${formatAppDate(period.accessEndAt)}` : name;
   }).join("\n");
   const subject = reason === "approved"
@@ -4393,6 +4500,12 @@ async function updateFacility(facilityId) {
     notify("Another facility already uses this name.", "warning");
     return;
   }
+  const authorised = await confirmManagerPassword({
+    title: `Save changes to ${displayFacilityName(facility.name)}?`,
+    message: "Enter the manager password to protect facility schedules, pricing, and access rules.",
+    confirmText: "Save facility",
+  });
+  if (!authorised) return;
 
   const previousName = facility.name;
   facility.name = nextName;
@@ -4453,6 +4566,12 @@ async function deleteFacility(facilityId) {
     confirmText: "Delete",
   });
   if (!confirmed) return;
+  const authorised = await confirmManagerPassword({
+    title: "Authorise facility deletion",
+    message: "Enter the manager password before permanently deleting this facility.",
+    confirmText: "Authorise delete",
+  });
+  if (!authorised) return;
 
   state.facilities = state.facilities.filter((item) => item.id !== facility.id);
   state.users.forEach((user) => {
@@ -4470,6 +4589,12 @@ async function deleteFacility(facilityId) {
 async function toggleFacility(facilityId) {
   const facility = state.facilities.find((item) => String(item.id) === String(facilityId));
   if (!facility) return;
+  const authorised = await confirmManagerPassword({
+    title: `${facility.open ? "Disable" : "Enable"} ${displayFacilityName(facility.name)}?`,
+    message: "Enter the manager password before changing whether this facility can be requested or scanned.",
+    confirmText: facility.open ? "Disable facility" : "Enable facility",
+  });
+  if (!authorised) return;
   facility.open = !facility.open;
   await upsertDoc("facilities", facility);
   saveState();
@@ -4641,10 +4766,18 @@ function getFacilityAccessPeriod(user, facility) {
   if (!Array.isArray(user.facilityAccessPeriods) || !user.facilityAccessPeriods.length) return null;
   const facilityId = String(facility?.id || "").trim();
   const facilityName = String(facility?.name || "").trim().toLowerCase();
-  return user.facilityAccessPeriods.find((period) =>
+  const matchingPeriods = user.facilityAccessPeriods.filter((period) =>
     (facilityId && String(period.facilityId || "").trim() === facilityId)
     || (facilityName && String(period.facilityName || "").trim().toLowerCase() === facilityName)
-  ) || null;
+  );
+  if (!matchingPeriods.length) return null;
+  const today = toDateInputValue(new Date());
+  return matchingPeriods.find((period) =>
+    (!period.accessStartAt || period.accessStartAt <= today)
+    && (!period.accessEndAt || period.accessEndAt >= today)
+  ) || [...matchingPeriods].filter((period) => period.accessStartAt > today)
+    .sort((a, b) => String(a.accessStartAt).localeCompare(String(b.accessStartAt)))[0]
+    || [...matchingPeriods].sort((a, b) => String(b.accessEndAt || "").localeCompare(String(a.accessEndAt || "")))[0];
 }
 
 function getUserAccessPeriods(user) {
@@ -5051,6 +5184,7 @@ document.addEventListener("click", (event) => {
   const startNewApplication = event.target.closest("[data-start-new-application]");
   const toggleAddFacility = event.target.closest("[data-toggle-add-facility]");
   const openManualResident = event.target.closest("[data-open-manual-resident]");
+  const extendResident = event.target.closest("[data-extend-resident]");
   const closeManualResident = event.target.closest("[data-close-manual-resident]");
   const editFacilityButton = event.target.closest("[data-edit-facility]");
   const cancelFacilityEdit = event.target.closest("[data-cancel-facility-edit]");
@@ -5108,6 +5242,7 @@ document.addEventListener("click", (event) => {
   if (exportPaymentReportButton) exportPaymentReport();
   if (startNewApplication) resetRegistrationSuccess();
   if (openManualResident) openManualResidentDrawer();
+  if (extendResident) openManualResidentDrawer(extendResident.dataset.extendResident);
   if (closeManualResident) closeManualResidentDrawer();
   if (toggleAddFacility) {
     const form = $("#facility-form");
@@ -5256,6 +5391,11 @@ $("#notification-type-filter")?.addEventListener("change", (event) => {
 });
 $("#account-year-filter")?.addEventListener("change", (event) => {
   accountReportYear = Number(event.target.value) || new Date().getFullYear();
+  accountPage = 1;
+  renderAccountReport();
+});
+$("#account-month-filter")?.addEventListener("change", (event) => {
+  accountReportMonth = event.target.value;
   accountPage = 1;
   renderAccountReport();
 });

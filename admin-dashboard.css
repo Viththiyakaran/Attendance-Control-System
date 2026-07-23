@@ -2384,3 +2384,13 @@ body.manual-resident-open { overflow: hidden; }
   .admin-page[data-admin-page="reports"] .account-pagination { justify-content: space-between; flex-wrap: wrap; }
   .admin-page[data-admin-page="reports"] .account-pagination span { order: -1; width: 100%; text-align: center; }
 }
+.account-period-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.account-period-filters label {
+  min-width: 110px;
+}
